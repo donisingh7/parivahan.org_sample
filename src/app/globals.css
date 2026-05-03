@@ -1,0 +1,729 @@
+@import "tailwindcss";
+
+/* ========= PARIVAHAN GLOBAL STYLES ========= */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #333; background: #fff; }
+
+/* ---- Top Header ---- */
+.my_top_header { background: #1a3060; }
+.header-top-list { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 4px 10px; margin: 0; }
+.header-top-list li { display: flex; align-items: center; }
+.header-top-list li a { color: #fff; text-decoration: none; font-size: 12px; padding: 4px 8px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.header-top-list li a:hover { background: rgba(255,255,255,0.15); border-radius: 3px; }
+.font-decrease { font-size: 10px; }
+.font-reset { font-size: 14px; }
+.font-increase { font-size: 18px; }
+.normal-contrast { background: #fff; color: #1a3060; padding: 2px 7px; border-radius: 3px; font-weight: bold; }
+.dark-contrast { background: #000; color: #ff0; padding: 2px 7px; border-radius: 3px; font-weight: bold; }
+.search-form-width { display: flex; align-items: center; }
+.search-form-width input { padding: 3px 8px; font-size: 12px; border: none; border-radius: 3px 0 0 3px; outline: none; width: 130px; }
+.search-form-width .s-btn { background: #f57c20; border: none; padding: 4px 10px; border-radius: 0 3px 3px 0; cursor: pointer; color: #fff; }
+
+/* ---- Navbar ---- */
+.parivahan-navbar { background: #1a3060; padding: 0; }
+.nav-container { max-width: 100%; padding: 0 10px; }
+.main-list { display: flex; flex-wrap: wrap; list-style: none; margin: 0; padding: 0; align-items: center; gap: 0; }
+.main-list > li > a.parent-link, .main-list > li > a.parent-link-with-submenu {
+  color: #fff; font-size: 13px; font-weight: 700; padding: 12px 14px; display: block;
+  text-decoration: none; white-space: nowrap; letter-spacing: 0.3px;
+}
+.main-list > li:hover > a, .main-list > li > a:hover { background: #f57c20; }
+.nav-item { position: relative; }
+.nav-item:hover .custom-dropdown-menu { display: block; }
+.custom-dropdown-menu {
+  display: none; position: absolute; top: 100%; left: 0; background: #fff;
+  border: 1px solid #ddd; box-shadow: 0 4px 16px rgba(0,0,0,0.15); z-index: 999;
+  min-width: 600px; padding: 16px; border-radius: 0 0 4px 4px;
+}
+.second-child-menu { color: #1a3060; text-decoration: none; font-size: 13px; }
+.second-child-menu:hover { color: #f57c20; text-decoration: underline; }
+.submenu-level-one-item li { list-style: none; padding: 5px 0; border-bottom: 1px dotted #eee; }
+.sub-submenu { display: block !important; list-style: none; padding-left: 10px; }
+.sub-submenu li a { font-size: 12px; color: #555; }
+.sub-submenu li a:hover { color: #f57c20; }
+
+/* ---- Hero Slider ---- */
+.hero-slider { position: relative; width: 100%; overflow: hidden; background: #f0f0f0; }
+.hero-slider img { width: 100%; display: block; }
+.slider-dots { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+.slider-dots span { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: background 0.3s; }
+.slider-dots span.active { background: #f57c20; }
+.slider-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.35); color: #fff; border: none; padding: 10px 14px; cursor: pointer; font-size: 18px; z-index: 10; transition: background 0.3s; }
+.slider-arrow:hover { background: rgba(0,0,0,0.7); }
+.slider-arrow.prev { left: 10px; }
+.slider-arrow.next { right: 10px; }
+
+/* ---- Section common ---- */
+.section-padding30 { padding: 30px 0; }
+.contain-section-head h2 { color: #1a3060; font-size: 26px; font-weight: 700; margin-bottom: 10px; }
+.contain-section-head p { color: #555; font-size: 14px; }
+
+/* ---- DL / Dashboard Cards (team-img hover) ---- */
+.single-team { border-radius: 6px; overflow: hidden; }
+.team-img { position: relative; overflow: hidden; cursor: pointer; }
+.team-img img { width: 100%; display: block; transition: transform 0.4s ease; }
+.team-img:hover img { transform: scale(1.05); }
+.team-caption {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(26,48,96,0.88); display: flex; align-items: center;
+  justify-content: center; opacity: 0; transition: opacity 0.35s ease;
+}
+.team-img:hover .team-caption { opacity: 1; }
+.team-caption-content { color: #fff; padding: 16px; text-align: center; }
+.team-caption-content h3 a { color: #fff; text-decoration: none; font-size: 15px; font-weight: 700; }
+.team-caption-content h3 a:hover { color: #f57c20; }
+.text-contain-section { font-size: 13px; margin: 8px 0; }
+.top-readmore { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; }
+.top-readmore a { color: #fff; text-decoration: none; font-size: 13px; }
+.circle-more { width: 28px; height: 28px; border-radius: 50%; background: #f57c20; display: flex; align-items: center; justify-content: center; }
+.animate-arrow { transition: transform 0.3s; }
+.top-readmore:hover .animate-arrow { transform: translateX(4px); }
+
+/* ---- Vehicle Related Services ---- */
+.vrs-section-w { background: #1a3060; border-radius: 8px; padding: 30px; color: #fff; }
+.vrs-section-w h2 { font-size: 24px; font-weight: 700; margin-bottom: 10px; }
+.vrs-section-w p { font-size: 13px; opacity: 0.9; }
+.service-section-ss { padding: 16px; border-right: 1px solid rgba(255,255,255,0.2); }
+.service-section-ss:last-child { border-right: none; }
+.service-section-ss img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 10px; }
+.service-section-ss h3 { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.service-section-ss .text-contain-section { font-size: 13px; color: rgba(255,255,255,0.85); margin-bottom: 10px; }
+.service-section-ss a { color: #ffd700; text-decoration: none; font-size: 13px; }
+.service-section-ss a:hover { text-decoration: underline; }
+
+/* ---- Manufacturer / Informational Services ---- */
+.mrs-section-w { padding: 20px 0; }
+.mrs-section-w h2 { color: #1a3060; font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+.mrs-section-w p { color: #555; font-size: 13px; margin-bottom: 10px; }
+.mrs-box { background: #f4f8ff; border: 1px solid #d0dff5; border-radius: 6px; padding: 12px 16px; margin-bottom: 8px; cursor: pointer; transition: background 0.25s, border-color 0.25s; }
+.mrs-box:hover, .mrs-box.active { background: #1a3060; border-color: #1a3060; color: #fff; }
+.mrs-box:hover h4, .mrs-box.active h4 { color: #ffd700; }
+.mrs-box h4 { font-size: 14px; font-weight: 700; color: #1a3060; margin-bottom: 4px; }
+.mrs-box div { font-size: 12px; color: #555; }
+.mrs-box:hover div, .mrs-box.active div { color: rgba(255,255,255,0.85); }
+.mrs-image-panel { position: relative; border-radius: 6px; overflow: hidden; }
+.mrs-image-panel img { width: 100%; display: block; border-radius: 6px; }
+
+/* ---- Other Products & Services ---- */
+.ops-section-w { background: #1a3060; border-radius: 10px; padding: 30px; }
+.ops-section-w h2 { color: #fff; font-size: 28px; font-weight: 700; line-height: 1.3; }
+.animation-inner-section { position: relative; border-radius: 8px; overflow: hidden; cursor: pointer; }
+.ani-img img { width: 100%; display: block; transition: transform 0.4s; }
+.animation-inner-section:hover .ani-img img { transform: scale(1.05); }
+.text-caption-top {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(26,48,96,0.85); display: flex; align-items: center;
+  justify-content: center; opacity: 0; transition: opacity 0.35s;
+}
+.animation-inner-section:hover .text-caption-top { opacity: 1; }
+.text-caption-content-grand { color: #fff; text-align: center; padding: 20px; }
+.text-caption-content-grand h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.text-caption {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(26,48,96,0.85); display: flex; align-items: center;
+  justify-content: center; opacity: 0; transition: opacity 0.35s;
+}
+.animation-inner-section:hover .text-caption { opacity: 1; }
+.text-caption-content { color: #fff; text-align: center; padding: 16px; }
+.text-caption-content h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.ani-contain-section { font-size: 13px; opacity: 0.9; margin-bottom: 10px; }
+.aniread-w { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.aniread-w a { color: #ffd700; text-decoration: none; font-size: 13px; font-weight: 600; }
+.ani-read-icon { width: 26px; height: 26px; border-radius: 50%; background: #f57c20; display: flex; align-items: center; justify-content: center; }
+
+/* ---- News Section ---- */
+.news-section-w { border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.card-header-bg { background: #1a3060; color: #fff; font-weight: 700; font-size: 14px; padding: 10px 14px; }
+.news-card-border { border-bottom: 2px solid #f57c20; }
+.tickerv-wrap { max-height: 220px; overflow-y: auto; padding: 8px 0; }
+.tickerv-wrap ul { list-style: none; padding: 0; margin: 0; }
+.tickerv-wrap li { padding: 8px 14px; border-bottom: 1px dotted #ddd; font-size: 13px; }
+.tickerv-wrap li:last-child { border-bottom: none; }
+.tickerv-wrap time { color: #c0392b; font-size: 11px; font-weight: 600; }
+.views-more-link { color: #1a3060; font-size: 12px; font-weight: 600; }
+.views-more-link:hover { color: #f57c20; }
+
+/* ---- Public Media ---- */
+.pb-section-w { padding: 10px 0; }
+.pb-section-w h2 { color: #1a3060; font-size: 24px; font-weight: 700; margin-right: 20px; white-space: nowrap; }
+.pb-section-w > div.d-flex { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.marquee { overflow: hidden; flex: 1; }
+.marquee-inner-2 { display: flex; gap: 10px; animation: marquee 20s linear infinite; white-space: nowrap; }
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.pm-btn-outline-light { border: 1px solid #1a3060; color: #1a3060; background: #fff; padding: 5px 14px; border-radius: 20px; font-size: 12px; text-decoration: none; display: inline-block; white-space: nowrap; transition: background 0.2s, color 0.2s; }
+.pm-btn-outline-light:hover, .pm-btn-outline-light.active { background: #1a3060; color: #fff; }
+.animation-inner-section-second { position: relative; border-radius: 8px; overflow: hidden; cursor: pointer; }
+.animation-inner-section-second .ani-img img { width: 100%; display: block; transition: transform 0.4s; }
+.animation-inner-section-second:hover .ani-img img { transform: scale(1.03); }
+.text-caption-public {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(26,48,96,0.82); display: flex; align-items: center;
+  justify-content: center; opacity: 0; transition: opacity 0.35s;
+}
+.animation-inner-section-second:hover .text-caption-public { opacity: 1; }
+.text-caption-public-content { color: #fff; text-align: center; padding: 20px; }
+.text-caption-public-content h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+
+/* ---- Partner Carousel ---- */
+.partner-carousel { background: #f5f7fb; padding: 16px 0; overflow: hidden; }
+.partner-track { display: flex; gap: 20px; animation: partnerScroll 25s linear infinite; }
+.partner-track img { height: 60px; object-fit: contain; filter: grayscale(30%); transition: filter 0.3s; }
+.partner-track img:hover { filter: grayscale(0); }
+@keyframes partnerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+/* ---- Footer ---- */
+.footer-parivahan { background: #1a3060; color: #ccc; padding: 30px 0 10px; }
+.footer-parivahan h3 { color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 12px; border-bottom: 2px solid #f57c20; padding-bottom: 6px; }
+.footer-parivahan ul { list-style: none; padding: 0; margin: 0; }
+.footer-parivahan ul li { padding: 4px 0; }
+.footer-parivahan ul li a { color: #aac; font-size: 13px; text-decoration: none; }
+.footer-parivahan ul li a:hover { color: #f57c20; }
+.copy-right { font-size: 12px; color: #aac; margin-top: 10px; }
+.footer-bottom { background: #111d38; color: #888; font-size: 12px; padding: 8px 16px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+
+/* ---- Utilities ---- */
+.move-up { transition: transform 0.3s, box-shadow 0.3s; }
+.move-up:hover { transform: translateY(-4px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+.d-flex { display: flex; }
+.align-items-center { align-items: center; }
+.justify-content-center { justify-content: center; }
+.text-center { text-align: center; }
+.row { display: flex; flex-wrap: wrap; margin: 0 -8px; }
+.col-md-3 { flex: 0 0 25%; max-width: 25%; padding: 0 8px; }
+.col-md-4 { flex: 0 0 33.333%; max-width: 33.333%; padding: 0 8px; }
+.col-md-5 { flex: 0 0 41.666%; max-width: 41.666%; padding: 0 8px; }
+.col-md-6 { flex: 0 0 50%; max-width: 50%; padding: 0 8px; }
+.col-md-7 { flex: 0 0 58.333%; max-width: 58.333%; padding: 0 8px; }
+.col-md-8 { flex: 0 0 66.666%; max-width: 66.666%; padding: 0 8px; }
+.col-md-9 { flex: 0 0 75%; max-width: 75%; padding: 0 8px; }
+.col-md-10 { flex: 0 0 83.333%; max-width: 83.333%; padding: 0 8px; }
+.col-md-11 { flex: 0 0 91.666%; max-width: 91.666%; padding: 0 8px; }
+.col-md-12 { flex: 0 0 100%; max-width: 100%; padding: 0 8px; }
+.col-lg-3 { flex: 0 0 25%; max-width: 25%; padding: 0 8px; }
+.container-fluid { width: 100%; padding: 0 16px; }
+.mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; } .mt-5 { margin-top: 20px; }
+.mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; } .mb-5 { margin-bottom: 20px; }
+.img-fluid { max-width: 100%; height: auto; display: block; }
+@media (max-width: 768px) {
+  .col-md-3, .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9, .col-md-10, .col-md-11, .col-md-12, .col-lg-3 { flex: 0 0 100%; max-width: 100%; }
+  .main-list { flex-direction: column; }
+  .custom-dropdown-menu { min-width: 90vw; }
+  .mrs-section-w .row { flex-direction: column; }
+  .service-section-ss { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.2); }
+}
+
+/* ========= INNER PAGE STYLES ========= */
+
+/* Inner page logo header */
+.inner-page-logo-row {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  justify-content: center; padding: 6px 0;
+}
+.logo-item { display: flex; align-items: center; }
+.logo-emblem { height: 70px; object-fit: contain; }
+.logo-parivahan { height: 65px; object-fit: contain; }
+.logo-morth { height: 65px; object-fit: contain; }
+.logo-brand-text { text-align: center; flex: 1; min-width: 200px; }
+.brand-hindi { font-size: 13px; font-weight: 700; color: #1a3060; line-height: 1.4; }
+.brand-eng { font-size: 12px; color: #555; margin-top: 2px; }
+
+/* Title block */
+.title-block-down { padding: 20px 0 40px; }
+.title-block-down .container { max-width: 1140px; margin: 0 auto; padding: 0 16px; }
+.title-block-down h1.title {
+  font-size: 26px; font-weight: 700; color: #1a3060;
+  margin-bottom: 24px; padding-bottom: 10px;
+  border-bottom: 2px solid #f57c20;
+}
+
+/* Breadcrumb */
+.breadcrumb-wrap {
+  font-size: 12px; color: #888; margin-bottom: 16px;
+}
+.breadcrumb-wrap a { color: #1a3060; text-decoration: none; }
+.breadcrumb-wrap a:hover { color: #f57c20; }
+.breadcrumb-wrap span { margin: 0 6px; }
+
+/* State selector (Checkpost Tax) */
+.states-conatiner {
+  background: #f4f8ff; border: 1px solid #d0dff5; border-radius: 8px;
+  padding: 30px 24px; margin-bottom: 24px; min-height: 120px;
+  position: relative;
+}
+.states-conatiner-min-height { min-height: 300px; }
+
+.select-css {
+  display: block; width: 100%; max-width: 420px;
+  font-size: 14px; font-weight: 600; color: #1a3060;
+  padding: 10px 40px 10px 14px;
+  border: 2px solid #1a3060; border-radius: 6px;
+  background: #fff url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231a3060' d='M6 8L0 0h12z'/%3E%3C/svg%3E") no-repeat right 12px center;
+  background-size: 10px;
+  appearance: none; -webkit-appearance: none;
+  cursor: pointer; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  margin-bottom: 20px;
+}
+.select-css:focus { border-color: #f57c20; box-shadow: 0 0 0 3px rgba(245,124,32,0.15); }
+.select-css:hover { border-color: #f57c20; }
+
+/* Overlay loader */
+.overlay {
+  position: absolute; inset: 0; background: rgba(244,248,255,0.92);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; z-index: 10;
+  transition: opacity 0.3s;
+}
+.overlay.hidden { display: none; }
+.overlay-heading {
+  font-size: 16px; color: #1a3060; font-weight: 600;
+  display: flex; align-items: center; gap: 12px;
+}
+.overlay-spinner {
+  width: 22px; height: 22px; border: 3px solid #d0dff5;
+  border-top-color: #f57c20; border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Checkpost result iframe */
+.checkpost-iframe {
+  width: 100%; min-height: 500px; border: none;
+  border-radius: 6px; margin-top: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+/* State info table (static fallback) */
+.state-info-box {
+  border: 1px solid #d0dff5; border-radius: 6px; overflow: hidden;
+  margin-top: 16px;
+}
+.state-info-box table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.state-info-box th { background: #1a3060; color: #fff; padding: 10px 14px; text-align: left; }
+.state-info-box td { padding: 9px 14px; border-bottom: 1px solid #eaf0fb; }
+.state-info-box tr:last-child td { border-bottom: none; }
+.state-info-box tr:hover td { background: #f4f8ff; }
+
+/* Print / PDF link */
+.print__wrapper { margin-top: 24px; }
+.print__link {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #1a3060; color: #fff; padding: 8px 18px;
+  border-radius: 5px; font-size: 13px; text-decoration: none;
+  transition: background 0.2s;
+}
+.print__link:hover { background: #f57c20; color: #fff; }
+.print__link::before { content: "📄"; font-size: 14px; }
+
+/* ========= CHECKPOST PAGE STYLES ========= */
+
+/* Top bar */
+.cp-topbar { background: #1a3060; padding: 4px 0; }
+.cp-topbar .marquee-top { color: #fff; font-size: 12px; overflow: hidden; }
+.cp-topbar .marquee-inner,
+.cp-marquee-inner { display: inline-block; white-space: nowrap; animation: cpMarquee 30s linear infinite; }
+@keyframes cpMarquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+.cp-top-menu { list-style: none; display: flex; gap: 6px; justify-content: flex-end; padding: 0; margin: 0; }
+.cp-top-menu li a { color: #fff; font-size: 12px; text-decoration: none; padding: 2px 6px; }
+.cp-top-menu li a:hover { color: #ffd700; }
+
+/* Checkpost header */
+.cp-header { background: #0d2550; padding: 10px 16px; }
+.cp-header .cp-logo { height: 55px; object-fit: contain; }
+.cp-header .cp-evahan-logo { height: 45px; object-fit: contain; }
+
+/* Checkpost navbar */
+.cp-navbar { background: #1a3060; padding: 0 16px; }
+.cp-navbar .nav-list { list-style: none; display: flex; align-items: center; gap: 0; margin: 0; padding: 0; flex-wrap: wrap; }
+.cp-navbar .nav-list li a { color: #fff; font-size: 13px; padding: 12px 16px; display: block; text-decoration: none; white-space: nowrap; }
+.cp-navbar .nav-list li a:hover { background: #f57c20; }
+.cp-navbar .nav-list li a.active { font-weight: 600; }
+.cp-navbar .login-btn { color: #fff; border: 1px solid #fff; padding: 6px 16px; border-radius: 4px; font-size: 13px; text-decoration: none; margin-left: auto; white-space: nowrap; }
+.cp-navbar .login-btn:hover { background: #f57c20; border-color: #f57c20; }
+.cp-navbar-inner { display: flex; align-items: center; width: 100%; }
+
+/* Dropdown in cp-navbar */
+.cp-dropdown { position: relative; }
+.cp-dropdown:hover .cp-dropdown-menu { display: block; }
+.cp-dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #ddd; box-shadow: 0 4px 12px rgba(0,0,0,0.12); z-index: 999; min-width: 220px; border-radius: 0 0 4px 4px; }
+.cp-dropdown-menu a { display: block; padding: 9px 16px; font-size: 13px; color: #1a3060; text-decoration: none; border-bottom: 1px solid #f0f0f0; }
+.cp-dropdown-menu a:last-child { border-bottom: none; }
+.cp-dropdown-menu a:hover { background: #f4f8ff; color: #f57c20; }
+
+/* News ticker bar */
+.cp-news-bar { background: #c0392b; color: #fff; padding: 6px 0; font-size: 13px; overflow: hidden; }
+.cp-news-scroll-wrap { overflow: hidden; }
+.cp-news-scroll { display: inline-block; white-space: nowrap; animation: cpMarquee 40s linear infinite; color: #fff; }
+.cp-news-highlight { color: #ffd700; font-weight: 700; }
+
+/* Main content area */
+.cp-main { padding: 24px 16px; }
+.cp-main .header-main { font-size: 22px; font-weight: 800; color: #1a3060; text-align: center; letter-spacing: 1px; margin-bottom: 20px; text-transform: uppercase; border-bottom: 3px solid #f57c20; padding-bottom: 10px; }
+
+/* PrimeFaces-like panel */
+.ui-panel { border: 1px solid #c5d3e8; border-radius: 6px; overflow: hidden; margin-bottom: 20px; }
+.ui-panel-titlebar { background: #1a3060; color: #fff; font-size: 14px; font-weight: 600; padding: 10px 16px; }
+.ui-panel-content { background: #fff; padding: 20px; }
+
+/* State select — disabled (locked) */
+.cp-select-wrap { position: relative; display: inline-block; min-width: 220px; }
+.cp-select { width: 100%; padding: 8px 36px 8px 12px; font-size: 13px; font-weight: 600; color: #1a3060; border: 2px solid #1a3060; border-radius: 4px; background: #eef3fb; cursor: not-allowed; appearance: none; -webkit-appearance: none; }
+.cp-select:disabled { background: #e8edf5; color: #555; border-color: #aab; opacity: 1; }
+.cp-select-enabled { cursor: pointer; background: #fff; }
+.cp-select-enabled:focus { border-color: #f57c20; outline: none; box-shadow: 0 0 0 3px rgba(245,124,32,0.15); }
+.cp-select-arrow { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #1a3060; font-size: 10px; }
+
+/* Locked badge */
+.locked-badge { display: inline-flex; align-items: center; gap: 4px; background: #fff3cd; color: #856404; border: 1px solid #ffc107; border-radius: 4px; font-size: 11px; padding: 2px 8px; margin-left: 8px; vertical-align: middle; }
+
+/* Field label */
+.field-label h3.top-space { font-size: 13px; font-weight: 700; color: #1a3060; margin-bottom: 6px; }
+
+/* Go button */
+.cp-go-btn { background: #1a3060; color: #fff; border: none; padding: 10px 28px; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background 0.2s; margin-top: 16px; }
+.cp-go-btn:hover { background: #f57c20; }
+.cp-go-btn i { font-size: 12px; }
+
+/* Instructions panel */
+.instructions-panel ol { padding-left: 20px; }
+.instructions-panel ol li { margin-bottom: 6px; font-size: 13px; color: #333; line-height: 1.6; }
+.instructions-panel ol ol { margin-top: 4px; }
+.dialog-highlight-text { color: #1a3060; font-weight: 700; }
+
+/* Visitor count */
+.cp-visitor { text-align: center; font-weight: 700; color: #c0392b; font-size: 13px; margin-top: 16px; padding: 8px; }
+
+/* ========= TAX COLLECTION PAYMENT FORM ========= */
+
+/* Heading with state name in red */
+.header-main .red { color: #c0392b; }
+
+/* Input fields — PrimeFaces style */
+.ui-inputtext {
+  width: 100%; padding: 6px 10px; font-size: 13px;
+  border: 1px solid #aab4c8; border-radius: 3px; background: #fff;
+  color: #333; box-sizing: border-box;
+}
+.ui-inputtext:focus { border-color: #1a3060; outline: none; box-shadow: 0 0 0 2px rgba(26,48,96,0.12); }
+.ui-inputtext[disabled], .ui-inputtext.ui-state-disabled {
+  background: #e8edf5; color: #888; cursor: not-allowed;
+}
+
+/* Selectonemenu — PrimeFaces dropdown */
+.ui-selectonemenu {
+  display: inline-flex; align-items: center; position: relative;
+  border: 1px solid #aab4c8; border-radius: 3px; background: #fff;
+  min-width: 160px; width: 100%; box-sizing: border-box; height: 32px;
+}
+.ui-selectonemenu.ui-state-disabled { background: #e8edf5; }
+.ui-selectonemenu select {
+  width: 100%; height: 100%; padding: 5px 28px 5px 8px; font-size: 13px;
+  border: none; background: transparent; color: #333;
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+}
+.ui-selectonemenu select:disabled { cursor: not-allowed; color: #888; }
+.ui-selectonemenu-arrow {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; color: #1a3060; font-size: 10px;
+}
+
+/* Field labels */
+.field-label { margin-bottom: 4px; }
+.field-label .ui-outputlabel { font-size: 13px; font-weight: 600; color: #1a3060; }
+.field-label-mandate::after { content: " *"; color: #c0392b; }
+.resp-label-section { display: block; margin-bottom: 2px; }
+
+/* Grid layout for form rows */
+.ui-grid-row { display: flex; flex-wrap: wrap; margin-bottom: 14px; gap: 0; }
+.ui-grid-col-3 { flex: 0 0 25%; padding: 0 8px; box-sizing: border-box; }
+.ui-grid-col-6 { flex: 0 0 50%; padding: 0 8px; box-sizing: border-box; }
+.ui-grid-col-12 { flex: 0 0 100%; padding: 0 8px; box-sizing: border-box; }
+.top_mar1 { margin-top: 22px; }
+.mar-left5 { margin-left: 0; }
+.top-space { margin-top: 16px; }
+.bottom-space { margin-bottom: 16px; }
+.contents-Space { padding: 8px 0; }
+
+/* PrimeFaces-style action buttons */
+.ui-button {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 16px; font-size: 13px; font-weight: 600;
+  border: 1px solid #1a3060; border-radius: 3px;
+  background: #1a3060; color: #fff; cursor: pointer;
+  margin-right: 6px; transition: background 0.2s;
+}
+.ui-button:hover { background: #f57c20; border-color: #f57c20; }
+.ui-button .ui-icon { font-size: 13px; }
+.ui-button .ui-button-text { line-height: 1; }
+
+/* Tax table */
+.ui-datatable { width: 100%; border-collapse: collapse; }
+.ui-datatable table { width: 100%; border-collapse: collapse; }
+.ui-datatable thead tr th {
+  background: #1a3060; color: #fff; padding: 8px 10px;
+  font-size: 13px; text-align: left; border: 1px solid #1a3060;
+}
+.ui-datatable tbody tr td {
+  padding: 8px 10px; font-size: 13px; border: 1px solid #dde3ef;
+  color: #333;
+}
+.ui-datatable tbody tr:nth-child(even) td { background: #f7f9fd; }
+.ui-datatable-empty-message td { text-align: center; color: #999; font-style: italic; }
+.collumn-width { width: 60px; }
+
+/* Total amount field */
+.font-bold { font-weight: 700; }
+.medium-text-font { font-size: 15px; }
+
+/* Calendar date input wrapper */
+.ui-calendar { display: block; }
+.ui-calendar input { width: 100%; }
+
+/* Confirmation modal */
+.cp-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 2000; display: flex; align-items: center; justify-content: center;
+}
+.cp-modal {
+  background: #fff; border-radius: 6px; overflow: hidden;
+  width: 560px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+}
+.cp-modal-header {
+  background: #1a3060; color: #fff; padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 14px; font-weight: 600;
+}
+.cp-modal-close {
+  background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;
+}
+.cp-modal-body { padding: 20px; }
+.datatable-panel-100 { width: 100%; border-collapse: collapse; }
+.datatable-panel-100 td { padding: 7px 10px; font-size: 13px; border-bottom: 1px solid #eee; }
+.small-text-font { font-size: 13px; color: #333; }
+.small-text-font-bold { font-size: 13px; font-weight: 700; color: #1a3060; }
+
+@media (max-width: 768px) {
+  .ui-grid-col-3, .ui-grid-col-6 { flex: 0 0 100%; }
+}
+
+/* ── Layout helpers for TaxCollectionForm / CheckpostTaxPayment ── */
+.cp-topbar-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.cp-topbar-marquee { flex: 1; overflow: hidden; }
+.cp-header-row { display: flex; align-items: center; justify-content: space-between; }
+.cp-logo-fallback { color: #ffd700; font-weight: 800; font-size: 20px; margin-left: 8px; }
+.cp-nav-toggler { display: none; background: none; border: 1px solid rgba(255,255,255,0.5); color: #fff; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+.cp-nav-collapse { display: flex; flex: 1; }
+.cp-loading-center { display: flex; align-items: center; justify-content: center; min-height: 60vh; }
+.cp-loading-spinner { width: 40px !important; height: 40px !important; border-width: 4px !important; }
+.ui-grid-col-10 { flex: 0 0 83.333%; padding: 0 8px; box-sizing: border-box; }
+@media (max-width: 768px) {
+  .cp-nav-toggler { display: block; }
+  .cp-nav-collapse { display: none; width: 100%; }
+  .cp-nav-collapse.open { display: flex; flex-direction: column; }
+  .ui-grid-col-10 { flex: 0 0 100%; }
+}
+
+/* Date input styling */
+.cp-date-input { cursor: pointer; }
+.cp-date-input::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.7; }
+.cp-date-error { border-color: #c0392b !important; background: #fff5f5 !important; }
+.cp-date-err-msg { color: #c0392b; font-size: 12px; font-weight: 600; padding: 4px 8px; background: #fff0f0; border: 1px solid #f5c6cb; border-radius: 3px; margin-top: 4px; }
+
+/* ========= SBI PAYMENT GATEWAY ========= */
+.sbi-page { min-height: 100vh; background: #f0f4f8; font-family: Arial, sans-serif; }
+.sbi-header { background: #1c4f9c; padding: 0; }
+.sbi-header-inner { display: flex; align-items: center; justify-content: space-between; padding: 10px 24px; }
+.sbi-logo-wrap { display: flex; align-items: center; gap: 12px; }
+.sbi-logo { width: 52px; height: 52px; object-fit: contain; }
+.sbi-logo-text .sbi-name { font-size: 22px; font-weight: 800; letter-spacing: 1px; color: #fff; }
+.sbi-logo-text .sbi-tagline { font-size: 11px; font-style: italic; color: #c8d8f0; display: block; }
+.sbi-secure-badge { display: flex; align-items: center; gap: 6px; color: #c8d8f0; font-size: 12px; }
+.sbi-secure-badge i { color: #4caf50; font-size: 16px; }
+.sbi-subheader { background: #0d3a7a; padding: 6px 24px; display: flex; align-items: center; justify-content: space-between; }
+.sbi-subheader span { color: #a8c4e8; font-size: 12px; }
+.sbi-subheader .sbi-ref { color: #ffd700; font-weight: 600; font-size: 12px; }
+.sbi-body { max-width: 960px; margin: 24px auto; padding: 0 16px; display: flex; gap: 20px; flex-wrap: wrap; }
+.sbi-summary { flex: 0 0 300px; }
+.sbi-summary-card { background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.sbi-summary-title { background: #1c4f9c; color: #fff; font-size: 14px; font-weight: 700; padding: 12px 16px; }
+.sbi-summary-body { padding: 16px; }
+.sbi-summary-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #eef2f8; font-size: 13px; gap: 8px; }
+.sbi-summary-row:last-child { border-bottom: none; }
+.sbi-summary-label { color: #666; flex: 0 0 45%; }
+.sbi-summary-value { color: #1c4f9c; font-weight: 600; text-align: right; word-break: break-all; }
+.sbi-amount-row { background: #f0f6ff; border-radius: 4px; padding: 12px 16px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; }
+.sbi-amount-label { font-size: 14px; font-weight: 700; color: #1c4f9c; }
+.sbi-amount-value { font-size: 20px; font-weight: 800; color: #1c4f9c; }
+.sbi-currency { font-size: 13px; margin-right: 2px; }
+.sbi-merchant-info { background: #fff8e1; border: 1px solid #ffe082; border-radius: 4px; padding: 10px 14px; margin-top: 12px; font-size: 12px; color: #7a5c00; }
+.sbi-merchant-name { font-weight: 700; font-size: 13px; color: #5a4000; margin-bottom: 2px; }
+.sbi-payment { flex: 1; min-width: 280px; }
+.sbi-pay-card { background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.sbi-pay-title { background: #1c4f9c; color: #fff; font-size: 14px; font-weight: 700; padding: 12px 16px; }
+.sbi-method-tabs { display: flex; border-bottom: 2px solid #e0e8f5; }
+.sbi-method-tab { flex: 1; padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #666; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none; }
+.sbi-method-tab:hover { color: #1c4f9c; background: #f4f8ff; }
+.sbi-method-tab.active { color: #1c4f9c; border-bottom-color: #1c4f9c; background: #f4f8ff; }
+.sbi-method-tab i { display: block; font-size: 18px; margin-bottom: 4px; }
+.sbi-pay-body { padding: 20px; }
+.sbi-netbank-label { font-size: 13px; font-weight: 700; color: #1c4f9c; margin-bottom: 12px; }
+.sbi-bank-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.sbi-bank-option { border: 2px solid #e0e8f5; border-radius: 6px; padding: 10px 6px; text-align: center; cursor: pointer; transition: all 0.2s; font-size: 11px; color: #333; }
+.sbi-bank-option:hover { border-color: #1c4f9c; background: #f4f8ff; }
+.sbi-bank-option.selected { border-color: #1c4f9c; background: #eef4ff; }
+.sbi-bank-logo-box { width: 48px; height: 28px; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px; border-radius: 3px; overflow: hidden; }
+.sbi-bank-logo-box img { width: 100%; height: 100%; object-fit: contain; }
+.sbi-bank-name { font-size: 10px; color: #444; line-height: 1.2; margin-top: 2px; }
+.sbi-sbi-logo-text { font-size: 14px; font-weight: 800; color: #1c4f9c; }
+.sbi-other-bank-wrap { margin-top: 8px; }
+.sbi-other-bank-label { font-size: 12px; color: #666; margin-bottom: 6px; }
+.sbi-other-bank-select { width: 100%; padding: 8px 10px; border: 1px solid #c5d3e8; border-radius: 4px; font-size: 13px; color: #333; }
+.sbi-upi-label { font-size: 13px; font-weight: 700; color: #1c4f9c; margin-bottom: 8px; }
+.sbi-upi-input-row { display: flex; gap: 8px; align-items: flex-start; }
+.sbi-upi-input { flex: 1; padding: 9px 12px; border: 1px solid #c5d3e8; border-radius: 4px; font-size: 13px; }
+.sbi-upi-input:focus { border-color: #1c4f9c; outline: none; }
+.sbi-upi-verify-btn { padding: 9px 16px; background: #1c4f9c; color: #fff; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.sbi-upi-verify-btn:hover { background: #14387a; }
+.sbi-upi-apps { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.sbi-upi-app { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: #444; cursor: pointer; }
+.sbi-upi-app-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.sbi-card-wrap { }
+.sbi-card-row { margin-bottom: 14px; }
+.sbi-card-label { font-size: 12px; font-weight: 600; color: #444; margin-bottom: 5px; display: block; }
+.sbi-card-input { width: 100%; padding: 9px 12px; border: 1px solid #c5d3e8; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+.sbi-card-input:focus { border-color: #1c4f9c; outline: none; }
+.sbi-card-row-half { display: flex; gap: 12px; }
+.sbi-card-row-half .sbi-card-row { flex: 1; }
+.sbi-pay-now-wrap { padding: 16px 20px; border-top: 1px solid #e8eef8; background: #f8faff; }
+.sbi-pay-now-btn { width: 100%; padding: 14px; background: #1c4f9c; color: #fff; border: none; border-radius: 6px; font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.sbi-pay-now-btn:hover { background: #14387a; }
+.sbi-pay-now-btn:disabled { background: #9ab0d4; cursor: not-allowed; }
+.sbi-pay-now-note { text-align: center; font-size: 11px; color: #888; margin-top: 8px; }
+.sbi-footer { background: #0d3a7a; color: #c8d8f0; text-align: center; font-size: 11px; padding: 14px 24px; margin-top: 24px; }
+.sbi-footer-secure { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 6px; flex-wrap: wrap; }
+.sbi-footer-secure span { display: flex; align-items: center; gap: 5px; }
+.sbi-footer-secure i { color: #4caf50; }
+@media (max-width: 768px) {
+  .sbi-body { flex-direction: column; }
+  .sbi-summary { flex: 0 0 100%; }
+  .sbi-bank-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── SBI extra elements ── */
+.sbi-header-right-group { display: flex; align-items: center; gap: 12px; }
+.sbi-pci-badge { display: flex; align-items: center; gap: 6px; color: #c8d8f0; font-size: 12px; }
+.sbi-subheader-left { display: flex; align-items: center; gap: 6px; }
+.sbi-section-label { font-size: 13px; font-weight: 700; color: #1c4f9c; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #e8eef8; }
+.sbi-bank-radio { display: none; }
+.sbi-bank-check { color: #1c4f9c; font-size: 15px; position: absolute; top: 6px; right: 6px; }
+.sbi-bank-option { position: relative; display: flex; flex-direction: column; align-items: center; border: 2px solid #e0e8f5; border-radius: 8px; padding: 10px 6px 8px; text-align: center; cursor: pointer; transition: all 0.18s; background: #fff; }
+.sbi-bank-option:hover { border-color: #1c4f9c; background: #f4f8ff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(28,79,156,0.12); }
+.sbi-bank-option.selected { border-color: #1c4f9c; background: #eef4ff; box-shadow: 0 3px 10px rgba(28,79,156,0.18); }
+.sbi-upi-verified { color: #1a7a3c; font-size: 12px; font-weight: 600; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+.sbi-upi-or { text-align: center; color: #999; font-size: 12px; margin: 14px 0 10px; position: relative; }
+.sbi-upi-or::before,.sbi-upi-or::after { content:""; position:absolute; top:50%; width:40%; height:1px; background:#e0e8f5; }
+.sbi-upi-or::before { left:0; } .sbi-upi-or::after { right:0; }
+.sbi-upi-or span { background:#fff; padding:0 10px; position:relative; }
+
+/* ── Progress stepper ── */
+.sbi-stepper { display: flex; align-items: center; justify-content: center; margin-top: 16px; background: #fff; border-radius: 8px; padding: 14px 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.sbi-step { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.sbi-step-num { width: 28px; height: 28px; border-radius: 50%; background: #e0e8f5; color: #999; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.sbi-step-lbl { font-size: 10px; color: #999; font-weight: 600; white-space: nowrap; }
+.sbi-step-active .sbi-step-num { background: #1c4f9c; color: #fff; }
+.sbi-step-active .sbi-step-lbl { color: #1c4f9c; }
+.sbi-step-line { flex: 1; height: 2px; background: #e0e8f5; margin: 0 4px; margin-bottom: 14px; min-width: 20px; }
+
+/* ── Bank Login Overlay ── */
+.sbi-login-overlay { max-width: 960px; margin: 24px auto; padding: 0 16px; display: flex; justify-content: center; }
+.sbi-login-card { width: 100%; max-width: 480px; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.14); }
+.sbi-login-header { padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
+.sbi-login-bank-row { display: flex; align-items: center; gap: 14px; }
+.sbi-login-logo-circle { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; color: #fff; border: 2px solid rgba(255,255,255,0.5); }
+.sbi-login-bank-name { color: #fff; font-size: 16px; font-weight: 800; line-height: 1.2; }
+.sbi-login-bank-sub { color: rgba(255,255,255,0.8); font-size: 11px; }
+.sbi-login-ssl { color: rgba(255,255,255,0.9); font-size: 12px; display: flex; align-items: center; gap: 5px; }
+.sbi-login-context { background: #fff8e1; border-left: 4px solid #f57c20; padding: 10px 16px; font-size: 13px; color: #5a4000; display: flex; align-items: flex-start; gap: 8px; }
+.sbi-login-body { padding: 24px; }
+.sbi-login-title { font-size: 16px; font-weight: 700; color: #1c4f9c; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+.sbi-login-error { background: #fdecea; border: 1px solid #f5c6cb; color: #c0392b; font-size: 13px; padding: 9px 12px; border-radius: 5px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.sbi-login-field { margin-bottom: 16px; }
+.sbi-login-label { display: block; font-size: 12px; font-weight: 700; color: #444; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+.sbi-login-input-wrap { position: relative; display: flex; align-items: center; }
+.sbi-login-icon { position: absolute; left: 12px; color: #aab; font-size: 14px; }
+.sbi-login-input { width: 100%; padding: 11px 40px 11px 38px; border: 1.5px solid #c5d3e8; border-radius: 6px; font-size: 14px; color: #333; transition: border-color 0.2s; box-sizing: border-box; }
+.sbi-login-input:focus { border-color: #1c4f9c; outline: none; box-shadow: 0 0 0 3px rgba(28,79,156,0.1); }
+.sbi-pwd-toggle { position: absolute; right: 10px; background: none; border: none; color: #999; cursor: pointer; font-size: 14px; padding: 4px; }
+.sbi-login-links { display: flex; justify-content: space-between; margin-bottom: 18px; }
+.sbi-login-links a { font-size: 12px; color: #1c4f9c; text-decoration: none; }
+.sbi-login-links a:hover { text-decoration: underline; }
+.sbi-login-btn { width: 100%; padding: 13px; border: none; border-radius: 6px; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: filter 0.2s; margin-bottom: 14px; }
+.sbi-login-btn:hover { filter: brightness(1.1); }
+.sbi-login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.sbi-login-back { width: 100%; padding: 10px; background: none; border: 1.5px solid #c5d3e8; border-radius: 6px; color: #666; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 14px; }
+.sbi-login-back:hover { border-color: #1c4f9c; color: #1c4f9c; }
+.sbi-login-secure-note { text-align: center; font-size: 11px; color: #999; display: flex; align-items: center; justify-content: center; gap: 5px; }
+
+/* OTP boxes */
+.sbi-otp-info { background: #f0f6ff; border: 1px solid #c5d3e8; border-radius: 5px; padding: 10px 14px; font-size: 13px; color: #333; margin-bottom: 16px; }
+.sbi-otp-boxes { display: flex; gap: 8px; justify-content: center; margin: 10px 0 4px; }
+.sbi-otp-box { width: 44px; height: 50px; text-align: center; font-size: 20px; font-weight: 700; border: 2px solid #c5d3e8; border-radius: 6px; color: #1c4f9c; }
+.sbi-otp-box:focus { border-color: #1c4f9c; outline: none; box-shadow: 0 0 0 3px rgba(28,79,156,0.1); }
+.sbi-otp-resend { text-align: center; font-size: 12px; color: #666; margin-bottom: 16px; }
+.sbi-otp-resend a { color: #1c4f9c; text-decoration: none; font-weight: 600; }
+
+/* ── Success Screen ── */
+.sbi-success-wrap { max-width: 960px; margin: 40px auto; padding: 0 16px; display: flex; justify-content: center; }
+.sbi-success-card { background: #fff; border-radius: 12px; padding: 40px 32px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.12); max-width: 460px; width: 100%; }
+.sbi-success-icon { font-size: 64px; color: #27ae60; margin-bottom: 16px; }
+.sbi-success-title { font-size: 24px; font-weight: 800; color: #1c4f9c; margin-bottom: 8px; }
+.sbi-success-sub { font-size: 14px; color: #666; margin-bottom: 24px; }
+.sbi-success-details { background: #f8faff; border-radius: 8px; padding: 16px; margin-bottom: 24px; text-align: left; }
+.sbi-success-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eef2f8; font-size: 13px; }
+.sbi-success-row:last-child { border-bottom: none; }
+.sbi-success-row span { color: #666; }
+.sbi-success-amount { color: #1c4f9c; font-size: 16px; }
+.sbi-success-status { color: #27ae60; background: #e8f8ef; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
+.sbi-success-actions { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+.sbi-success-print { padding: 10px 20px; background: #1c4f9c; color: #fff; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.sbi-success-print:hover { background: #14387a; }
+.sbi-success-home { padding: 10px 20px; background: #fff; color: #1c4f9c; border: 2px solid #1c4f9c; border-radius: 6px; font-size: 14px; text-decoration: none; display: flex; align-items: center; gap: 6px; }
+.sbi-success-home:hover { background: #f0f6ff; }
+.sbi-success-note { font-size: 12px; color: #999; }
+
+/* Grid helpers for checkpost */
+.ui-grid-row { display: flex; flex-wrap: wrap; margin-bottom: 12px; align-items: flex-start; }
+.ui-grid-col-1 { flex: 0 0 8.333%; }
+.ui-grid-col-5 { flex: 0 0 41.666%; padding: 0 8px; }
+.ui-grid-col-12 { flex: 0 0 100%; }
+.center-position { display: flex; justify-content: center; align-items: center; }
+@media (max-width: 768px) {
+  .ui-grid-col-1, .ui-grid-col-5 { flex: 0 0 100%; }
+  .cp-navbar-inner { flex-direction: column; align-items: flex-start; }
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}

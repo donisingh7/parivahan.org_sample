@@ -1,0 +1,281 @@
+<body id="masterlaoyoutbody" onload="changeHashOnLoad();" aria-busy="false" style="position: relative;">
+<form id="master_Layout_form" name="master_Layout_form" method="post" action="/checkpost/faces/public/payment/TaxCollectionMainOnline.xhtml" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="master_Layout_form" value="master_Layout_form">
+
+		<div class="container-fluid topbar-menu">
+			<div class="mar-bot">
+				<div>
+					<div class="row">
+						<div class="col-md-6 left-position">
+							<div class="marquee marquee-top mar-common-f">
+								<div>
+									<span>Please pay tax in advance to avoid any last minute
+										hassle.</span>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-5 right-position top-pad-top">
+							<ul class="top-menu ">
+								<li><a href="https://vahan.parivahan.gov.in/" title="Home">
+										<span class="glyphicon glyphicon-home"></span> Home
+								</a></li>
+								<li><a href="#skip-main-content" title="skip-main-content">
+										<span class="glyphicon glyphicon-arrow-down"></span> Skip main
+										content
+								</a></li>
+								<li><a href="#navbar" title="Skip to navigation"> <span class="glyphicon glyphicon-arrow-down"></span> Skip navigation
+								</a></li>
+								<li><a href="#" title="A+">A<sup>+</sup></a></li>
+								<li><a href="#" title="A">A</a></li>
+								<li><a href="#" title="A-">A<sup>-</sup></a></li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="navigation-background hide-header">
+			<div class="container-fluid">
+				<div class="row">
+					<div class="col-md-9 col-8 mt-1 mb-1 ">
+						<a><img id="j_idt15" src="/checkpost/faces/javax.faces.resource/checkpost-logo.png?ln=images" class="img-fluid" alt="Check Post Logo">
+						</a>
+					</div>
+
+					<div class="col-md-2 col-2 mt-1 mb-1 text-end">
+						<a><img id="j_idt17" src="/checkpost/faces/javax.faces.resource/e-vahan-logo.png?ln=images" class="img-fluid" alt="e-Vahan Logo">
+						</a>
+					</div>
+				</div>
+			</div>
+
+		</div>
+		<nav class="navbar navbar-expand-lg navigation-background-nav ">
+		<div class="container-fluid">
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"><i class="fa fa-bars mt-1" aria-hidden="true"></i></span>
+			</button>
+			<div class="collapse navbar-collapse " id="navbarSupportedContent">
+				<ul class="navbar-nav me-auto mb-2 mb-lg-0 text-white">
+					<li class="nav-item"><a href="https://parivahan.gov.in/" class="nav-link active"><i class="fa fa-home" aria-hidden="true"></i> Home </a></li>
+					<li class="nav-item"><a href="/checkpost/faces/public/payment/ChecklTransactionStatus.xhtml" class="nav-link active">
+							<i class="fa fa-user" aria-hidden="true"></i> Check Pending Transaction </a>
+					</li>
+					<li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" rendered=""><i class="fa fa-print" aria-hidden="true"></i>
+							Reports<span class="caret"></span></a>
+						<ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+
+							<li><a href="/checkpost/faces/public/reports/PaymentReceipt.xhtml" class="dropdown-item">
+									<span class="glyphicon glyphicon-arrow-right"></span> Print Payment Receipt</a>
+							</li>
+							<li><a href="/checkpost/faces/public/reports/PermitReceiptPrinting.xhtml" class="dropdown-item">
+									<span class="glyphicon glyphicon-arrow-right"></span> Print Permit Receipt</a>
+							</li>
+							<li><a href="/checkpost/faces/public/reports/CheckReceiptDetails.xhtml" class="dropdown-item">
+									<span class="glyphicon glyphicon-arrow-right"></span> Check Receipt Details</a>
+							</li>
+						</ul></li>
+				</ul>
+			</div>
+			<ul class="navbar-nav mx-auto">
+				<li class="nav-item"><a href="/checkpost/faces/admin/pages/login.xhtml" class="btn btn-outline-light">Log In</a></li>
+			</ul>
+		</div>
+		</nav>
+		<div class="main_news_w">
+			<div class="news_w">
+				<div data-direction="left" class="marquee-with-options">
+					<marquee scrollamount="2" onmouseover="this.stop();" onmouseout="this.start();" direction="left" behavior="alternate">
+					Verify the validity of the receipt by sending sms <font color="#ff83dc">VAHAN &lt;STATE CODE&gt; CP &lt;VEHICLE
+						NO&gt; </font> to 7738299899 (e.g. <font color="#ff83dc">VAHAN XX
+						CP XXXXXXXXXX</font>) </marquee>
+				</div>
+			</div>
+		</div>
+		<div>
+        <div class="container-fluid">
+            <div class="ui-grid ui-grid-responsive">
+                <div class="ui-grid-row top-space center-position contents-Space">
+                    <h1 class="header-main"><label id="j_idt34" class="ui-outputlabel ui-widget header-main" style="color: #154281!important;font-weight: bold!important;"><span class="ui-outputlabel-label">BORDER TAX PAYMENT FOR ENTRY INTO</span></label><span class="red"> RAJASTHAN</span></h1>
+                </div>
+                <div class="ui-grid-row">
+                    <div class="ui-grid-col-12 center-position contents-Space">
+                    </div>
+                </div>
+                <div class="ui-grid-row top-space">
+                    <div class="ui-grid-col-1 resp-blank-height"></div>
+                    <div class="ui-grid-col-10"><div id="rjtaxcollection" class="ui-panel ui-widget ui-widget-content ui-corner-all bottom-space" data-widget="widget_rjtaxcollection" role="region" aria-labelledby="rjtaxcollection_header"><div id="rjtaxcollection_header" class="ui-panel-titlebar ui-widget-header ui-helper-clearfix ui-corner-all"><span class="ui-panel-title">Tax Payment Details</span></div><div id="rjtaxcollection_content" class="ui-panel-content ui-widget-content">
+        <div class="ui-grid-row">
+            <div class="ui-grid-col-6">
+                <label class="field-label resp-label-section"><label id="j_idt1044" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Vehicle No.</span></label>
+                </label><input id="j_idt1046" name="j_idt1046" type="text" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all" autocomplete="off" maxlength="10" onkeypress="return AlphaOnly(event, 'abcdefghijklmnopqrstuvwxyz0123456789');" onkeyup="makeCaps(this);">
+            </div>
+            <div class="ui-grid-col-6">
+                <div class="ui-grid-row">
+                    <div class="ui-grid-col-12 top_mar1 mar-left5"><button id="j_idt1048" name="j_idt1048" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-left" onclick="PrimeFaces.ab({s:&quot;j_idt1048&quot;,f:&quot;master_Layout_form&quot;,u:&quot;rjtaxcollection popup&quot;,onst:function(cfg){PF('masterLayoutVar').show();;},onsu:function(data,status,xhr){PF('masterLayoutVar').hide();;}});return false;" type="submit"><span class="ui-button-icon-left ui-icon ui-c ui-icon-arrowthick-1-s"></span><span class="ui-button-text ui-c">Get Details</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ui-grid-row">
+            <div class="ui-grid-col-6">
+                <label class="field-label resp-label-section"><label id="j_idt1050" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Chassis No.</span></label>
+                </label><input id="j_idt1052" name="j_idt1052" type="text" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all ui-state-disabled" disabled="disabled" autocomplete="off" maxlength="30" onkeypress="return AlphaOnly(event, '*#.0123456789');" onkeyup="makeCaps(this);">
+            </div>   
+            <div class="ui-grid-col-6">
+                <label class="field-label resp-label-section"><label id="j_idt1054" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Owner Name</span></label>
+                </label><input id="j_idt1056" name="j_idt1056" type="text" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all ui-state-disabled" disabled="disabled" autocomplete="off" maxlength="50" onkeypress="return AlphaWithSpaceOnly(event, '. ');" onkeyup="makeCaps(this);">
+            </div>
+        </div>
+        <div class="ui-grid-row">
+            <div class="ui-grid-col-6">
+                <label class="field-label resp-label-section"><label id="j_idt1058" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Mobile No.</span></label>
+                </label><input id="mobileno" name="mobileno" type="text" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all" autocomplete="off" maxlength="10" placeholder="SMS about payment will be sent to this number." title="SMS about payment will be sent to this number." onkeypress="return NumericOnly(event, '');">
+            </div>   
+            <div class="ui-grid-col-6">
+                <label class="field-label resp-label-section"><label id="j_idt1061" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">From State</span></label>
+                </label><div id="j_idt1063" class="ui-selectonemenu ui-widget ui-state-default ui-corner-all " style="min-width: 178.4px;"><div class="ui-helper-hidden-accessible"><select id="j_idt1063_input" name="j_idt1063_input" tabindex="-1" autocomplete="off" aria-hidden="true"><option value="-1" data-escape="true">---Select State---</option><option value="AN" data-escape="true">ANDAMAN &amp; NICOBAR</option><option value="AP" data-escape="true">ANDHRA PRADESH</option><option value="AR" data-escape="true">ARUNACHAL PRADESH</option><option value="AS" data-escape="true">ASSAM</option><option value="BR" data-escape="true">BIHAR</option><option value="CH" data-escape="true">CHANDIGARH</option><option value="CG" data-escape="true">CHHATTISGARH</option><option value="DL" data-escape="true">DELHI</option><option value="GA" data-escape="true">GOA</option><option value="GJ" data-escape="true">GUJARAT</option><option value="HR" data-escape="true">HARYANA</option><option value="HP" data-escape="true">HIMACHAL PRADESH</option><option value="JK" data-escape="true">JAMMU &amp; KASHMIR</option><option value="JH" data-escape="true">JHARKHAND</option><option value="KA" data-escape="true">KARNATAKA</option><option value="KL" data-escape="true">KERALA</option><option value="LD" data-escape="true">LAKSHADWEEP</option><option value="MP" data-escape="true">MADHYA PRADESH</option><option value="MH" data-escape="true">MAHARASHTRA</option><option value="MN" data-escape="true">MANIPUR</option><option value="ML" data-escape="true">MEGHALAYA</option><option value="MZ" data-escape="true">MIZORAM</option><option value="NL" data-escape="true">NAGALAND</option><option value="OR" data-escape="true">ODISHA</option><option value="PY" data-escape="true">PONDICHERRY</option><option value="PB" data-escape="true">PUNJAB</option><option value="SK" data-escape="true">SIKKIM</option><option value="TN" data-escape="true">TAMIL NADU</option><option value="TS" data-escape="true">TELANGANA</option><option value="TR" data-escape="true">TRIPURA</option><option value="DD" data-escape="true">UT of DNH and DD</option><option value="UP" data-escape="true">UTTAR PRADESH</option><option value="UK" data-escape="true">UTTRAKHAND</option><option value="WB" data-escape="true">WEST BENGAL</option></select></div><span id="j_idt1063_label" class="ui-selectonemenu-label ui-inputfield ui-corner-all" tabindex="0" aria-controls="j_idt1063_panel" role="combobox" aria-haspopup="listbox" aria-expanded="false">---Select State---</span><div class="ui-selectonemenu-trigger ui-state-default ui-corner-right"><span class="ui-icon ui-icon-triangle-1-s ui-c"></span></div></div>
+            </div>
+        </div>
+        <div class="ui-grid-row">
+            <div class="ui-grid-col-6">
+                <label class="field-label resp-label-section"><label id="j_idt1067" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Vehicle Type</span></label>
+                </label><div id="j_idt1069" class="ui-selectonemenu ui-widget ui-state-default ui-corner-all ui-state-disabled " style="min-width: 338.4px;"><div class="ui-helper-hidden-accessible"><select id="j_idt1069_input" name="j_idt1069_input" tabindex="-1" autocomplete="off" aria-hidden="true" disabled="disabled" onchange="PrimeFaces.ab({s:&quot;j_idt1069&quot;,e:&quot;change&quot;,f:&quot;master_Layout_form&quot;,p:&quot;rjtaxcollection&quot;,u:&quot;rjtaxcollection&quot;});"><option value="-1" data-escape="true">---Select Vehicle Type---</option><option value="1" data-escape="true">CONTRACT CARRIAGE/PASSENGER VEHICLES</option><option value="3" data-escape="true">GOODS VEHICLE</option><option value="7" data-escape="true">TEMPORARY REGISTERED VEHICLES</option><option value="9" data-escape="true">CONSTRUCTION EQUIPMENT VEHICLE</option></select></div><span id="j_idt1069_label" class="ui-selectonemenu-label ui-inputfield ui-corner-all" tabindex="0" aria-controls="j_idt1069_panel" role="combobox" aria-haspopup="listbox" aria-expanded="false" disabled="disabled">---Select Vehicle Type---</span><div class="ui-selectonemenu-trigger ui-state-default ui-corner-right"><span class="ui-icon ui-icon-triangle-1-s ui-c"></span></div><div id="j_idt1069_panel" class="ui-selectonemenu-panel ui-widget ui-widget-content ui-corner-all ui-helper-hidden ui-shadow ui-input-overlay" tabindex="-1"><div class="ui-selectonemenu-items-wrapper" style="max-height:200px"></div></div></div>     
+            </div>
+            <div class="ui-grid-col-6">
+                <label class="field-label resp-label-section"><label id="j_idt1073" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Vehicle Class</span></label>
+                </label><div id="j_idt1075" class="ui-selectonemenu ui-widget ui-state-default ui-corner-all ui-state-disabled " style="min-width: 175.2px;"><div class="ui-helper-hidden-accessible"><select id="j_idt1075_input" name="j_idt1075_input" tabindex="-1" autocomplete="off" aria-hidden="true" disabled="disabled" onchange="PrimeFaces.ab({s:&quot;j_idt1075&quot;,e:&quot;change&quot;,f:&quot;master_Layout_form&quot;,p:&quot;rjtaxcollection&quot;,u:&quot;rjtaxcollection&quot;});"><option value="-1" data-escape="true">---Select Vehicle Class---</option></select></div><span id="j_idt1075_label" class="ui-selectonemenu-label ui-inputfield ui-corner-all" tabindex="0" aria-controls="j_idt1075_panel" role="combobox" aria-haspopup="listbox" aria-expanded="false" disabled="disabled">---Select Vehicle Class---</span><div class="ui-selectonemenu-trigger ui-state-default ui-corner-right"><span class="ui-icon ui-icon-triangle-1-s ui-c"></span></div><div id="j_idt1075_panel" class="ui-selectonemenu-panel ui-widget ui-widget-content ui-corner-all ui-helper-hidden ui-shadow ui-input-overlay" tabindex="-1"><div class="ui-selectonemenu-items-wrapper" style="max-height:200px"></div></div></div> 
+            </div> 
+        </div>
+
+        <div class="ui-grid-row">
+            <div class="ui-grid-col-3">
+                <label class="field-label resp-label-section"><label id="lbl_seat_cap" class="ui-outputlabel ui-widget"><span class="ui-outputlabel-label">Seating Cap<font color="#FF0000">*</font></span></label>
+                </label><input id="txt_seat_cap" name="txt_seat_cap" type="text" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all ui-state-disabled" disabled="disabled" autocomplete="off" maxlength="2" onkeypress="return NumericOnly(event, '');">
+            </div>
+            <div class="ui-grid-col-3">
+                <label class="field-label resp-label-section"><label id="lbl_sleeper_cap" class="ui-outputlabel ui-widget"><span class="ui-outputlabel-label">Sleeper Cap</span></label>
+                </label><input id="txt_sleeper_cap" name="txt_sleeper_cap" type="text" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all" autocomplete="off" maxlength="2" onkeypress="return NumericOnly(event, '');">
+            </div>
+            <div class="ui-grid-col-3">
+                <label class="field-label resp-label-section">
+                </label>
+            </div> 
+            <div class="ui-grid-col-3">
+                <label class="field-label resp-label-section"><label id="j_idt1085" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Permit Type</span></label>
+                </label><div id="cmb_permit_type" class="ui-selectonemenu ui-widget ui-state-default ui-corner-all " style="min-width: 165.6px;"><div class="ui-helper-hidden-accessible"><select id="cmb_permit_type_input" name="cmb_permit_type_input" tabindex="-1" autocomplete="off" aria-hidden="true" onchange="PrimeFaces.ab({s:&quot;cmb_permit_type&quot;,e:&quot;change&quot;,f:&quot;master_Layout_form&quot;,p:&quot;rjtaxcollection&quot;,u:&quot;rjtaxcollection&quot;});"><option value="-1" data-escape="true">---Select Permit Type---</option></select></div><span id="cmb_permit_type_label" class="ui-selectonemenu-label ui-inputfield ui-corner-all" tabindex="0" aria-controls="cmb_permit_type_panel" role="combobox" aria-haspopup="listbox" aria-expanded="false">---Select Permit Type---</span><div class="ui-selectonemenu-trigger ui-state-default ui-corner-right"><span class="ui-icon ui-icon-triangle-1-s ui-c"></span></div></div>     
+            </div>
+        </div>                        
+        <div class="ui-grid-row">
+            <div class="ui-grid-col-3">
+                <label class="field-label resp-label-section"><label id="j_idt1090" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">District through Entering</span></label>
+                </label><div id="j_idt1092" class="ui-selectonemenu ui-widget ui-state-default ui-corner-all " style="min-width: 180px;"><div class="ui-helper-hidden-accessible"><select id="j_idt1092_input" name="j_idt1092_input" tabindex="-1" autocomplete="off" aria-hidden="true" onchange="PrimeFaces.ab({s:&quot;j_idt1092&quot;,e:&quot;change&quot;,f:&quot;master_Layout_form&quot;,p:&quot;rjtaxcollection&quot;,u:&quot;rjtaxcollection&quot;});"><option value="-1" data-escape="true">---Select District/Barrier---</option><option value="2" data-escape="true">ALWAR</option><option value="3" data-escape="true">BANSWARA</option><option value="28" data-escape="true">BARAN</option><option value="5" data-escape="true">BHARATPUR</option><option value="9" data-escape="true">CHITTORGARH</option><option value="10" data-escape="true">CHURU</option><option value="11" data-escape="true">DHOLPUR</option><option value="12" data-escape="true">DUNGARPUR</option><option value="13" data-escape="true">GANGANAGAR</option><option value="31" data-escape="true">HANUMANGARH</option><option value="14" data-escape="true">JAIPUR</option><option value="16" data-escape="true">JALORE</option><option value="17" data-escape="true">JHALAWAR</option><option value="18" data-escape="true">JHUNJHUNU</option><option value="35" data-escape="true">PRATAPGARH</option><option value="24" data-escape="true">SIROHI</option></select></div><span id="j_idt1092_label" class="ui-selectonemenu-label ui-inputfield ui-corner-all" tabindex="0" aria-controls="j_idt1092_panel" role="combobox" aria-haspopup="listbox" aria-expanded="false">---Select District/Barrier---</span><div class="ui-selectonemenu-trigger ui-state-default ui-corner-right"><span class="ui-icon ui-icon-triangle-1-s ui-c"></span></div></div> 
+            </div>
+            <div class="ui-grid-col-3">
+                <label class="field-label resp-label-section"><label id="j_idt1096" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Purpose of visit</span></label>
+                </label><div id="cmb_payment_dest" class="ui-selectonemenu ui-widget ui-state-default ui-corner-all " style="min-width: 187.2px;"><div class="ui-helper-hidden-accessible"><select id="cmb_payment_dest_input" name="cmb_payment_dest_input" tabindex="-1" autocomplete="off" aria-hidden="true" onchange="PrimeFaces.ab({s:&quot;cmb_payment_dest&quot;,e:&quot;change&quot;,f:&quot;master_Layout_form&quot;,p:&quot;rjtaxcollection&quot;,u:&quot;rjtaxcollection&quot;});"><option value="-1" data-escape="true">---Select Purpose of visit---</option><option value="4" data-escape="true">RAMDEVRA FAIR</option><option value="6" data-escape="true">URS FAIR</option></select></div><span id="cmb_payment_dest_label" class="ui-selectonemenu-label ui-inputfield ui-corner-all" tabindex="0" aria-controls="cmb_payment_dest_panel" role="combobox" aria-haspopup="listbox" aria-expanded="false">---Select Purpose of visit---</span><div class="ui-selectonemenu-trigger ui-state-default ui-corner-right"><span class="ui-icon ui-icon-triangle-1-s ui-c"></span></div></div>     
+            </div>
+            <div class="ui-grid-col-6">
+                <label class="field-label resp-label-section"><label id="j_idt1101" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Check Post Name Through Entering</span></label>
+                </label><div id="j_idt1103" class="ui-selectonemenu ui-widget ui-state-default ui-corner-all " style="min-width: 240.8px;"><div class="ui-helper-hidden-accessible"><select id="j_idt1103_input" name="j_idt1103_input" tabindex="-1" autocomplete="off" aria-hidden="true" onchange="PrimeFaces.ab({s:&quot;j_idt1103&quot;,e:&quot;change&quot;,f:&quot;master_Layout_form&quot;,p:&quot;rjtaxcollection&quot;,u:&quot;rjtaxcollection&quot;});"><option value="-1" data-escape="true">---Select CheckpostName/Barrier---</option></select></div><span id="j_idt1103_label" class="ui-selectonemenu-label ui-inputfield ui-corner-all" tabindex="0" aria-controls="j_idt1103_panel" role="combobox" aria-haspopup="listbox" aria-expanded="false">---Select CheckpostName/Barrier---</span><div class="ui-selectonemenu-trigger ui-state-default ui-corner-right"><span class="ui-icon ui-icon-triangle-1-s ui-c"></span></div></div>
+            </div> 
+        </div>
+        <div class="ui-grid-row">
+            <div class="ui-grid-col-6">
+                <label class="field-label resp-label-section"><label id="j_idt1107" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">AITP Permit Validity</span></label>
+                </label><span id="aitp_permit_upto" class="ui-calendar"><input id="aitp_permit_upto_input" name="aitp_permit_upto_input" type="text" class="ui-inputfield ui-widget ui-state-default ui-corner-all ui-state-disabled hasDatepicker" autocomplete="off" placeholder="DD-MM-YYYY" disabled=""></span>
+            </div>   
+            <div class="ui-grid-col-6">
+                <label class="field-label resp-label-section"><label id="j_idt1110" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">AITP Permit Auth Validity</span></label>
+                </label><span id="permit_auth_validity" class="ui-calendar"><input id="permit_auth_validity_input" name="permit_auth_validity_input" type="text" class="ui-inputfield ui-widget ui-state-default ui-corner-all ui-state-disabled hasDatepicker" autocomplete="off" placeholder="DD-MM-YYYY" disabled=""></span>
+            </div>
+        </div>
+        <div class="ui-grid-row">
+            <div class="ui-grid-col-3">
+                <label class="field-label resp-label-section"><label id="j_idt1113" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Tax Mode</span></label>
+                </label><div id="cmb_payment_mode" class="ui-selectonemenu ui-widget ui-state-default ui-corner-all ui-state-disabled " style="min-width: 185.6px;"><div class="ui-helper-hidden-accessible"><select id="cmb_payment_mode_input" name="cmb_payment_mode_input" tabindex="-1" autocomplete="off" aria-hidden="true" disabled="disabled" onchange="PrimeFaces.ab({s:&quot;cmb_payment_mode&quot;,e:&quot;change&quot;,f:&quot;master_Layout_form&quot;,p:&quot;rjtaxcollection&quot;,u:&quot;rjtaxcollection&quot;});"><option value="-1" data-escape="true">---Select Payment Mode---</option></select></div><span id="cmb_payment_mode_label" class="ui-selectonemenu-label ui-inputfield ui-corner-all" tabindex="0" aria-controls="cmb_payment_mode_panel" role="combobox" aria-haspopup="listbox" aria-expanded="false" disabled="disabled">---Select Payment Mode---</span><div class="ui-selectonemenu-trigger ui-state-default ui-corner-right"><span class="ui-icon ui-icon-triangle-1-s ui-c"></span></div><div id="cmb_payment_mode_panel" class="ui-selectonemenu-panel ui-widget ui-widget-content ui-corner-all ui-helper-hidden ui-shadow ui-input-overlay" tabindex="-1"><div class="ui-selectonemenu-items-wrapper" style="max-height:200px"></div></div></div> 
+            </div>
+            <div class="ui-grid-col-3">
+                <label class="field-label resp-label-section"><label id="j_idt1118" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">No of Periods</span></label>
+                </label><input id="txt_no_of_weeks" name="txt_no_of_weeks" type="text" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all ui-state-disabled" disabled="disabled" autocomplete="off" maxlength="2" onkeypress="return NumericOnly(event, '');">
+            </div>
+            <div class="ui-grid-col-3">
+                <label class="field-label resp-label-section"><label id="j_idt1121" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Tax From Date</span></label>
+                </label><span id="cal_tax_from" class="ui-calendar"><input id="cal_tax_from_input" name="cal_tax_from_input" type="text" class="ui-inputfield ui-widget ui-state-default ui-corner-all hasDatepicker" autocomplete="off" placeholder="DD-MM-YYYY"></span>
+            </div>   
+            <div class="ui-grid-col-3">
+                <label class="field-label resp-label-section"><label id="j_idt1124" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Tax Upto Date</span></label>
+                </label><span id="cal_tax_to" class="ui-calendar"><input id="cal_tax_to_input" name="cal_tax_to_input" type="text" class="ui-inputfield ui-widget ui-state-default ui-corner-all hasDatepicker" autocomplete="off" placeholder="DD-MM-YYYY"></span>
+            </div>
+        </div>
+        <br>
+        <div class="ui-grid-row">
+            <div class="ui-grid-col-12"><div id="j_idt1127" class="ui-datatable ui-widget"><div class="ui-datatable-tablewrapper"><table role="grid"><thead id="j_idt1127_head"><tr><th id="j_idt1127:j_idt1128" class="ui-state-default center-position collumn-width" aria-label="Sl. No." scope="col"><span class="ui-column-title">Sl. No.</span></th><th id="j_idt1127:j_idt1130" class="ui-state-default" aria-label="Particulars" scope="col"><span class="ui-column-title">Particulars</span></th><th id="j_idt1127:j_idt1132" class="ui-state-default" aria-label="Tax From" scope="col"><span class="ui-column-title">Tax From</span></th><th id="j_idt1127:j_idt1134" class="ui-state-default" aria-label="Tax Upto" scope="col"><span class="ui-column-title">Tax Upto</span></th><th id="j_idt1127:j_idt1136" class="ui-state-default" aria-label="Amount" scope="col"><span class="ui-column-title">Amount</span></th></tr></thead><tbody id="j_idt1127_data" class="ui-datatable-data ui-widget-content"><tr class="ui-widget-content ui-datatable-empty-message"><td colspan="5">No records found.</td></tr></tbody></table></div></div>
+            </div>
+        </div>
+        <div class="ui-grid-row">
+            <div class="ui-grid-col-6">
+                <label class="field-label resp-label-section"><label id="j_idt1139" class="ui-outputlabel ui-widget field-label-mandate"><span class="ui-outputlabel-label">Total Amount</span></label>
+                </label><input id="txt_tax_amount" name="txt_tax_amount" type="text" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all ui-state-disabled font-bold medium-text-font" disabled="disabled">
+            </div>   
+            <div class="ui-grid-col-6">
+                <div class="ui-grid-row">
+                    <div class="ui-grid-col-12 top_mar1 mar-left5"><button id="j_idt1142" name="j_idt1142" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-left" onclick="PrimeFaces.ab({s:&quot;j_idt1142&quot;,f:&quot;master_Layout_form&quot;,p:&quot;master_Layout_form&quot;,u:&quot;rjtaxcollection popup payment_dialog&quot;,onst:function(cfg){PF('masterLayoutVar').show();;},onsu:function(data,status,xhr){PF('masterLayoutVar').hide();;}});return false;" type="submit"><span class="ui-button-icon-left ui-icon ui-c ui-icon-calculator"></span><span class="ui-button-text ui-c">Calculate Tax</span></button><button id="j_idt1143" name="j_idt1143" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-left" onclick="PrimeFaces.bcn(this,event,[function(event){PF('ConfirmationDLG').show();},function(event){PrimeFaces.ab({s:&quot;j_idt1143&quot;,f:&quot;master_Layout_form&quot;,p:&quot;rjtaxcollection&quot;});return false;}]);" type="submit"><span class="ui-button-icon-left ui-icon ui-c ui-icon-seek-next"></span><span class="ui-button-text ui-c">Pay Tax</span></button><button id="j_idt1144" name="j_idt1144" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-left" onclick="PrimeFaces.ab({s:&quot;j_idt1144&quot;,f:&quot;master_Layout_form&quot;,u:&quot;master_Layout_form&quot;});return false;" type="submit"><span class="ui-button-icon-left ui-icon ui-c ui-icon-refresh"></span><span class="ui-button-text ui-c">Reset</span></button>
+                    </div>
+                </div>
+            </div>
+        </div></div></div><div id="popup" class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-shadow ui-hidden-container center-position ui-resizable" style="display: none; width: auto; height: auto;" role="dialog" aria-describedby="popup_content" aria-hidden="true" aria-modal="true" aria-labelledby="popup_title"><div class="ui-dialog-titlebar ui-widget-header ui-helper-clearfix ui-corner-top"><span id="popup_title" class="ui-dialog-title"></span></div><div class="ui-dialog-content ui-widget-content" id="popup_content" style="height: auto;"><div id="j_idt1146" class="ui-messages ui-widget" aria-live="polite"></div><button id="j_idt1147" name="j_idt1147" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" onclick="PrimeFaces.bcn(this,event,[function(event){mojarra.ab('j_idt1147',event,'click',0,'rjtaxcollection popup')},function(event){PrimeFaces.ab({s:&quot;j_idt1147&quot;,f:&quot;master_Layout_form&quot;,onco:function(xhr,status,args,data){PF('dlg1').hide();;}});return false;}]);" type="submit"><span class="ui-button-text ui-c">Ok</span></button></div><div class="ui-resizable-handle ui-resizable-n" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-s" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-e" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-w" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-ne" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-nw" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-se ui-icon ui-icon-gripsmall-diagonal-se" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-sw" style="z-index: 90;"></div></div><div id="payment_dialog" class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-shadow ui-hidden-container ui-draggable" style="display: none; width: 550px; height: auto;" role="dialog" aria-describedby="payment_dialog_content" aria-hidden="true" aria-modal="true" aria-labelledby="payment_dialog_title"><div class="ui-dialog-titlebar ui-widget-header ui-helper-clearfix ui-corner-top ui-draggable-handle"><span id="payment_dialog_title" class="ui-dialog-title">Confirmation Message...</span><a href="#" class="ui-dialog-titlebar-icon ui-dialog-titlebar-close ui-corner-all" aria-label="Close" role="button"><span class="ui-icon ui-icon-closethick"></span></a></div><div class="ui-dialog-content ui-widget-content" id="payment_dialog_content" style="height: 272px;"><table class="datatable-panel-100">
+<tbody>
+<tr>
+<td><span class="small-text-font-bold">Registration No</span></td>
+<td><span class="small-text-font-bold">:</span></td>
+<td><span class="small-text-font-bold"></span></td>
+</tr>
+<tr>
+<td><span class="small-text-font">Owner Name</span></td>
+<td><span class="small-text-font">:</span></td>
+<td><span class="small-text-font"></span></td>
+</tr>
+<tr>
+<td><span class="small-text-font">Chassis Number</span></td>
+<td><span class="small-text-font">:</span></td>
+<td><span class="small-text-font"></span></td>
+</tr>
+<tr>
+<td><span class="small-text-font">Tax From Date</span></td>
+<td><span class="small-text-font">:</span></td>
+<td><span class="small-text-font"></span></td>
+</tr>
+<tr>
+<td><span class="small-text-font">Tax To Date</span></td>
+<td><span class="small-text-font">:</span></td>
+<td><span class="small-text-font"></span></td>
+</tr>
+<tr>
+<td><span class="small-text-font-bold">Amount</span></td>
+<td><span class="small-text-font-bold">:</span></td>
+<td><span class="small-text-font-bold">/-</span></td>
+</tr>
+<tr>
+<td><span class="small-text-font">Payment Mode</span></td>
+<td><span class="small-text-font">:</span></td>
+<td><span class="small-text-font">ONLINE</span></td>
+</tr>
+</tbody>
+</table>
+
+
+        <div class="ui-grid-row top-space bottom-space">
+            <div class="ui-grid-col-12 center-position"><button id="j_idt1172" name="j_idt1172" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-left" onclick="" type="submit"><span class="ui-button-icon-left ui-icon ui-c ui-icon-check"></span><span class="ui-button-text ui-c">Confirm</span></button><button id="j_idt1173" name="j_idt1173" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-left" onclick="PrimeFaces.bcn(this,event,[function(event){PF('ConfirmationDLG').hide();},function(event){PrimeFaces.ab({s:&quot;j_idt1173&quot;,f:&quot;master_Layout_form&quot;});return false;}]);" type="submit"><span class="ui-button-icon-left ui-icon ui-c ui-icon-close"></span><span class="ui-button-text ui-c">Cancel</span></button>
+
+            </div>
+        </div></div></div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+		</div><input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:0" value="-4391787166106794514:-8935487275407254390" autocomplete="off">
+</form>
+<div id="textarea_simulator" style="position: absolute; top: 0px; left: 0px; visibility: hidden;"></div><div id="j_idt1063_panel" class="ui-selectonemenu-panel ui-widget ui-widget-content ui-corner-all ui-helper-hidden ui-shadow ui-input-overlay" tabindex="-1"><div class="ui-selectonemenu-items-wrapper" style="max-height:200px"></div></div><div id="cmb_permit_type_panel" class="ui-selectonemenu-panel ui-widget ui-widget-content ui-corner-all ui-helper-hidden ui-shadow ui-input-overlay" tabindex="-1"><div class="ui-selectonemenu-items-wrapper" style="max-height:200px"></div></div><div id="j_idt1092_panel" class="ui-selectonemenu-panel ui-widget ui-widget-content ui-corner-all ui-helper-hidden ui-shadow ui-input-overlay" tabindex="-1"><div class="ui-selectonemenu-items-wrapper" style="max-height:200px"></div></div><div id="cmb_payment_dest_panel" class="ui-selectonemenu-panel ui-widget ui-widget-content ui-corner-all ui-helper-hidden ui-shadow ui-input-overlay" tabindex="-1"><div class="ui-selectonemenu-items-wrapper" style="max-height:200px"></div></div><div id="j_idt1103_panel" class="ui-selectonemenu-panel ui-widget ui-widget-content ui-corner-all ui-helper-hidden ui-shadow ui-input-overlay" tabindex="-1"><div class="ui-selectonemenu-items-wrapper" style="max-height:200px"></div></div><div id="ui-datepicker-div" class="ui-datepicker ui-widget ui-widget-content ui-helper-clearfix ui-corner-all"></div><div class="ui-dialog-docking-zone"></div><div id="j_idt40_masterlaoyoutbody_blocker" class="ui-blockui ui-widget-overlay ui-helper-hidden" data-bui-overlay="j_idt40" style="z-index: 1001; height: 908.025px; width: 900px; left: 0px; top: 0px;"><div id="j_idt40" class="ui-blockui-content ui-widget ui-widget-content ui-corner-all ui-helper-hidden ui-shadow" data-bui-content="j_idt40" style="left: 395.2px; top: 399.212px; z-index: 1002;"><img id="j_idt41" src="/checkpost/faces/javax.faces.resource/ajax_loader_blue.gif?ln=images" alt=""></div></div></body>
