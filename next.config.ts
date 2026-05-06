@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdfkit", "sharp", "qrcode", "moment"],
+  serverExternalPackages: ["pdfkit", "sharp", "qrcode", "moment", "@img/sharp-linux-x64", "@img/sharp-linux-arm64"],
 
   // The /api/receipt/[transactionId] route spawns receipt-runner.js as a
   // child process, which then loads generateReceipt.js, the Roboto fonts and
@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
       "node_modules/pdfkit/**",
       "node_modules/qrcode/**",
       "node_modules/sharp/**",
+      "node_modules/@img/**",
       "node_modules/moment/**",
     ],
   },
