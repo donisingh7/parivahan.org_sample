@@ -48,21 +48,30 @@ function BankLoginScreen({
   const [showPwd,  setShowPwd]  = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState("");
-  const [otpStep,  setOtpStep]  = useState(false);
-  const [otp,      setOtp]      = useState(["","","","","",""]);
-  const [otpError, setOtpError] = useState("");
 
-  const handleLogin = () => {
-    if (!userId.trim() || !password.trim()) { setError("Please enter your Username and Password."); return; }
+  const handleLogin = async () => {
+    if (!userId.trim() || !password.trim()) {
+      setError("Please enter your Portal User ID and Password.");
+      return;
+    }
     setError(""); setLoading(true);
-    setTimeout(() => { setLoading(false); setOtpStep(true); }, 1400);
-  };
-
-  const handleOtp = () => {
-    const code = otp.join("");
-    if (code.length < 6) { setOtpError("Please enter the 6-digit OTP."); return; }
-    setOtpError(""); setLoading(true);
-    setTimeout(() => { setLoading(false); onSuccess(); }, 1600);
+    try {
+      const res  = await fetch("/api/auth/user-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: userId.trim(), password }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError("Invalid credentials. Use the same User ID and Password you used to log in.");
+        setLoading(false);
+        return;
+      }
+      onSuccess();
+    } catch {
+      setError("Network error. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -83,78 +92,43 @@ function BankLoginScreen({
           Paying <strong>&#8377;{amount}</strong> to <strong>Checkpost Parivahan — MoRTH, Govt. of India</strong>
         </div>
         <div className="sbi-login-body">
-          {!otpStep ? (
-            <>
-              <div className="sbi-login-title"><i className="fa fa-user-circle"></i> {bank.name} NetBanking</div>
-              {error && <div className="sbi-login-error"><i className="fa fa-exclamation-triangle"></i> {error}</div>}
-              <div className="sbi-login-field">
-                <label className="sbi-login-label">Username / Customer ID</label>
-                <div className="sbi-login-input-wrap">
-                  <i className="fa fa-user sbi-login-icon"></i>
-                  <input type="text" className="sbi-login-input" placeholder="Enter your username"
-                    value={userId} onChange={(e) => setUserId(e.target.value)} autoComplete="off" />
-                </div>
-              </div>
-              <div className="sbi-login-field">
-                <label className="sbi-login-label">Login Password</label>
-                <div className="sbi-login-input-wrap">
-                  <i className="fa fa-lock sbi-login-icon"></i>
-                  <input type={showPwd ? "text" : "password"} className="sbi-login-input"
-                    placeholder="Enter your password" value={password}
-                    onChange={(e) => setPassword(e.target.value)} autoComplete="off" />
-                  <button className="sbi-pwd-toggle" type="button" onClick={() => setShowPwd(!showPwd)}>
-                    <i className={`fa fa-eye${showPwd ? "-slash" : ""}`}></i>
-                  </button>
-                </div>
-              </div>
-              <div className="sbi-login-links">
-                <a href="#" onClick={(e) => e.preventDefault()}>Forgot Username?</a>
-                <a href="#" onClick={(e) => e.preventDefault()}>Forgot Password?</a>
-              </div>
-              <button className="sbi-login-btn" style={{ background: bank.bg }} type="button"
-                onClick={handleLogin} disabled={loading}>
-                {loading
-                  ? <><i className="fa fa-spinner fa-spin"></i> Verifying...</>
-                  : <><i className="fa fa-sign-in"></i> Login &amp; Proceed</>}
+          <div className="sbi-login-title"><i className="fa fa-user-circle"></i> Verify Your Identity</div>
+          <div style={{
+            background: "#fff8e1", border: "1px solid #f0c000", borderRadius: "4px",
+            padding: "8px 12px", fontSize: "12px", marginBottom: "14px", color: "#7a5800",
+          }}>
+            <i className="fa fa-info-circle"></i>&nbsp;
+            Enter the same <strong>User ID and Password</strong> you used to log in to the Checkpost Portal.
+          </div>
+          {error && <div className="sbi-login-error"><i className="fa fa-exclamation-triangle"></i> {error}</div>}
+          <div className="sbi-login-field">
+            <label className="sbi-login-label">Portal User ID</label>
+            <div className="sbi-login-input-wrap">
+              <i className="fa fa-id-card sbi-login-icon"></i>
+              <input type="text" className="sbi-login-input" placeholder="e.g. UP12345"
+                value={userId} onChange={(e) => setUserId(e.target.value)}
+                autoComplete="username" onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
+            </div>
+          </div>
+          <div className="sbi-login-field">
+            <label className="sbi-login-label">Portal Password</label>
+            <div className="sbi-login-input-wrap">
+              <i className="fa fa-lock sbi-login-icon"></i>
+              <input type={showPwd ? "text" : "password"} className="sbi-login-input"
+                placeholder="Enter your password" value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password" onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
+              <button className="sbi-pwd-toggle" type="button" onClick={() => setShowPwd(!showPwd)}>
+                <i className={`fa fa-eye${showPwd ? "-slash" : ""}`}></i>
               </button>
-            </>
-          ) : (
-            <>
-              <div className="sbi-login-title"><i className="fa fa-mobile"></i> OTP Verification</div>
-              <div className="sbi-otp-info">
-                A 6-digit OTP has been sent to your registered mobile number ending in <strong>&#8226;&#8226;&#8226;&#8226;56</strong>
-              </div>
-              {otpError && <div className="sbi-login-error"><i className="fa fa-exclamation-triangle"></i> {otpError}</div>}
-              <div className="sbi-login-field">
-                <label className="sbi-login-label">Enter OTP</label>
-                <div className="sbi-otp-boxes">
-                  {otp.map((val, i) => (
-                    <input key={i} type="text" maxLength={1} className="sbi-otp-box" value={val}
-                      onChange={(e) => {
-                        const v = e.target.value.replace(/\D/g, "");
-                        const next = [...otp]; next[i] = v; setOtp(next);
-                        if (v && e.target.nextElementSibling)
-                          (e.target.nextElementSibling as HTMLInputElement).focus();
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Backspace" && !val && e.currentTarget.previousElementSibling)
-                          (e.currentTarget.previousElementSibling as HTMLInputElement).focus();
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="sbi-otp-resend">
-                Didn&apos;t receive? <a href="#" onClick={(e) => e.preventDefault()}>Resend OTP</a>
-              </div>
-              <button className="sbi-login-btn" style={{ background: bank.bg }} type="button"
-                onClick={handleOtp} disabled={loading}>
-                {loading
-                  ? <><i className="fa fa-spinner fa-spin"></i> Verifying...</>
-                  : <><i className="fa fa-check-circle"></i> Confirm Payment &#8377;{amount}</>}
-              </button>
-            </>
-          )}
+            </div>
+          </div>
+          <button className="sbi-login-btn" style={{ background: bank.bg }} type="button"
+            onClick={handleLogin} disabled={loading}>
+            {loading
+              ? <><i className="fa fa-spinner fa-spin"></i> Verifying...</>
+              : <><i className="fa fa-check-circle"></i> Confirm &amp; Pay &#8377;{amount}</>}
+          </button>
           <button className="sbi-login-back" type="button" onClick={onBack}>
             <i className="fa fa-arrow-left"></i> Cancel &amp; Go Back
           </button>
@@ -167,28 +141,125 @@ function BankLoginScreen({
   );
 }
 
-function SuccessScreen({ amount, orderRef, vehicleNo }: { amount: string; orderRef: string; vehicleNo: string }) {
+function SuccessScreen({
+  transactionId,
+  vehicleNo,
+  amount,
+  isSaving,
+  saveError,
+  onRetry,
+}: {
+  transactionId: string;
+  vehicleNo:     string;
+  amount:        string;
+  isSaving:      boolean;
+  saveError:     string;
+  onRetry:       () => void;
+}) {
+  // The View *and* Download buttons both target the same URL — the PDF is
+  // generated once by receipt-generator/generateReceipt.js and served from
+  // /api/receipt/<txnId>. `?download=1` swaps Content-Disposition to
+  // attachment so the same script can drive both flows.
+  const viewUrl     = `/api/receipt/${transactionId}`;
+  const downloadUrl = `/api/receipt/${transactionId}?download=1`;
+
   return (
-    <div className="sbi-success-wrap">
-      <div className="sbi-success-card">
-        <div className="sbi-success-icon"><i className="fa fa-check-circle"></i></div>
-        <h2 className="sbi-success-title">Payment Successful!</h2>
-        <p className="sbi-success-sub">Your vehicle border tax has been paid successfully.</p>
-        <div className="sbi-success-details">
-          <div className="sbi-success-row"><span>Transaction ID</span><strong>{orderRef}</strong></div>
-          <div className="sbi-success-row"><span>Amount Paid</span><strong className="sbi-success-amount">&#8377;{amount}</strong></div>
-          {vehicleNo && <div className="sbi-success-row"><span>Vehicle No.</span><strong>{vehicleNo}</strong></div>}
-          <div className="sbi-success-row"><span>Status</span><strong className="sbi-success-status">SUCCESS</strong></div>
+    <div className="sbi-success-wrap" style={{ background: "#f5f7fa", minHeight: "100vh", padding: "24px 0" }}>
+      {/* ── Action bar (hidden on print) ── */}
+      <div className="no-print" style={{
+        maxWidth: 900, margin: "0 auto 16px", display: "flex",
+        alignItems: "center", justifyContent: "space-between", padding: "0 28px",
+        flexWrap: "wrap", gap: "12px",
+      }}>
+        <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+          <span style={{ color:"#1a7a1a", fontWeight:"bold", fontSize:"18px" }}>
+            <i className="fa fa-check-circle"></i> Payment Successful
+          </span>
+          <span style={{ fontSize:"13px", color:"#555" }}>
+            — ₹{amount} paid for {vehicleNo}
+          </span>
         </div>
-        <div className="sbi-success-actions">
-          <button className="sbi-success-print" type="button" onClick={() => window.print()}>
-            <i className="fa fa-print"></i> Print Receipt
-          </button>
-          <a className="sbi-success-home" href="/en/node/579">
-            <i className="fa fa-home"></i> Back to Home
+        <div style={{ display:"flex", gap:"10px", flexWrap: "wrap" }}>
+          <a
+            href={viewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              background:"#1a3060", color:"#fff", borderRadius:"4px",
+              padding:"8px 18px", fontSize:"13px", textDecoration:"none", fontWeight:"bold",
+              display:"inline-flex", alignItems:"center", gap:"6px",
+            }}
+          >
+            <i className="fa fa-eye"></i> View Receipt
+          </a>
+          <a
+            href={downloadUrl}
+            download={`receipt_${transactionId}.pdf`}
+            style={{
+              background:"#1a7a1a", color:"#fff", borderRadius:"4px",
+              padding:"8px 18px", fontSize:"13px", textDecoration:"none", fontWeight:"bold",
+              display:"inline-flex", alignItems:"center", gap:"6px",
+            }}
+          >
+            <i className="fa fa-download"></i> Download Receipt PDF
+          </a>
+          <a href="/checkpost" style={{
+            background:"#666", color:"#fff", borderRadius:"4px",
+            padding:"8px 18px", fontSize:"13px", textDecoration:"none", fontWeight:"bold",
+          }}>
+            <i className="fa fa-home"></i> Back
           </a>
         </div>
-        <p className="sbi-success-note">A confirmation SMS will be sent to your registered mobile number.</p>
+      </div>
+
+      {/* ── Receipt body ── */}
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px" }}>
+        {isSaving && (
+          <div style={{
+            background: "#fff", borderRadius: 6, padding: "60px 20px",
+            textAlign: "center", color: "#555", fontSize: 14,
+            border: "1px solid #e3e3e3",
+          }}>
+            <i className="fa fa-spinner fa-spin"></i>&nbsp;
+            Saving payment to records and generating receipt...
+          </div>
+        )}
+
+        {!isSaving && saveError && (
+          <div style={{
+            background: "#fff", borderRadius: 6, padding: "40px 20px",
+            border: "1px solid #f0c0c0", color: "#a33",
+          }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>
+              <i className="fa fa-exclamation-triangle"></i>&nbsp; Receipt could not be generated
+            </div>
+            <div style={{ fontSize: 13, color: "#555", marginBottom: 12 }}>{saveError}</div>
+            <button
+              type="button"
+              onClick={onRetry}
+              style={{
+                background:"#1a3060", color:"#fff", border:"none", borderRadius:"4px",
+                padding:"6px 16px", fontSize:"13px", cursor:"pointer", fontWeight:"bold",
+              }}
+            >
+              <i className="fa fa-refresh"></i> Try again
+            </button>
+          </div>
+        )}
+
+        {!isSaving && !saveError && transactionId && (
+          <iframe
+            src={viewUrl}
+            title="Tax payment receipt"
+            style={{
+              width: "100%",
+              height: "1100px",
+              border: "1px solid #d0d0d0",
+              borderRadius: 4,
+              background: "#fff",
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -237,29 +308,72 @@ function GatewayFooter() {
   );
 }
 
+function generateReceiptNo(): string {
+  const d = new Date();
+  const yy  = String(d.getFullYear()).slice(2);
+  const mm  = String(d.getMonth() + 1).padStart(2, "0");
+  const dd  = String(d.getDate()).padStart(2, "0");
+  const rand = Math.floor(Math.random() * 9000000 + 1000000);
+  return `RJT${yy}${mm}${dd}${rand}`;
+}
+
+// Random transaction id generated up-front on the client so the success
+// screen and the DB row use the SAME id — even if the network request to save
+// is slow or fails, the receipt page can still render a complete receipt.
+function generateTransactionId(): string {
+  const ts   = Date.now().toString(36).toUpperCase();
+  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `TXN${ts}${rand}`;
+}
+
 function SBIContent() {
   const searchParams = useSearchParams();
-  const stateCode = searchParams.get("state")     ?? "";
-  const vehicleNo = searchParams.get("vehicleNo") ?? "";
-  const ownerName = searchParams.get("ownerName") ?? "";
-  const chassisNo = searchParams.get("chassisNo") ?? "";
-  const taxFrom   = searchParams.get("taxFrom")   ?? "";
-  const taxTo     = searchParams.get("taxTo")     ?? "";
-  const amount    = searchParams.get("amount")    ?? "0";
+  const stateCode        = searchParams.get("state")            ?? "";
+  const vehicleNo        = searchParams.get("vehicleNo")        ?? "";
+  const ownerName        = searchParams.get("ownerName")        ?? "";
+  const chassisNo        = searchParams.get("chassisNo")        ?? "";
+  const mobileNo         = searchParams.get("mobileNo")         ?? "";
+  const fromState        = searchParams.get("fromState")        ?? "";
+  const vehicleType      = searchParams.get("vehicleType")      ?? "-1";
+  const vehicleClass     = searchParams.get("vehicleClass")     ?? "-1";
+  const seatingCap       = searchParams.get("seatingCap")       ?? "";
+  const sleeperCap       = searchParams.get("sleeperCap")       ?? "";
+  const permitType       = searchParams.get("permitType")       ?? "-1";
+  const districtEntering = searchParams.get("districtEntering") ?? "";
+  const checkpostName    = searchParams.get("checkpostName")    ?? "";
+  const purposeOfVisit   = searchParams.get("purposeOfVisit")   ?? "";
+  const aitpValidity     = searchParams.get("aitpValidity")     ?? "";
+  const aitpAuthValidity = searchParams.get("aitpAuthValidity") ?? "";
+  const taxMode          = searchParams.get("taxMode")          ?? "";
+  const noOfPeriods      = searchParams.get("noOfPeriods")      ?? "";
+  const taxFrom          = searchParams.get("taxFrom")          ?? "";
+  const taxTo            = searchParams.get("taxTo")            ?? "";
+  const amount           = searchParams.get("amount")           ?? "0";
 
   const [clientOrderRef, setClientOrderRef] = useState("");
-  useEffect(() => { setClientOrderRef(makeOrderRef(vehicleNo || "VH")); }, []); // eslint-disable-line
+  const [receiptNo,      setReceiptNo]      = useState("");
+  const [txnId,          setTxnId]          = useState("");
+  const [paidAt,         setPaidAt]         = useState<Date>(new Date());
+  useEffect(() => {
+    setClientOrderRef(makeOrderRef(vehicleNo || "VH"));
+    setReceiptNo(generateReceiptNo());
+    setTxnId(generateTransactionId());
+    setPaidAt(new Date());
+  }, []); // eslint-disable-line
 
-  const [method,       setMethod]       = useState<Method>("netbanking");
-  const [selectedBank, setSelectedBank] = useState("sbi");
-  const [otherBank,    setOtherBank]    = useState("");
-  const [upiId,        setUpiId]        = useState("");
-  const [upiVerified,  setUpiVerified]  = useState(false);
-  const [cardNo,       setCardNo]       = useState("");
-  const [cardExpiry,   setCardExpiry]   = useState("");
-  const [cardCvv,      setCardCvv]      = useState("");
-  const [cardName,     setCardName]     = useState("");
-  const [step,         setStep]         = useState<Step>("method");
+  const [method,         setMethod]         = useState<Method>("netbanking");
+  const [selectedBank,   setSelectedBank]   = useState("sbi");
+  const [otherBank,      setOtherBank]      = useState("");
+  const [upiId,          setUpiId]          = useState("");
+  const [upiVerified,    setUpiVerified]    = useState(false);
+  const [cardNo,         setCardNo]         = useState("");
+  const [cardExpiry,     setCardExpiry]     = useState("");
+  const [cardCvv,        setCardCvv]        = useState("");
+  const [cardName,       setCardName]       = useState("");
+  const [step,           setStep]           = useState<Step>("method");
+  const [savedTxnId,     setSavedTxnId]     = useState("");
+  const [isSaving,       setIsSaving]       = useState(false);
+  const [saveError,      setSaveError]      = useState("");
 
   const displayAmount = parseFloat(amount || "0").toFixed(2);
   const bankObj = popularBanks.find(b => b.id === selectedBank) ?? popularBanks[0];
@@ -267,8 +381,66 @@ function SBIContent() {
   const methodIcons:  Record<Method, string> = { netbanking:"fa-university", upi:"fa-mobile", debitcard:"fa-credit-card", creditcard:"fa-credit-card-alt" };
   const methodLabels: Record<Method, string> = { netbanking:"Net Banking",   upi:"UPI / BHIM", debitcard:"Debit Card",   creditcard:"Credit Card" };
 
+  // Persists the transaction in MongoDB and then flips to the success screen.
+  // We must await the save here because the success screen embeds the PDF
+  // generated from the DB row — the iframe URL only resolves once the row
+  // exists.
+  const persistAndShowReceipt = async () => {
+    setIsSaving(true);
+    setSaveError("");
+    setSavedTxnId(txnId);
+    setStep("success");
+    try {
+      const res = await fetch("/api/payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transactionId:    txnId,
+          vehicleNo, chassisNo, ownerName, mobileNo,
+          visitingState:    stateCode,
+          fromState,
+          vehicleType, vehicleClass,
+          permitType,
+          districtEntering,
+          checkpostName,
+          purposeOfVisit,
+          aitpValidity,
+          aitpAuthValidity,
+          taxMode,
+          noOfPeriods:      parseInt(noOfPeriods) || 1,
+          taxFrom, taxTo,
+          seatingCap:       parseInt(seatingCap) || 0,
+          sleeperCap:       parseInt(sleeperCap) || 0,
+          amount:           parseFloat(amount)   || 0,
+          paymentMethod:    "ONLINE",
+          orderRef:         clientOrderRef,
+          receiptNo,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || `Payment record save failed (HTTP ${res.status})`);
+      }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save payment record.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePaymentSuccess = () => { void persistAndShowReceipt(); };
+
   if (step === "success") {
-    return <SuccessScreen amount={displayAmount} orderRef={clientOrderRef} vehicleNo={vehicleNo} />;
+    return (
+      <SuccessScreen
+        transactionId={savedTxnId}
+        vehicleNo={vehicleNo}
+        amount={displayAmount}
+        isSaving={isSaving}
+        saveError={saveError}
+        onRetry={() => { void persistAndShowReceipt(); }}
+      />
+    );
   }
 
   if (step === "login") {
@@ -276,7 +448,7 @@ function SBIContent() {
       <div className="sbi-page">
         <GatewayHeader orderRef={clientOrderRef} />
         <BankLoginScreen bank={bankObj} amount={displayAmount}
-          onBack={() => setStep("method")} onSuccess={() => setStep("success")} />
+          onBack={() => setStep("method")} onSuccess={handlePaymentSuccess} />
         <GatewayFooter />
       </div>
     );
@@ -323,11 +495,9 @@ function SBIContent() {
           <div className="sbi-stepper">
             <div className="sbi-step sbi-step-active"><div className="sbi-step-num">1</div><div className="sbi-step-lbl">Method</div></div>
             <div className="sbi-step-line"></div>
-            <div className="sbi-step"><div className="sbi-step-num">2</div><div className="sbi-step-lbl">Login</div></div>
+            <div className="sbi-step"><div className="sbi-step-num">2</div><div className="sbi-step-lbl">Verify</div></div>
             <div className="sbi-step-line"></div>
-            <div className="sbi-step"><div className="sbi-step-num">3</div><div className="sbi-step-lbl">OTP</div></div>
-            <div className="sbi-step-line"></div>
-            <div className="sbi-step"><div className="sbi-step-num">4</div><div className="sbi-step-lbl">Done</div></div>
+            <div className="sbi-step"><div className="sbi-step-num">3</div><div className="sbi-step-lbl">Done</div></div>
           </div>
         </div>
 

@@ -48,11 +48,28 @@ const allStates = [
 
 const vehicleTypes = [
   { value: "-1", label: "---Select Vehicle Type---" },
-  { value: "1", label: "CONTRACT CARRIAGE/PASSENGER VEHICLES" },
-  { value: "3", label: "GOODS VEHICLE" },
-  { value: "7", label: "TEMPORARY REGISTERED VEHICLES" },
-  { value: "9", label: "CONSTRUCTION EQUIPMENT VEHICLE" },
+  { value: "1",  label: "CONTRACT CARRIAGE/PASSENGER VEHICLES" },
+  { value: "3",  label: "GOODS VEHICLE" },
+  { value: "7",  label: "TEMPORARY REGISTERED VEHICLES" },
+  { value: "9",  label: "CONSTRUCTION EQUIPMENT VEHICLE" },
 ];
+
+const vehicleClasses: Record<string, string> = {
+  "1": "MOTOR CAB",
+  "2": "MAXI CAB",
+  "3": "BUS",
+  "4": "GOODS VEHICLE (LMV)",
+  "5": "GOODS VEHICLE (HGV)",
+  "6": "TRACTOR",
+  "7": "ARTICULATED VEHICLE",
+};
+
+const permitTypes: Record<string, string> = {
+  "1": "AITP",
+  "2": "NATIONAL PERMIT",
+  "3": "SPECIAL PERMIT",
+  "4": "CONTRACT CARRIAGE PERMIT",
+};
 
 const purposeOptions = [
   { value: "-1", label: "---Select Purpose of visit---" },
@@ -77,6 +94,7 @@ function TaxCollectionContent() {
   const [sleeperCap, setSleeperCap] = useState("");
   const [permitType, setPermitType] = useState("-1");
   const [districtEntering, setDistrictEntering] = useState("-1");
+  const [checkpostName, setCheckpostName] = useState("");
   const [purposeVisit, setPurposeVisit] = useState("-1");
   const [aitpValidity, setAitpValidity] = useState("");
   const [aitpAuthValidity, setAitpAuthValidity] = useState("");
@@ -116,21 +134,53 @@ function TaxCollectionContent() {
     }
   };
 
+  const [formError, setFormError] = useState("");
+
   const handlePayTax = () => {
+    setFormError("");
     if (dateError) return;
     if (taxFrom && taxTo && taxFrom > taxTo) {
       setDateError("Tax From Date must be before Tax Upto Date.");
+      return;
+    }
+    // Required-field gate. Without these, /api/payment will 400 and the
+    // success screen would never render the receipt.
+    const missing: string[] = [];
+    if (!vehicleNo.trim())            missing.push("Registration No.");
+    if (!taxFrom)                     missing.push("Tax From Date");
+    if (!taxTo)                       missing.push("Tax Upto Date");
+    if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("Total Amount");
+    if (missing.length > 0) {
+      setFormError(`Please fill the following before paying: ${missing.join(", ")}`);
       return;
     }
     setShowModal(true);
   };
 
   const handleConfirmPayment = () => {
+    // We forward the raw form codes (e.g. vehicleType="1") rather than labels.
+    // Mongo is the single source of truth — labels are resolved at render time
+    // by src/lib/receipt/buildReceiptData.ts so the on-screen receipt and the
+    // PDF stay in sync no matter what.
     const params = new URLSearchParams({
-      state: stateCode,
+      state:            stateCode,
       vehicleNo,
       ownerName,
       chassisNo,
+      mobileNo,
+      fromState,
+      vehicleType,
+      vehicleClass,
+      seatingCap,
+      sleeperCap,
+      permitType,
+      districtEntering,
+      checkpostName,
+      purposeOfVisit:   purposeVisit,
+      aitpValidity,
+      aitpAuthValidity,
+      taxMode,
+      noOfPeriods:      noPeriods,
       taxFrom,
       taxTo,
       amount: totalAmount || "0",
@@ -142,9 +192,9 @@ function TaxCollectionContent() {
     setVehicleNo(""); setChassisNo(""); setOwnerName(""); setMobileNo("");
     setFromState("-1"); setVehicleType("-1"); setVehicleClass("-1");
     setSeatingCap(""); setSleeperCap(""); setPermitType("-1");
-    setDistrictEntering("-1"); setPurposeVisit("-1"); setAitpValidity("");
+    setCheckpostName(""); setDistrictEntering("-1"); setPurposeVisit("-1"); setAitpValidity("");
     setAitpAuthValidity(""); setTaxMode("-1"); setNoPeriods("");
-    setTaxFrom(""); setTaxTo(""); setTotalAmount(""); setDateError(""); setShowModal(false);
+    setTaxFrom(""); setTaxTo(""); setTotalAmount(""); setDateError(""); setFormError(""); setShowModal(false);
   };
 
   const [navOpen, setNavOpen] = useState(false);
@@ -525,12 +575,15 @@ function TaxCollectionContent() {
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Check Post Name Through Entering</label>
                       </div>
-                      <div className="ui-selectonemenu">
-                        <select defaultValue="-1">
-                          <option value="-1">---Select CheckpostName/Barrier---</option>
-                        </select>
-                        <span className="ui-selectonemenu-arrow">▼</span>
-                      </div>
+                      <input
+                        type="text"
+                        className="ui-inputtext"
+                        value={checkpostName}
+                        onChange={(e) => setCheckpostName(e.target.value.toUpperCase())}
+                        maxLength={80}
+                        autoComplete="off"
+                        placeholder="e.g. AAKERA MOD, ALWAR"
+                      />
                     </div>
                   </div>
 
@@ -542,11 +595,10 @@ function TaxCollectionContent() {
                       </div>
                       <div className="ui-calendar">
                         <input
-                          type="text"
-                          className="ui-inputtext"
+                          type="date"
+                          className="ui-inputtext cp-date-input"
                           value={aitpValidity}
                           onChange={(e) => setAitpValidity(e.target.value)}
-                          placeholder="DD-MM-YYYY"
                           autoComplete="off"
                         />
                       </div>
@@ -557,11 +609,10 @@ function TaxCollectionContent() {
                       </div>
                       <div className="ui-calendar">
                         <input
-                          type="text"
-                          className="ui-inputtext"
+                          type="date"
+                          className="ui-inputtext cp-date-input"
                           value={aitpAuthValidity}
                           onChange={(e) => setAitpAuthValidity(e.target.value)}
-                          placeholder="DD-MM-YYYY"
                           autoComplete="off"
                         />
                       </div>
@@ -662,6 +713,15 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
+                  {/* Inline form error (e.g. missing required fields) */}
+                  {formError && (
+                    <div className="ui-grid-row">
+                      <div className="ui-grid-col-12">
+                        <div className="cp-date-err-msg">{formError}</div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Total amount + action buttons */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
@@ -672,7 +732,7 @@ function TaxCollectionContent() {
                         type="text"
                         className="ui-inputtext font-bold medium-text-font"
                         value={totalAmount}
-                        onChange={(e) => setTotalAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+                        onChange={(e) => { setTotalAmount(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
                         placeholder="0.00"
                       />
                     </div>
