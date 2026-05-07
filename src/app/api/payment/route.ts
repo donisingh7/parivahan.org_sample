@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Transaction from "@/models/Transaction";
 import { verifyToken } from "@/lib/auth";
+import { buildReceiptPdf } from "@/lib/receipt/generatePdf";
+import { uploadReceipt, buildReceiptS3Key } from "@/lib/aws/s3";
+import { sendReceiptSms } from "@/lib/aws/sns";
+import { signQrToken, buildQrPageUrl } from "@/lib/qrToken";
+
+export const runtime = "nodejs";
 
 function makeTransactionId() {
   const ts = Date.now().toString(36).toUpperCase();
@@ -102,7 +108,69 @@ export async function POST(req: NextRequest) {
       paidAt:           new Date(),
     });
 
-    return NextResponse.json({ success: true, transactionId, data: txn }, { status: 201 });
+    // ── Side-effects after a successful save ──────────────────────────────
+    // 1. Compute the canonical S3 key  <portalUserId>/<MonthName>/<txnId>.pdf
+    //    so receipts are foldered per portal user and per month.
+    // 2. Mint a 3-day QR token that resolves to /r/<token> on this app — that
+    //    public page streams the PDF from S3 without requiring login.
+    // 3. Render the receipt PDF with the QR encoding the /r/<token> URL, so
+    //    scanning the printed receipt opens our portal page.
+    // 4. Upload the PDF to S3.
+    // 5. Publish the post-payment SMS via SNS.
+    //
+    // S3 upload is awaited so the iframe on the success screen has something
+    // to show. SMS failures are logged but never propagate — payments must
+    // never roll back because of a downstream notification glitch.
+    const s3Key = buildReceiptS3Key({
+      portalUserId:  userIdLabel,
+      paidAt:        txn.paidAt,
+      transactionId,
+    });
+    const qrToken = await signQrToken({ tid: transactionId, s3: s3Key });
+    const qrUrl   = buildQrPageUrl(qrToken);
+
+    let storedS3Key = "";
+    let smsMessageId = "";
+    try {
+      const pdf = await buildReceiptPdf(
+        txn.toObject() as unknown as Record<string, unknown>,
+        { qrUrl }
+      );
+      storedS3Key = await uploadReceipt(s3Key, pdf);
+    } catch (s3Err) {
+      console.error("[payment] receipt upload to S3 failed:", s3Err);
+    }
+    try {
+      const id = await sendReceiptSms({
+        mobileNo:      String(mobileNo ?? ""),
+        vehicleNo:     String(vehicleNo).toUpperCase().trim(),
+        amount:        parseFloat(amount),
+        receiptNo:     String(receiptNo ?? ""),
+        transactionId,
+      });
+      smsMessageId = id ?? "";
+    } catch (smsErr) {
+      console.error("[payment] SMS publish failed:", smsErr);
+    }
+
+    if (storedS3Key || smsMessageId) {
+      await Transaction.updateOne(
+        { transactionId },
+        { $set: { s3Key: storedS3Key, smsMessageId } }
+      ).catch((e) => console.error("[payment] failed to persist s3Key/smsMessageId:", e));
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        transactionId,
+        data: txn,
+        s3Key: storedS3Key,
+        smsMessageId,
+        qrUrl,
+      },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("POST /api/payment error:", err);
     return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });

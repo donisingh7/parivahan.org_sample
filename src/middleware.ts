@@ -19,11 +19,14 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // ── 2. Protect checkpost pages — require user login ─────────────────────────
+  // ── 2. Protect checkpost + payment-gateway pages — require user login ──────
+  // /payment/sbi is added so a user cannot deep-link past the form into the
+  // gateway and then submit a transaction without ever logging in.
   const isCheckpost =
     pathname === "/en/node/579" ||
     pathname === "/checkpost" ||
-    pathname.startsWith("/checkpost/");
+    pathname.startsWith("/checkpost/") ||
+    pathname.startsWith("/payment/sbi");
 
   if (isCheckpost) {
     const token = req.cookies.get("user_token")?.value;
@@ -52,5 +55,7 @@ export const config = {
     "/en/node/579",
     "/checkpost",
     "/checkpost/:path*",
+    "/payment/sbi",
+    "/payment/sbi/:path*",
   ],
 };

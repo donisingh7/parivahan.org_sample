@@ -14,9 +14,14 @@ export async function GET(req: NextRequest) {
     const limit  = parseInt(req.nextUrl.searchParams.get("limit") ?? "20");
     const status = req.nextUrl.searchParams.get("status");
     const search = req.nextUrl.searchParams.get("search");
+    // Filter by the human portal-login ID we copied onto every transaction
+    // (e.g. "UP12345"). Lets the admin dashboard drill into one user's bookings
+    // without needing to know the Mongo _id behind that login.
+    const userId = req.nextUrl.searchParams.get("userId");
 
     const query: Record<string, unknown> = {};
     if (status) query.status = status;
+    if (userId) query.userIdLabel = userId;
     if (search) {
       const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
       query.$or = [{ vehicleNo: re }, { ownerName: re }, { transactionId: re }];
@@ -31,8 +36,11 @@ export async function GET(req: NextRequest) {
       Transaction.countDocuments(query),
     ]);
 
-    // Summary stats
+    // Summary stats — honour the same filters as the table so the totals on
+    // the dashboard always describe the rows currently visible. Without this,
+    // filtering by user would still show "Total Collected" for every user.
     const [stats] = await Transaction.aggregate([
+      { $match: query },
       { $group: {
         _id: null,
         totalAmount:  { $sum: "$amount" },

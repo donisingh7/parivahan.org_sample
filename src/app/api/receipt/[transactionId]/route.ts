@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Transaction from "@/models/Transaction";
-import { buildReceiptData } from "@/lib/receipt/buildReceiptData";
+import { fetchReceipt, uploadReceipt, buildReceiptS3Key } from "@/lib/aws/s3";
+import { buildReceiptPdf } from "@/lib/receipt/generatePdf";
+import { signQrToken, buildQrPageUrl } from "@/lib/qrToken";
 
 export const runtime = "nodejs";
-
-// Static relative require so webpack bundles generateReceiptRajasthan.js and
-// nft automatically traces pdfkit / sharp / qrcode / moment (and all their
-// transitive deps) into the Vercel function bundle.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { generateReceiptRajasthan } = require(
-  "../../../../lib/receipt/rajasthan/generateReceiptRajasthan"
-) as { generateReceiptRajasthan: (data: unknown) => Promise<Buffer> };
 
 /**
  * GET /api/receipt/[transactionId]
  *
- * Generates the Rajasthan checkpost-tax PDF using generateReceiptRajasthan.js.
+ * Streams the Rajasthan checkpost-tax PDF straight from S3 (the canonical
+ * source after a successful payment). When the object isn't in S3 yet — e.g.
+ * a legacy transaction or a payment whose post-save upload failed — we fall
+ * back to generating it on the fly, mint a fresh QR token, and back-fill S3
+ * so subsequent requests are served from S3.
+ *
  * Pass `?download=1` to force a save dialog instead of inline view.
  */
 export async function GET(
@@ -36,31 +35,40 @@ export async function GET(
       );
     }
 
-    const data = buildReceiptData(txn as unknown as Record<string, unknown>);
-
-    const receiptData = {
-      registrationNo:  data.registrationNo,
-      receiptNo:       data.receiptNo,
-      paymentDate:     data.paymentDate,
-      ownerName:       data.ownerName,
-      chassisNo:       data.chassisNo,
-      taxMode:         data.taxMode,
-      vehicleType:     data.vehicleType,
-      vehicleClass:    data.vehicleClass,
-      mobileNo:        data.mobileNo,
-      checkpostName:   data.checkpostName,
-      sleeperCap:      data.sleeperCap,
-      seatingCapacity: data.seatingCapacity,
-      bankRefNo:       data.bankRefNo,
-      paymentMode:     data.paymentMode,
-      serviceType:     data.serviceType,
-      permitType:      data.permitType,
-      permitCategory:  data.permitCategory,
-      qrUrl:           data.qrUrl,
-      taxItems:        data.taxItems,
+    // Prefer the key persisted on the transaction; fall back to recomputing
+    // it so legacy rows (where s3Key was never written) still resolve.
+    const txnAny = txn as unknown as {
+      s3Key?:        string;
+      userIdLabel?:  string;
+      paidAt?:       Date | string | null;
     };
+    const s3Key = txnAny.s3Key && txnAny.s3Key.length > 0
+      ? txnAny.s3Key
+      : buildReceiptS3Key({
+          portalUserId:  txnAny.userIdLabel ?? "",
+          paidAt:        txnAny.paidAt ?? null,
+          transactionId,
+        });
 
-    const pdfBuffer = await generateReceiptRajasthan(receiptData);
+    let pdfBuffer = await fetchReceipt(s3Key).catch((err) => {
+      console.error("[receipt] S3 fetch failed, will regenerate:", err);
+      return null;
+    });
+
+    if (!pdfBuffer) {
+      // Regenerate with a fresh QR token so the printed link is guaranteed
+      // to work for the next 3 days.
+      const qrToken = await signQrToken({ tid: transactionId, s3: s3Key });
+      const qrUrl   = buildQrPageUrl(qrToken);
+      pdfBuffer = await buildReceiptPdf(
+        txn as unknown as Record<string, unknown>,
+        { qrUrl }
+      );
+      // Best-effort backfill so the next request hits S3.
+      uploadReceipt(s3Key, pdfBuffer)
+        .then(() => Transaction.updateOne({ transactionId }, { $set: { s3Key } }))
+        .catch((err) => console.error("[receipt] backfill upload failed:", err));
+    }
 
     const disposition = forceDownload ? "attachment" : "inline";
     return new NextResponse(pdfBuffer as unknown as BodyInit, {
@@ -76,7 +84,7 @@ export async function GET(
   } catch (err) {
     console.error("GET /api/receipt/[transactionId] error:", err);
     return NextResponse.json(
-      { success: false, message: "Failed to generate receipt" },
+      { success: false, message: "Failed to load receipt" },
       { status: 500 }
     );
   }

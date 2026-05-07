@@ -56,14 +56,25 @@ function BankLoginScreen({
     }
     setError(""); setLoading(true);
     try {
-      const res  = await fetch("/api/auth/user-login", {
+      // Server enforces: cookie's user_token userId === submitted userId AND
+      // password is correct. So a logged-in user cannot pay with a different
+      // identity — every transaction stays tied to the portal account.
+      const res  = await fetch("/api/auth/verify-payment-credentials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: userId.trim(), password }),
       });
       const data = await res.json();
       if (!data.success) {
-        setError("Invalid credentials. Use the same User ID and Password you used to log in.");
+        if (data.code === "NOT_LOGGED_IN") {
+          // Session lost — bounce back to login keeping the SBI URL as redirect.
+          window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+          return;
+        }
+        setError(
+          data.message ||
+          "Invalid credentials. Use the same User ID and Password you used to log in."
+        );
         setLoading(false);
         return;
       }

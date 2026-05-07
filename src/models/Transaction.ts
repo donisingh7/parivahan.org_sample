@@ -39,6 +39,13 @@ export interface ITransaction extends Document {
   bankName:         string;
   status:           PaymentStatus;
   paidAt:           Date | null;
+  // S3 object key where the receipt PDF is stored after a successful payment.
+  // /api/receipt/[transactionId] streams the PDF directly from this key, so
+  // every receipt the user sees comes from S3 — not a one-shot in-memory render.
+  s3Key:            string;
+  // ID returned by SNS Publish for the post-payment SMS, kept for traceability
+  // when investigating delivery issues.
+  smsMessageId:     string;
   createdAt:        Date;
   updatedAt:        Date;
 }
@@ -75,6 +82,8 @@ const TransactionSchema = new Schema<ITransaction>(
     bankName:         { type: String, default: "" },
     status:           { type: String, enum: ["PENDING","SUCCESS","FAILED"], default: "PENDING" },
     paidAt:           { type: Date, default: null },
+    s3Key:            { type: String, default: "" },
+    smsMessageId:     { type: String, default: "" },
   },
   { timestamps: true }
 );
