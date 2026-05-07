@@ -1,24 +1,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdfkit", "sharp", "qrcode", "moment", "@img/sharp-linux-x64", "@img/sharp-linux-arm64"],
+  serverExternalPackages: ["pdfkit", "sharp", "qrcode", "moment"],
 
-  // The /api/receipt/[transactionId] route spawns receipt-runner.js as a
-  // child process, which then loads generateReceipt.js, the Roboto fonts and
-  // the Rajasthan watermark from disk. Those files are referenced via
-  // runtime-computed paths (path.join with __dirname / process.cwd()), which
-  // @vercel/nft cannot statically analyse — so on Vercel they get dropped
-  // from the function bundle and the runtime hits MODULE_NOT_FOUND.
-  // Listing them here forces nft to copy them into /var/task/.
+  // generateReceiptRajasthan.js is required via a static relative path in
+  // route.ts, so webpack bundles it and nft automatically traces pdfkit /
+  // sharp / qrcode / moment (and all their transitive deps) into the Vercel
+  // function bundle.
+  // Only the binary assets accessed via process.cwd() at runtime need to be
+  // listed here — nft cannot trace fs reads from runtime-computed paths.
   outputFileTracingIncludes: {
     "/api/receipt/**": [
-      "receipt-generator/**/*",
+      "receipt-generator/fonts/**",
       "public/Images/Rajasthan-Transport-Department.png",
-      "node_modules/pdfkit/**",
-      "node_modules/qrcode/**",
-      "node_modules/sharp/**",
-      "node_modules/@img/**",
-      "node_modules/moment/**",
     ],
   },
 
