@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import Transaction from "@/models/Transaction";
 import { verifyToken } from "@/lib/auth";
 import { buildReceiptPdf } from "@/lib/receipt/generatePdf";
 import { uploadReceipt, buildReceiptS3Key } from "@/lib/aws/s3";
 import { sendReceiptSms } from "@/lib/aws/sns";
 import { signQrToken, buildQrPageUrl } from "@/lib/qrToken";
+import { isSupportedState } from "@/lib/states/registry";
+import { getStateServer } from "@/lib/states/registry.server";
 
 export const runtime = "nodejs";
 
@@ -38,12 +39,17 @@ function toDateOrNull(v: unknown): Date | null {
 }
 
 // POST /api/payment — create a new payment transaction.
-// Accepts every field the checkpost-tax form collects so MongoDB is the
-// single source of truth for both the on-screen receipt and the PDF.
+//
+// Multi-state aware: the body must include `state` (RJ / BR / AP / …), which
+// selects the per-state Mongo collection and per-state PDF generator. The
+// state code is also embedded in the QR JWT so /r/<token> can later route the
+// public PDF stream back to the right collection without having to scan all
+// of them.
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
+      state,
       vehicleNo, chassisNo, ownerName, mobileNo,
       visitingState, fromState,
       vehicleType, vehicleClass,
@@ -54,12 +60,22 @@ export async function POST(req: NextRequest) {
       seatingCap, sleeperCap,
       receiptNo, orderRef,
       amount, paymentMethod, bankName,
+      // ── Haryana-specific (other states send these undefined) ─────────
+      vehicleCategory, serviceType, distance, borderDistrict,
+      fitnessValidity, insuranceValidity, puccValidity,
+      // ── Punjab-shared (Uttarakhand / Himachal Pradesh also use these) ─
+      userCharge, infraCess,
+      // ── Himachal Pradesh-specific (other states send this undefined) ─
+      fuelType,
+      // ── Uttarakhand / Uttar Pradesh-specific (others send undefined) ─
+      permitNumber, permitFrom, permitUpto,
     } = body;
 
     const missing: string[] = [];
-    if (!vehicleNo)                                          missing.push("vehicleNo");
-    if (!taxFrom)                                            missing.push("taxFrom");
-    if (!taxTo)                                              missing.push("taxTo");
+    if (!state || !isSupportedState(state))                   missing.push("state");
+    if (!vehicleNo)                                           missing.push("vehicleNo");
+    if (!taxFrom)                                             missing.push("taxFrom");
+    if (!taxTo)                                               missing.push("taxTo");
     if (amount === undefined || amount === null || amount === "") missing.push("amount");
     if (missing.length > 0) {
       return NextResponse.json(
@@ -70,13 +86,17 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
+    const stateServer = getStateServer(state);
+    const TransactionModel = stateServer.getModel();
+
     const transactionId = body.transactionId && typeof body.transactionId === "string"
       ? body.transactionId
       : makeTransactionId();
     const { userId, userIdLabel } = await readPortalUser(req);
 
-    const txn = await Transaction.create({
+    const txn = await TransactionModel.create({
       transactionId,
+      state,
       userId,
       userIdLabel,
       receiptNo:        receiptNo        ?? "",
@@ -85,7 +105,7 @@ export async function POST(req: NextRequest) {
       chassisNo:        chassisNo        ?? "",
       ownerName:        ownerName        ?? "",
       mobileNo:         mobileNo         ?? "",
-      visitingState:    visitingState    ?? "",
+      visitingState:    visitingState    ?? state,
       fromState:        fromState        ?? "",
       vehicleType:      vehicleType      ?? "",
       vehicleClass:     vehicleClass     ?? "",
@@ -106,15 +126,35 @@ export async function POST(req: NextRequest) {
       bankName:         bankName         ?? "",
       status:           "SUCCESS",
       paidAt:           new Date(),
+      // ── State-specific extras ─────────────────────────────────────────
+      // Every per-state schema declares whatever subset of these it cares
+      // about as optional fields on the shared baseSchema, so unknown keys
+      // are silently dropped by Mongoose strict-mode for states that don't
+      // need them. Sending them all unconditionally keeps the route fully
+      // state-agnostic — adding a new state with a new field is just a
+      // schema change, no edits here.
+      vehicleCategory:   vehicleCategory  ?? "",
+      serviceType:       serviceType      ?? "",
+      distance:          Number(distance) || 0,
+      borderDistrict:    borderDistrict   ?? "",
+      fitnessValidity:   toDateOrNull(fitnessValidity),
+      insuranceValidity: toDateOrNull(insuranceValidity),
+      puccValidity:      toDateOrNull(puccValidity),
+      userCharge:        Number(userCharge) || 0,
+      infraCess:         Number(infraCess)  || 0,
+      fuelType:          fuelType         ?? "",
+      permitNumber:      permitNumber     ?? "",
+      permitFrom:        toDateOrNull(permitFrom),
+      permitUpto:        toDateOrNull(permitUpto),
     });
 
     // ── Side-effects after a successful save ──────────────────────────────
-    // 1. Compute the canonical S3 key  <portalUserId>/<MonthName>/<txnId>.pdf
-    //    so receipts are foldered per portal user and per month.
+    // 1. Compute the canonical S3 key  <state>/<portalUserId>/<MonthName>/<txnId>.pdf
+    //    so receipts are foldered per state, per portal user, per month.
     // 2. Mint a 3-day QR token that resolves to /r/<token> on this app — that
-    //    public page streams the PDF from S3 without requiring login.
-    // 3. Render the receipt PDF with the QR encoding the /r/<token> URL, so
-    //    scanning the printed receipt opens our portal page.
+    //    public page streams the PDF from S3 without requiring login. The
+    //    token also carries the state code so the lookup is direct.
+    // 3. Render the receipt PDF with the state's PDF generator.
     // 4. Upload the PDF to S3.
     // 5. Publish the post-payment SMS via SNS.
     //
@@ -122,17 +162,19 @@ export async function POST(req: NextRequest) {
     // to show. SMS failures are logged but never propagate — payments must
     // never roll back because of a downstream notification glitch.
     const s3Key = buildReceiptS3Key({
+      state,
       portalUserId:  userIdLabel,
       paidAt:        txn.paidAt,
       transactionId,
     });
-    const qrToken = await signQrToken({ tid: transactionId, s3: s3Key });
+    const qrToken = await signQrToken({ tid: transactionId, s3: s3Key, st: state });
     const qrUrl   = buildQrPageUrl(qrToken);
 
     let storedS3Key = "";
     let smsMessageId = "";
     try {
       const pdf = await buildReceiptPdf(
+        state,
         txn.toObject() as unknown as Record<string, unknown>,
         { qrUrl }
       );
@@ -154,7 +196,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (storedS3Key || smsMessageId) {
-      await Transaction.updateOne(
+      await TransactionModel.updateOne(
         { transactionId },
         { $set: { s3Key: storedS3Key, smsMessageId } }
       ).catch((e) => console.error("[payment] failed to persist s3Key/smsMessageId:", e));
@@ -164,6 +206,7 @@ export async function POST(req: NextRequest) {
       {
         success: true,
         transactionId,
+        state,
         data: txn,
         s3Key: storedS3Key,
         smsMessageId,
@@ -177,11 +220,16 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/payment?txnId=XXX — get payment by transaction ID
+// GET /api/payment?txnId=XXX[&state=XX] — get payment by transaction ID.
+//
+// `state` is optional: when provided we hit a single per-state collection
+// directly; when absent we scan every state collection in parallel. Production
+// callers (admin, success screen) are expected to pass it.
 export async function GET(req: NextRequest) {
   try {
-    const txnId = req.nextUrl.searchParams.get("txnId");
+    const txnId     = req.nextUrl.searchParams.get("txnId");
     const vehicleNo = req.nextUrl.searchParams.get("vehicleNo");
+    const stateHint = req.nextUrl.searchParams.get("state");
 
     if (!txnId && !vehicleNo) {
       return NextResponse.json({ success: false, message: "txnId or vehicleNo required" }, { status: 400 });
@@ -189,15 +237,33 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
 
-    let result;
     if (txnId) {
-      result = await Transaction.findOne({ transactionId: txnId }).lean();
-      if (!result) return NextResponse.json({ success: false, message: "Transaction not found" }, { status: 404 });
-      return NextResponse.json({ success: true, data: result });
-    } else {
-      result = await Transaction.find({ vehicleNo: vehicleNo!.toUpperCase() }).sort({ createdAt: -1 }).lean();
-      return NextResponse.json({ success: true, data: result });
+      if (stateHint && isSupportedState(stateHint)) {
+        const result = await getStateServer(stateHint).getModel().findOne({ transactionId: txnId }).lean();
+        if (!result) return NextResponse.json({ success: false, message: "Transaction not found" }, { status: 404 });
+        return NextResponse.json({ success: true, data: result, state: stateHint });
+      }
+      // No state hint — fan out across every collection.
+      const { findTransactionAcrossStates } = await import("@/lib/states/registry.server");
+      const found = await findTransactionAcrossStates(txnId);
+      if (!found) return NextResponse.json({ success: false, message: "Transaction not found" }, { status: 404 });
+      return NextResponse.json({ success: true, data: found.doc, state: found.state });
     }
+
+    // vehicleNo lookup — search every state's collection in parallel and merge.
+    const { getAllStateServers } = await import("@/lib/states/registry.server");
+    const upperVeh = vehicleNo!.toUpperCase();
+    const lists = await Promise.all(
+      getAllStateServers().map((s) =>
+        s.getModel().find({ vehicleNo: upperVeh }).sort({ createdAt: -1 }).lean()
+      )
+    );
+    const merged = lists.flat().sort((a, b) => {
+      const ta = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+      const tb = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+      return tb - ta;
+    });
+    return NextResponse.json({ success: true, data: merged });
   } catch (err) {
     console.error("GET /api/payment error:", err);
     return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });

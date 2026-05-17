@@ -1,6 +1,10 @@
 import { connectDB } from "@/lib/mongodb";
-import Transaction from "@/models/Transaction";
 import { verifyQrToken, QR_TOKEN_TTL_DAYS } from "@/lib/qrToken";
+import { isSupportedState } from "@/lib/states/registry";
+import {
+  findTransactionAcrossStates,
+  getStateServer,
+} from "@/lib/states/registry.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -92,12 +96,24 @@ export default async function PublicReceiptPage({
   }
 
   await connectDB();
-  const txnDoc = await Transaction.findOne({ transactionId: payload.tid }).lean();
+
+  // Use the state code embedded in the token to hit the right per-state
+  // collection directly. Older tokens (pre-`st` field) trigger a fan-out scan.
+  let txnDoc: unknown = null;
+  if (isSupportedState(payload.st)) {
+    txnDoc = await getStateServer(payload.st)
+      .getModel()
+      .findOne({ transactionId: payload.tid })
+      .lean();
+  } else {
+    const found = await findTransactionAcrossStates(payload.tid);
+    txnDoc = found?.doc ?? null;
+  }
   if (!txnDoc) {
     return <NotFoundView />;
   }
 
-  const t = txnDoc as unknown as {
+  const t = txnDoc as {
     transactionId: string;
     vehicleNo:     string;
     ownerName:     string;

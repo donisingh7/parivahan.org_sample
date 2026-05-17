@@ -154,6 +154,7 @@ function BankLoginScreen({
 
 function SuccessScreen({
   transactionId,
+  stateCode,
   vehicleNo,
   amount,
   isSaving,
@@ -161,6 +162,7 @@ function SuccessScreen({
   onRetry,
 }: {
   transactionId: string;
+  stateCode:     string;
   vehicleNo:     string;
   amount:        string;
   isSaving:      boolean;
@@ -168,11 +170,14 @@ function SuccessScreen({
   onRetry:       () => void;
 }) {
   // The View *and* Download buttons both target the same URL — the PDF is
-  // generated once by receipt-generator/generateReceipt.js and served from
-  // /api/receipt/<txnId>. `?download=1` swaps Content-Disposition to
-  // attachment so the same script can drive both flows.
-  const viewUrl     = `/api/receipt/${transactionId}`;
-  const downloadUrl = `/api/receipt/${transactionId}?download=1`;
+  // generated once by the per-state generateReceipt.js and served from
+  // /api/receipt/<txnId>?state=<XX>. The state hint lets the receipt API
+  // hit the right per-state collection without a cross-state scan.
+  // `?download=1` swaps Content-Disposition to attachment so the same
+  // route can drive both flows.
+  const stateQuery  = stateCode ? `&state=${encodeURIComponent(stateCode)}` : "";
+  const viewUrl     = `/api/receipt/${transactionId}?inline=1${stateQuery}`;
+  const downloadUrl = `/api/receipt/${transactionId}?download=1${stateQuery}`;
 
   return (
     <div className="sbi-success-wrap" style={{ background: "#f5f7fa", minHeight: "100vh", padding: "24px 0" }}>
@@ -402,27 +407,27 @@ function SBIContent() {
     setSavedTxnId(txnId);
     setStep("success");
     try {
+      // Forward every URL search param the per-state form handed us, plus
+      // the gateway-side fields the API requires. This keeps the gateway
+      // state-agnostic — Haryana / Punjab / etc. can add state-specific
+      // fields (vehicleCategory, fitnessValidity, …) to the form's
+      // navigation URL and they'll flow through to /api/payment without
+      // any change here.
+      const forwarded: Record<string, string> = {};
+      searchParams.forEach((v, k) => { forwarded[k] = v; });
+
       const res = await fetch("/api/payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          ...forwarded,
           transactionId:    txnId,
-          vehicleNo, chassisNo, ownerName, mobileNo,
-          visitingState:    stateCode,
-          fromState,
-          vehicleType, vehicleClass,
-          permitType,
-          districtEntering,
-          checkpostName,
-          purposeOfVisit,
-          aitpValidity,
-          aitpAuthValidity,
-          taxMode,
+          state:            stateCode,
+          visitingState:    forwarded.visitingState ?? stateCode,
           noOfPeriods:      parseInt(noOfPeriods) || 1,
-          taxFrom, taxTo,
-          seatingCap:       parseInt(seatingCap) || 0,
-          sleeperCap:       parseInt(sleeperCap) || 0,
-          amount:           parseFloat(amount)   || 0,
+          seatingCap:       parseInt(seatingCap)  || 0,
+          sleeperCap:       parseInt(sleeperCap)  || 0,
+          amount:           parseFloat(amount)    || 0,
           paymentMethod:    "ONLINE",
           orderRef:         clientOrderRef,
           receiptNo,
@@ -445,6 +450,7 @@ function SBIContent() {
     return (
       <SuccessScreen
         transactionId={savedTxnId}
+        stateCode={stateCode}
         vehicleNo={vehicleNo}
         amount={displayAmount}
         isSaving={isSaving}

@@ -92,7 +92,7 @@ async function setup() {
   await client.connect();
   console.log("✅  Connected to MongoDB:", MONGODB_URI.replace(/\/\/.*@/, "//***@"));
 
-  const dbName = new URL(MONGODB_URI).pathname.replace("/", "") || "parivahan";
+  const dbName = MONGODB_URI.split("/").pop()?.split("?")[0] || "parivahan";
   const db = client.db(dbName);
   console.log("📦  Database:", dbName);
   console.log("");
@@ -149,17 +149,64 @@ async function setup() {
   console.log("   ✓ Index: mobileNo");
   console.log(`   ✓ Vehicles seeded: ${vehicleUpserted} new / ${VEHICLES.length - vehicleUpserted} already existed`);
 
-  // ── 4. Transactions ───────────────────────────────────────────────────────
-  console.log("\n🔧  Setting up collection: transactions");
-  const transactions = db.collection("transactions");
-  await transactions.createIndex({ transactionId: 1 }, { unique: true, background: true });
-  await transactions.createIndex({ vehicleNo: 1, createdAt: -1 }, { background: true });
-  await transactions.createIndex({ status: 1 }, { background: true });
-  await transactions.createIndex({ createdAt: -1 }, { background: true });
-  console.log("   ✓ Index: transactionId (unique)");
-  console.log("   ✓ Index: vehicleNo + createdAt");
-  console.log("   ✓ Index: status");
-  console.log("   ✓ Index: createdAt");
+  // ── 4. Transactions (per-state collections) ──────────────────────────────
+  // The legacy unified `transactions` collection is dropped on every setup
+  // because the app now writes to per-state collections (rajasthan_transactions,
+  // bihar_transactions, …). Each per-state collection mirrors the same schema
+  // and indexes — the model file under src/lib/states/<state>/model.ts uses
+  // the shared base schema (which already declares the same indexes), so the
+  // first write to any state collection auto-creates them. We pre-create all
+  // ten here so admin queries see consistent collections from day one.
+  const PER_STATE_COLLECTIONS = [
+    { code: "RJ", name: "Rajasthan",         collection: "rajasthan_transactions"        },
+    { code: "BR", name: "Bihar",             collection: "bihar_transactions"            },
+    { code: "AP", name: "Andhra Pradesh",    collection: "andhra_pradesh_transactions"   },
+    { code: "MH", name: "Maharashtra",       collection: "maharashtra_transactions"      },
+    { code: "JH", name: "Jharkhand",         collection: "jharkhand_transactions"        },
+    { code: "PB", name: "Punjab",            collection: "punjab_transactions"           },
+    { code: "UP", name: "Uttar Pradesh",     collection: "uttar_pradesh_transactions"    },
+    { code: "UK", name: "Uttarakhand",       collection: "uttarakhand_transactions"      },
+    { code: "HR", name: "Haryana",           collection: "haryana_transactions"          },
+    { code: "HP", name: "Himachal Pradesh",  collection: "himachal_pradesh_transactions" },
+  ];
+
+  // Drop the legacy single-collection if it exists — fresh start as agreed.
+  const existing = await db.listCollections({ name: "transactions" }).toArray();
+  if (existing.length > 0) {
+    console.log("\n🗑   Dropping legacy collection: transactions (per-state collections take over)");
+    await db.collection("transactions").drop();
+    console.log("   ✓ Dropped");
+  }
+
+  // ── Per-state collections whose schema has been redesigned to match the
+  //    real gov-portal inspect HTML are wiped here so leftover Rajasthan-
+  //    shaped documents from prior runs don't poison the new receipts.
+  //    Add a state code to this list whenever its schema changes shape.
+  const SCHEMA_CHANGED_COLLECTIONS = [
+    "haryana_transactions",
+    "punjab_transactions",
+    "uttarakhand_transactions",
+  ];
+  for (const name of SCHEMA_CHANGED_COLLECTIONS) {
+    const drop = await db.listCollections({ name }).toArray();
+    if (drop.length > 0) {
+      console.log(`\n🗑   Dropping ${name} (schema redesign — fresh start)`);
+      await db.collection(name).drop();
+      console.log("   ✓ Dropped");
+    }
+  }
+
+  console.log("\n🔧  Setting up per-state transaction collections");
+  for (const s of PER_STATE_COLLECTIONS) {
+    const coll = db.collection(s.collection);
+    await coll.createIndex({ transactionId: 1 }, { unique: true, background: true });
+    await coll.createIndex({ vehicleNo: 1, createdAt: -1 }, { background: true });
+    await coll.createIndex({ status: 1 },     { background: true });
+    await coll.createIndex({ state: 1 },      { background: true });
+    await coll.createIndex({ userId: 1 },     { background: true });
+    await coll.createIndex({ createdAt: -1 }, { background: true });
+    console.log(`   ✓ ${s.collection.padEnd(35)}  (${s.name})`);
+  }
 
   // ── Summary ───────────────────────────────────────────────────────────────
   console.log("\n════════════════════════════════════════");

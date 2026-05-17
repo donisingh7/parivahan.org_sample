@@ -1,22 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import Transaction from "@/models/Transaction";
 import { fetchReceipt, uploadReceipt, buildReceiptS3Key } from "@/lib/aws/s3";
 import { buildReceiptPdf } from "@/lib/receipt/generatePdf";
 import { signQrToken, buildQrPageUrl } from "@/lib/qrToken";
+import { isSupportedState } from "@/lib/states/registry";
+import {
+  findTransactionAcrossStates,
+  getStateServer,
+} from "@/lib/states/registry.server";
+import type { StateCode } from "@/lib/states/types";
 
 export const runtime = "nodejs";
 
 /**
- * GET /api/receipt/[transactionId]
+ * GET /api/receipt/[transactionId][?state=XX][&download=1]
  *
- * Streams the Rajasthan checkpost-tax PDF straight from S3 (the canonical
- * source after a successful payment). When the object isn't in S3 yet — e.g.
- * a legacy transaction or a payment whose post-save upload failed — we fall
- * back to generating it on the fly, mint a fresh QR token, and back-fill S3
- * so subsequent requests are served from S3.
+ * Streams the checkpost-tax PDF straight from S3 (the canonical source after
+ * a successful payment). When the object isn't in S3 yet — e.g. a legacy
+ * transaction or a payment whose post-save upload failed — we fall back to
+ * regenerating it on the fly using the per-state PDF generator, mint a
+ * fresh QR token, and back-fill S3 so subsequent requests are served
+ * straight from S3.
  *
- * Pass `?download=1` to force a save dialog instead of inline view.
+ * Multi-state aware: pass `?state=XX` to skip the cross-collection scan.
+ * Production callers (admin, success screen) should always pass it.
  */
 export async function GET(
   req: NextRequest,
@@ -25,19 +32,38 @@ export async function GET(
   try {
     const { transactionId } = await params;
     const forceDownload = req.nextUrl.searchParams.get("download") === "1";
+    const stateHint     = req.nextUrl.searchParams.get("state");
     await connectDB();
 
-    const txn = await Transaction.findOne({ transactionId }).lean();
-    if (!txn) {
-      return NextResponse.json(
-        { success: false, message: "Transaction not found" },
-        { status: 404 }
-      );
+    let stateCode: StateCode;
+    let txn: Record<string, unknown>;
+
+    if (stateHint && isSupportedState(stateHint)) {
+      stateCode = stateHint;
+      const Model = getStateServer(stateCode).getModel();
+      const found = await Model.findOne({ transactionId }).lean();
+      if (!found) {
+        return NextResponse.json(
+          { success: false, message: "Transaction not found" },
+          { status: 404 }
+        );
+      }
+      txn = found as unknown as Record<string, unknown>;
+    } else {
+      const found = await findTransactionAcrossStates(transactionId);
+      if (!found) {
+        return NextResponse.json(
+          { success: false, message: "Transaction not found" },
+          { status: 404 }
+        );
+      }
+      stateCode = found.state;
+      txn = found.doc as unknown as Record<string, unknown>;
     }
 
     // Prefer the key persisted on the transaction; fall back to recomputing
     // it so legacy rows (where s3Key was never written) still resolve.
-    const txnAny = txn as unknown as {
+    const txnAny = txn as {
       s3Key?:        string;
       userIdLabel?:  string;
       paidAt?:       Date | string | null;
@@ -45,6 +71,7 @@ export async function GET(
     const s3Key = txnAny.s3Key && txnAny.s3Key.length > 0
       ? txnAny.s3Key
       : buildReceiptS3Key({
+          state:         stateCode,
           portalUserId:  txnAny.userIdLabel ?? "",
           paidAt:        txnAny.paidAt ?? null,
           transactionId,
@@ -58,15 +85,13 @@ export async function GET(
     if (!pdfBuffer) {
       // Regenerate with a fresh QR token so the printed link is guaranteed
       // to work for the next 3 days.
-      const qrToken = await signQrToken({ tid: transactionId, s3: s3Key });
+      const qrToken = await signQrToken({ tid: transactionId, s3: s3Key, st: stateCode });
       const qrUrl   = buildQrPageUrl(qrToken);
-      pdfBuffer = await buildReceiptPdf(
-        txn as unknown as Record<string, unknown>,
-        { qrUrl }
-      );
+      pdfBuffer = await buildReceiptPdf(stateCode, txn, { qrUrl });
       // Best-effort backfill so the next request hits S3.
+      const Model = getStateServer(stateCode).getModel();
       uploadReceipt(s3Key, pdfBuffer)
-        .then(() => Transaction.updateOne({ transactionId }, { $set: { s3Key } }))
+        .then(() => Model.updateOne({ transactionId }, { $set: { s3Key } }))
         .catch((err) => console.error("[receipt] backfill upload failed:", err));
     }
 

@@ -1,37 +1,17 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { listSupportedStates } from "@/lib/states/registry";
 
-const states = [
-  { value: "AP", label: "ANDHRA PRADESH" },
-  { value: "AS", label: "ASSAM" },
-  { value: "BR", label: "BIHAR" },
-  { value: "CG", label: "CHHATTISGARH" },
-  { value: "GA", label: "GOA" },
-  { value: "GJ", label: "GUJARAT" },
-  { value: "HR", label: "HARYANA" },
-  { value: "HP", label: "HIMACHAL PRADESH" },
-  { value: "JH", label: "JHARKHAND" },
-  { value: "JK", label: "JAMMU & KASHMIR" },
-  { value: "KA", label: "KARNATAKA" },
-  { value: "KL", label: "KERALA" },
-  { value: "MH", label: "MAHARASHTRA" },
-  { value: "MP", label: "MADHYA PRADESH" },
-  { value: "MZ", label: "MIZORAM" },
-  { value: "OR", label: "ODISHA" },
-  { value: "PB", label: "PUNJAB" },
-  { value: "PY", label: "PONDICHERRY" },
-  { value: "RJ", label: "RAJASTHAN" },
-  { value: "SK", label: "SIKKIM" },
-  { value: "TN", label: "TAMIL NADU" },
-  { value: "TR", label: "TRIPURA" },
-  { value: "TG", label: "TELANGANA" },
-  { value: "DD", label: "UNION TERRITORY OF DADRA AND NAGAR HAVELI AND DAMAN AND DIU" },
-  { value: "UK", label: "UTTRAKHAND" },
-  { value: "UP", label: "UTTAR PRADESH" },
-  { value: "WB", label: "WEST BENGAL" },
-];
+// Drop-in replacement that pulls the state list from the per-state registry.
+// Only the 10 states with full implementation under src/lib/states/ are shown
+// — selecting any other state isn't possible because they never enter the
+// dropdown to begin with.
+const states = listSupportedStates().map((c) => ({ value: c.code, label: c.label }));
 
+// Re-export so existing call sites that did `import { states } from
+// "@/components/CheckpostTax"` keep compiling. New code should import from
+// `@/lib/states/registry` instead.
 export { states };
 
 export default function CheckpostTax() {

@@ -70,9 +70,14 @@ export async function sendReceiptSms(p: ReceiptSmsPayload): Promise<string | nul
         PhoneNumber,
         Message,
         MessageAttributes: {
+          // Transactional gives best deliverability for OTP-style alerts.
           "AWS.SNS.SMS.SMSType": {
             DataType: "String",
             StringValue: "Transactional",
+          },
+          "AWS.SNS.SMS.SenderID": {
+            DataType: "String",
+            StringValue: "PARVHN",
           },
         },
       })

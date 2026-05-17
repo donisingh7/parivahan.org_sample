@@ -410,7 +410,7 @@ function TaxCollectionContent() {
                         className="ui-inputtext"
                         maxLength={10}
                         value={mobileNo}
-                        onChange={(e) => setMobileNo(e.target.value.replace(/\D/g, ""))}
+                        onChange={(e) => setMobileNo(e.target.value)}
                         autoComplete="off"
                         placeholder="SMS about payment will be sent to this number."
                         title="SMS about payment will be sent to this number."
@@ -485,7 +485,7 @@ function TaxCollectionContent() {
                         type="text"
                         className="ui-inputtext"
                         value={seatingCap}
-                        onChange={(e) => setSeatingCap(e.target.value.replace(/\D/g, ""))}
+                        onChange={(e) => setSeatingCap(e.target.value)}
                         maxLength={2}
                         autoComplete="off"
                       />
@@ -498,7 +498,7 @@ function TaxCollectionContent() {
                         type="text"
                         className="ui-inputtext"
                         value={sleeperCap}
-                        onChange={(e) => setSleeperCap(e.target.value.replace(/\D/g, ""))}
+                        onChange={(e) => setSleeperCap(e.target.value)}
                         maxLength={2}
                         autoComplete="off"
                       />
@@ -642,7 +642,7 @@ function TaxCollectionContent() {
                         type="text"
                         className="ui-inputtext"
                         value={noPeriods}
-                        onChange={(e) => setNoPeriods(e.target.value.replace(/\D/g, ""))}
+                        onChange={(e) => setNoPeriods(e.target.value)}
                         maxLength={2}
                         autoComplete="off"
                       />
@@ -732,7 +732,7 @@ function TaxCollectionContent() {
                         type="text"
                         className="ui-inputtext font-bold medium-text-font"
                         value={totalAmount}
-                        onChange={(e) => { setTotalAmount(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        onChange={(e) => { setTotalAmount(e.target.value); setFormError(""); }}
                         placeholder="0.00"
                       />
                     </div>

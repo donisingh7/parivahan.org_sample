@@ -15,6 +15,8 @@ export interface QrTokenPayload {
   tid: string;
   /** S3 object key of the receipt PDF (cached on the token to avoid an extra DB read in the hot PDF route) */
   s3:  string;
+  /** Two-letter state code so /r/<token> can hit the right per-state collection without scanning */
+  st:  string;
   /** Token type discriminator — refuses login tokens replayed as QR tokens */
   typ: string;
   iat?: number;
@@ -25,8 +27,12 @@ export interface QrTokenPayload {
  * Sign a 3-day-valid token that proves "the bearer is allowed to download
  * exactly this receipt PDF" — embedded in the QR code on the printed receipt.
  */
-export async function signQrToken(input: { tid: string; s3: string }): Promise<string> {
-  return new SignJWT({ tid: input.tid, s3: input.s3, typ: TOKEN_TYPE })
+export async function signQrToken(input: {
+  tid: string;
+  s3:  string;
+  st:  string;
+}): Promise<string> {
+  return new SignJWT({ tid: input.tid, s3: input.s3, st: input.st, typ: TOKEN_TYPE })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${TOKEN_TTL_SECONDS}s`)

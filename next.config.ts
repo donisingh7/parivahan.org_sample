@@ -12,19 +12,26 @@ const nextConfig: NextConfig = {
     "@aws-sdk/client-sns",
   ],
 
-  // generateReceiptRajasthan.js is required via a static relative path in
-  // both /api/receipt/[transactionId]/route.ts and /api/payment/route.ts (the
-  // payment route now also renders the PDF before uploading it to S3), so
-  // webpack bundles it for both routes and nft automatically traces pdfkit /
-  // sharp / qrcode / moment into each function bundle.
+  // Per-state generateReceipt.js files are required via static relative paths
+  // in src/lib/states/registry.server.ts so webpack bundles every state's
+  // generator and nft automatically traces pdfkit / sharp / qrcode / moment
+  // (and all transitive deps) into each function bundle.
+  //
   // Only the binary assets accessed via process.cwd() at runtime need to be
   // listed here — nft cannot trace fs reads from runtime-computed paths.
+  // Today every state reuses the Rajasthan watermark image as a placeholder;
+  // when state-specific assets are dropped into public/Images/ they should
+  // be added to this list.
   outputFileTracingIncludes: {
     "/api/receipt/**": [
       "receipt-generator/fonts/**",
       "public/Images/Rajasthan-Transport-Department.png",
     ],
     "/api/payment/**": [
+      "receipt-generator/fonts/**",
+      "public/Images/Rajasthan-Transport-Department.png",
+    ],
+    "/api/r/**": [
       "receipt-generator/fonts/**",
       "public/Images/Rajasthan-Transport-Department.png",
     ],

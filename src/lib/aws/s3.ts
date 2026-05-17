@@ -35,9 +35,11 @@ function bucket(): string {
 }
 
 // ── Folder structure ───────────────────────────────────────────────────────
-// <portalUserId>/<MonthName>/<transactionId>.pdf
-//   e.g.  UP12345/May/TXN1ABCDXYZ.pdf
+// <stateCode>/<portalUserId>/<MonthName>/<transactionId>.pdf
+//   e.g.  RJ/UP12345/May/TXN1ABCDXYZ.pdf
 //
+// State is the primary partition so admins can navigate by state in the S3
+// console; user goes second so per-user receipts stay grouped within a state.
 // Hard-coded month names so the key is the same regardless of server timezone.
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -55,19 +57,25 @@ function sanitizeSegment(s: string): string {
  * Build the canonical S3 key for a receipt PDF.
  * Anonymous (no-login) bookings land under the "anonymous" prefix so they
  * never collide with a real portal user's folder.
+ *
+ * The state segment uses the two-letter visiting-state code ("RJ", "BR", …);
+ * unknown states fall back to "STATE" so receipts are still uploadable while
+ * the deployment catches up to a new state being added.
  */
 export function buildReceiptS3Key(opts: {
-  portalUserId: string;       // human login ID like "UP12345" — empty = anonymous
+  state:        string;        // two-letter state code ("RJ" / "BR" / …)
+  portalUserId: string;        // human login ID like "UP12345" — empty = anonymous
   paidAt:       Date | string | null | undefined;
   transactionId:string;
 }): string {
-  const userSegment = opts.portalUserId
+  const stateSegment = opts.state ? sanitizeSegment(opts.state.toUpperCase()) : "STATE";
+  const userSegment  = opts.portalUserId
     ? sanitizeSegment(opts.portalUserId)
     : "anonymous";
   const date = opts.paidAt ? new Date(opts.paidAt) : new Date();
   const month = MONTH_NAMES[Number.isNaN(date.getTime()) ? new Date().getUTCMonth() : date.getUTCMonth()];
   const txnSegment = sanitizeSegment(opts.transactionId);
-  return `${userSegment}/${month}/${txnSegment}.pdf`;
+  return `${stateSegment}/${userSegment}/${month}/${txnSegment}.pdf`;
 }
 
 /**

@@ -14,7 +14,6 @@ const serviceOptions = [
 function CheckpostContent() {
   const searchParams = useSearchParams();
   const stateCode = searchParams.get("state") ?? "";
-  const stateLabel = states.find((s) => s.value === stateCode)?.label ?? stateCode;
 
   const [service, setService] = useState("5003");
   const [submitted, setSubmitted] = useState(false);

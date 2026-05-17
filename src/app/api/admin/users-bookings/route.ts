@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import Transaction from "@/models/Transaction";
 import PortalUser from "@/models/PortalUser";
 import { requireAuth } from "@/lib/auth";
+import { getAllStateServers } from "@/lib/states/registry.server";
 
 export const runtime = "nodejs";
 
@@ -22,13 +22,64 @@ interface UserBookingRow {
   lastBookingAt:  string | null;
 }
 
+interface AggRow {
+  _id:            string;
+  bookingCount:   number;
+  totalAmount:    number;
+  successCount:   number;
+  pendingCount:   number;
+  failedCount:    number;
+  successAmount:  number;
+  firstBookingAt: Date;
+  lastBookingAt:  Date;
+}
+
+// Combine two AggRow values (used to fold per-state aggregations into a single
+// per-user row). Keeps the shape unchanged so the rest of the route is
+// state-blind.
+function mergeAgg(a: AggRow, b: AggRow): AggRow {
+  return {
+    _id:            a._id,
+    bookingCount:   a.bookingCount   + b.bookingCount,
+    totalAmount:    a.totalAmount    + b.totalAmount,
+    successCount:   a.successCount   + b.successCount,
+    pendingCount:   a.pendingCount   + b.pendingCount,
+    failedCount:    a.failedCount    + b.failedCount,
+    successAmount:  a.successAmount  + b.successAmount,
+    firstBookingAt: a.firstBookingAt < b.firstBookingAt ? a.firstBookingAt : b.firstBookingAt,
+    lastBookingAt:  a.lastBookingAt  > b.lastBookingAt  ? a.lastBookingAt  : b.lastBookingAt,
+  };
+}
+
+const GROUP_STAGE = {
+  $group: {
+    _id:            "$userIdLabel",
+    bookingCount:   { $sum: 1 },
+    totalAmount:    { $sum: "$amount" },
+    successCount:   { $sum: { $cond: [{ $eq: ["$status", "SUCCESS"] }, 1, 0] } },
+    pendingCount:   { $sum: { $cond: [{ $eq: ["$status", "PENDING"] }, 1, 0] } },
+    failedCount:    { $sum: { $cond: [{ $eq: ["$status", "FAILED"]  }, 1, 0] } },
+    successAmount:  { $sum: { $cond: [{ $eq: ["$status", "SUCCESS"] }, "$amount", 0] } },
+    firstBookingAt: { $min: "$createdAt" },
+    lastBookingAt:  { $max: "$createdAt" },
+  },
+};
+
+const ANON_GROUP_STAGE = {
+  $group: {
+    ...GROUP_STAGE.$group,
+    _id: null,
+  },
+};
+
 /**
  * GET /api/admin/users-bookings
  *
- * Per-portal-user booking breakdown for the admin dashboard. We start from the
- * full PortalUser collection (so users with zero bookings still appear) and
- * left-join the aggregated booking stats keyed on `userIdLabel` (the human
- * login ID we copy onto every Transaction at /api/payment time).
+ * Per-portal-user booking breakdown for the admin dashboard. Aggregates the
+ * same pipeline against every per-state collection in parallel and folds the
+ * partial results back into a single per-user row, so a portal user who paid
+ * tax in three different states still shows up as one entry with the totals
+ * summed.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -43,64 +94,52 @@ export async function GET(req: NextRequest) {
       .sort({ name: 1 })
       .lean();
 
-    // ── 2. Aggregate bookings grouped by the login ID we stored on the txn ─
-    // We group on `userIdLabel` because that matches PortalUser.userId 1-to-1
-    // and survives even if the Mongo _id shape changes in legacy data.
-    type Agg = {
-      _id:            string;
-      bookingCount:   number;
-      totalAmount:    number;
-      successCount:   number;
-      pendingCount:   number;
-      failedCount:    number;
-      successAmount:  number;
-      firstBookingAt: Date;
-      lastBookingAt:  Date;
-    };
-    const agg = (await Transaction.aggregate([
-      { $match: { userIdLabel: { $ne: "" } } },
-      {
-        $group: {
-          _id:            "$userIdLabel",
-          bookingCount:   { $sum: 1 },
-          totalAmount:    { $sum: "$amount" },
-          successCount:   { $sum: { $cond: [{ $eq: ["$status", "SUCCESS"] }, 1, 0] } },
-          pendingCount:   { $sum: { $cond: [{ $eq: ["$status", "PENDING"] }, 1, 0] } },
-          failedCount:    { $sum: { $cond: [{ $eq: ["$status", "FAILED"]  }, 1, 0] } },
-          successAmount:  {
-            $sum: { $cond: [{ $eq: ["$status", "SUCCESS"] }, "$amount", 0] },
-          },
-          firstBookingAt: { $min: "$createdAt" },
-          lastBookingAt:  { $max: "$createdAt" },
-        },
-      },
-    ])) as Agg[];
+    // ── 2. Aggregate bookings per user across every state collection ────
+    const servers = getAllStateServers();
+    const perStateAgg = await Promise.all(
+      servers.map((s) =>
+        s.getModel().aggregate([
+          { $match: { userIdLabel: { $ne: "" } } },
+          GROUP_STAGE,
+        ]) as Promise<AggRow[]>
+      )
+    );
 
-    // Index aggregation rows by login ID for O(1) merge with the user list.
-    const aggByUser = new Map<string, Agg>();
-    for (const row of agg) aggByUser.set(row._id, row);
+    // Fold all per-state results into a single map keyed by login ID.
+    const aggByUser = new Map<string, AggRow>();
+    for (const list of perStateAgg) {
+      for (const row of list) {
+        const existing = aggByUser.get(row._id);
+        aggByUser.set(row._id, existing ? mergeAgg(existing, row) : row);
+      }
+    }
 
     // ── 3. Anonymous bookings — payments where no portal user was logged in.
-    // Surfacing this lets admins notice a misconfiguration where the SBI step
-    // is somehow being reached without authentication.
-    const [anonAgg] = (await Transaction.aggregate([
-      { $match: { userIdLabel: "" } },
-      {
-        $group: {
-          _id: null,
-          bookingCount:   { $sum: 1 },
-          totalAmount:    { $sum: "$amount" },
-          successCount:   { $sum: { $cond: [{ $eq: ["$status", "SUCCESS"] }, 1, 0] } },
-          pendingCount:   { $sum: { $cond: [{ $eq: ["$status", "PENDING"] }, 1, 0] } },
-          failedCount:    { $sum: { $cond: [{ $eq: ["$status", "FAILED"]  }, 1, 0] } },
-          successAmount:  {
-            $sum: { $cond: [{ $eq: ["$status", "SUCCESS"] }, "$amount", 0] },
-          },
-          firstBookingAt: { $min: "$createdAt" },
-          lastBookingAt:  { $max: "$createdAt" },
-        },
-      },
-    ])) as (Agg | undefined)[];
+    const perStateAnon = await Promise.all(
+      servers.map((s) =>
+        s.getModel().aggregate([
+          { $match: { userIdLabel: "" } },
+          ANON_GROUP_STAGE,
+        ]) as Promise<AggRow[]>
+      )
+    );
+    let anonAgg: AggRow | null = null;
+    for (const list of perStateAnon) {
+      for (const row of list) {
+        const normalized: AggRow = {
+          _id:            "",
+          bookingCount:   row.bookingCount,
+          totalAmount:    row.totalAmount,
+          successCount:   row.successCount,
+          pendingCount:   row.pendingCount,
+          failedCount:    row.failedCount,
+          successAmount:  row.successAmount,
+          firstBookingAt: row.firstBookingAt,
+          lastBookingAt:  row.lastBookingAt,
+        };
+        anonAgg = anonAgg ? mergeAgg(anonAgg, normalized) : normalized;
+      }
+    }
 
     // ── 4. Stitch portal users + their booking stats together ───────────
     const rows: UserBookingRow[] = users.map((u) => {
@@ -111,11 +150,11 @@ export async function GET(req: NextRequest) {
         mobileNo:       u.mobileNo ?? "",
         email:          u.email ?? "",
         isActive:       u.isActive,
-        bookingCount:   a?.bookingCount ?? 0,
-        successCount:   a?.successCount ?? 0,
-        pendingCount:   a?.pendingCount ?? 0,
-        failedCount:    a?.failedCount  ?? 0,
-        totalAmount:    a?.totalAmount  ?? 0,
+        bookingCount:   a?.bookingCount  ?? 0,
+        successCount:   a?.successCount  ?? 0,
+        pendingCount:   a?.pendingCount  ?? 0,
+        failedCount:    a?.failedCount   ?? 0,
+        totalAmount:    a?.totalAmount   ?? 0,
         successAmount:  a?.successAmount ?? 0,
         firstBookingAt: a?.firstBookingAt ? new Date(a.firstBookingAt).toISOString() : null,
         lastBookingAt:  a?.lastBookingAt  ? new Date(a.lastBookingAt).toISOString()  : null,
@@ -127,10 +166,10 @@ export async function GET(req: NextRequest) {
 
     // ── 5. Top-level summary across every portal-user booking ───────────
     const summary = {
-      totalUsers:       users.length,
-      activeUserCount:  rows.filter((r) => r.bookingCount > 0).length,
-      totalBookings:    rows.reduce((s, r) => s + r.bookingCount, 0),
-      totalAmount:      rows.reduce((s, r) => s + r.totalAmount,  0),
+      totalUsers:         users.length,
+      activeUserCount:    rows.filter((r) => r.bookingCount > 0).length,
+      totalBookings:      rows.reduce((s, r) => s + r.bookingCount, 0),
+      totalAmount:        rows.reduce((s, r) => s + r.totalAmount,  0),
       totalSuccessAmount: rows.reduce((s, r) => s + r.successAmount, 0),
     };
 
@@ -157,8 +196,8 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Server error";
-    const status = msg.startsWith("Unauthorized") ? 401 : 500;
+    const httpStatus = msg.startsWith("Unauthorized") ? 401 : 500;
     console.error("GET /api/admin/users-bookings error:", err);
-    return NextResponse.json({ success: false, message: msg }, { status });
+    return NextResponse.json({ success: false, message: msg }, { status: httpStatus });
   }
 }
