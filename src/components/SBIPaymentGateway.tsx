@@ -326,20 +326,29 @@ function GatewayFooter() {
 
 function generateReceiptNo(stateCode?: string): string {
   if (stateCode === "HR") {
-    // HRT + 13-digit timestamp = unique per millisecond, no random needed
     return `HRT${Date.now()}`;
   }
   const d    = new Date();
   const yy   = String(d.getFullYear()).slice(2);
   const mm   = String(d.getMonth() + 1).padStart(2, "0");
   const dd   = String(d.getDate()).padStart(2, "0");
+  if (stateCode === "UP") {
+    const rand = Math.floor(Math.random() * 9000000 + 1000000);
+    return `UPR${yy}${mm}${dd}${rand}`;
+  }
   const rand = Math.floor(Math.random() * 9000000 + 1000000);
   return `RJT${yy}${mm}${dd}${rand}`;
 }
 
 function generateHRBankRef(): string {
-  // 9-digit random number: 100000000 – 999999999
   return String(Math.floor(Math.random() * 900000000 + 100000000));
+}
+
+function generateUPBankRef(): string {
+  // Format: <1 digit><2 caps><1 digit><3 caps><1 digit><2 caps>
+  const d = () => String(Math.floor(Math.random() * 10));
+  const c = () => String.fromCharCode(65 + Math.floor(Math.random() * 26));
+  return `${d()}${c()}${c()}${d()}${c()}${c()}${c()}${d()}${c()}${c()}`;
 }
 
 // Random transaction id generated up-front on the client so the success
@@ -380,7 +389,11 @@ function SBIContent() {
   const [txnId,          setTxnId]          = useState("");
   const [paidAt,         setPaidAt]         = useState<Date>(new Date());
   useEffect(() => {
-    setClientOrderRef(stateCode === "HR" ? generateHRBankRef() : makeOrderRef(vehicleNo || "VH"));
+    let orderRef: string;
+    if      (stateCode === "HR") orderRef = generateHRBankRef();
+    else if (stateCode === "UP") orderRef = generateUPBankRef();
+    else                         orderRef = makeOrderRef(vehicleNo || "VH");
+    setClientOrderRef(orderRef);
     setReceiptNo(generateReceiptNo(stateCode));
     setTxnId(generateTransactionId());
     setPaidAt(new Date());

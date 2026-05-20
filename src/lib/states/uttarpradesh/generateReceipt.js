@@ -1,298 +1,299 @@
 /**
- * Uttar Pradesh PDF receipt generator. Each state has its own copy of this file
- * under src/lib/states/<state>/generateReceipt.js so the per-state design is
- * editable in isolation. The state-name strings ("GOVERNMENT OF UTTAR PRADESH",
- * watermark image path) are inlined here on purpose — duplicating them per
- * state makes design-tweaks safe.
+ * Uttar Pradesh PDF receipt generator.
+ * Returns a Buffer — does NOT write to disk.
+ * Layout matches UttarPradeshReceiptTemplate.tsx exactly (two pages).
  */
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const PDFDocument = require('pdfkit');
-const QRCode = require('qrcode');
-const moment = require('moment');
-const path = require('path');
-const sharp = require('sharp');
+const QRCode      = require('qrcode');
+const moment      = require('moment');
+const fs          = require('fs');
+const path        = require('path');
+const sharp       = require('sharp');
 
-// State-specific constants — each state's generateReceipt.js inlines its own.
-const STATE_GOV_LABEL    = 'GOVERNMENT OF UTTAR PRADESH';
-const STATE_DEPT_LABEL   = 'Department of Transport';
-const STATE_RECEIPT_TITLE = 'Checkpost Tax e-Receipt';
-const STATE_WATERMARK_FILE = 'Rajasthan-Transport-Department.png';
+const STATE_LOGO_FILE = 'UP_logo.png';
 
-// Converts webp/png → greyscale PNG buffer for the watermark.
-async function loadGreyscaleImage(imagePath) {
-  const buffer = await sharp(imagePath)
-    .grayscale()
-    .png()
-    .blur(2)
-    .toBuffer();
-  return buffer;
+const TERMS = [
+  'This is a computer generated printout and no signature is required.',
+  'Should not carry unlawful/unaccompanied goods.',
+  'If any false information/discrepancies are found at later, necessary action will be taken against the vehicle owner/driver.',
+];
+
+async function loadImage(imagePath) {
+  try {
+    if (!fs.existsSync(imagePath)) return null;
+    return await sharp(imagePath).png().toBuffer();
+  } catch { return null; }
 }
 
 function numberToWords(num) {
-  const ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
-    'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN',
-    'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
-  const tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
-
+  const ones = ['','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE',
+    'TEN','ELEVEN','TWELVE','THIRTEEN','FOURTEEN','FIFTEEN','SIXTEEN',
+    'SEVENTEEN','EIGHTEEN','NINETEEN'];
+  const tens = ['','','TWENTY','THIRTY','FORTY','FIFTY','SIXTY','SEVENTY','EIGHTY','NINETY'];
   if (num === 0) return 'ZERO';
-
   function convert(n) {
-    if (n < 20) return ones[n];
-    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
-    if (n < 1000) return ones[Math.floor(n / 100)] + ' HUNDRED' + (n % 100 ? ' AND ' + convert(n % 100) : '');
-    if (n < 100000) return convert(Math.floor(n / 1000)) + ' THOUSAND' + (n % 1000 ? ' ' + convert(n % 1000) : '');
-    return convert(Math.floor(n / 100000)) + ' LAKH' + (n % 100000 ? ' ' + convert(n % 100000) : '');
+    if (n < 20)     return ones[n];
+    if (n < 100)    return tens[Math.floor(n/10)] + (n%10 ? ' '+ones[n%10] : '');
+    if (n < 1000)   return ones[Math.floor(n/100)] + ' HUNDRED' + (n%100 ? ' AND '+convert(n%100) : '');
+    if (n < 100000) return convert(Math.floor(n/1000)) + ' THOUSAND' + (n%1000 ? ' '+convert(n%1000) : '');
+    return convert(Math.floor(n/100000)) + ' LAKH' + (n%100000 ? ' '+convert(n%100000) : '');
   }
-
   return convert(num);
 }
 
 async function generateQRCode(text) {
   const dataUrl = await QRCode.toDataURL(text, {
-    width: 120,
-    margin: 1,
-    color: { dark: '#000000', light: '#ffffff' }
+    width: 138, margin: 1,
+    color: { dark: '#000000', light: '#ffffff' },
   });
   const base64 = dataUrl.replace(/^data:image\/png;base64,/, '');
   return Buffer.from(base64, 'base64');
 }
 
-/**
- * Generates a Uttar Pradesh checkpost tax receipt PDF and returns it as a Buffer.
- * @param {Object} data - Booking/payment data
- * @returns {Promise<Buffer>} PDF buffer
- */
+function drawTextWatermark(doc, watermarkText, pageWidth) {
+  doc.save();
+  doc.opacity(0.5);
+  doc.fontSize(14.5).fillColor('#aaaaaa').font('Helvetica');
+  const tileStep = 20;
+  const startY   = 25;
+  const endY     = 650;
+  const startX   = 25;
+  for (let row = 0; ; row++) {
+    const rowY = startY + row * tileStep;
+    if (rowY > endY) break;
+    const lineText = `${watermarkText}  `.repeat(2);
+    doc.text(lineText, startX, rowY, { width: pageWidth, lineBreak: false });
+  }
+  doc.restore();
+}
+
+async function drawImageWatermark(doc, imagePath, pageWidth, pageHeight) {
+  const wmBuffer = await loadImage(imagePath);
+  if (!wmBuffer) return;
+  const wmWidth  = 260;
+  const wmHeight = 280;
+  const wmX      = ((pageWidth - wmWidth) / 2) + 120;
+  const wmY      = (pageHeight - wmHeight) / 2 - 80;
+  doc.save();
+  doc.opacity(0.42);
+  doc.image(wmBuffer, wmX, wmY, { width: wmWidth, height: wmHeight });
+  doc.restore();
+}
+
 async function generateReceipt(data) {
-  const now = moment(data.paymentDate || new Date());
-  const formattedDate = now.format('DD-MMM-YYYY hh:mm A').toUpperCase();
+  const logoPath = path.join(process.cwd(), 'public', 'Images', STATE_LOGO_FILE);
+
+  const now            = moment(data.paymentDate || new Date());
+  const printedOn      = now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
   const registrationNo = data.registrationNo || 'XX00X0000';
-  const watermarkText = `${registrationNo} / ${formattedDate}`;
+  const watermarkText  = `${registrationNo} ${now.format('DD-MMM-YYYY hh:mm A')}`;
 
-  const grandTotal = (data.taxItems || []).reduce((sum, item) => sum + item.total, 0);
-  const grandTotalWords = numberToWords(grandTotal);
+  const grandTotal      = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
+  const grandTotalWords = (data.amountInWords || numberToWords(grandTotal)).toUpperCase();
 
-  const qrUrl = data.qrUrl || `https://kms.parivahan.gov.in/verify?receipt=${data.receiptNo}`;
+  const qrUrl    = data.qrUrl || `https://kms.parivahan.gov.in/verify?receipt=${data.receiptNo}`;
   const qrBuffer = await generateQRCode(qrUrl);
 
-  const doc = new PDFDocument({
-    size: 'A4',
-    margin: 0,
-    info: {
-      Title: STATE_RECEIPT_TITLE,
-      Author: STATE_DEPT_LABEL,
-      Subject: `Receipt - ${data.receiptNo}`
-    }
-  });
+  const doc = new PDFDocument({ size: 'A4', margin: 0, autoFirstPage: false });
   doc.registerFont('Roboto',      path.join(process.cwd(), 'receipt-generator', 'fonts', 'Roboto-Regular.ttf'));
   doc.registerFont('Roboto-Bold', path.join(process.cwd(), 'receipt-generator', 'fonts', 'Roboto-Bold.ttf'));
 
-  const pageWidth = 595.28;
-  const pageHeight = 841.89;
-  const margin = 30;
+  const pageWidth    = 595.28;
+  const pageHeight   = 841.89;
+  const margin       = 30;
   const contentWidth = pageWidth - margin * 2;
 
   const chunks = [];
-  doc.on('data', chunk => chunks.push(chunk));
+  doc.on('data', (chunk) => chunks.push(chunk));
   const pdfPromise = new Promise((resolve, reject) => {
     doc.on('end',   () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
   });
 
-  // ===== 1. IMAGE WATERMARK ============================================
-  const imagePath = path.join(process.cwd(), 'public', 'Images', STATE_WATERMARK_FILE);
-  const wmBuffer = await loadGreyscaleImage(imagePath);
+  // =========================================================
+  // PAGE 1
+  // =========================================================
+  doc.addPage();
 
-  const wmWidth = 220;
-  const wmHeight = 280;
+  await drawImageWatermark(doc, logoPath, pageWidth, pageHeight);
+  drawTextWatermark(doc, watermarkText, pageWidth);
 
-  const wmX = (pageWidth - wmWidth) / 2;
-  const wmY = (pageHeight - wmHeight) / 2;
+  // ── Printed on (top right) ──
+  let y = margin - 10;
+  doc.fontSize(11).font('Helvetica').fillColor('#000000');
+  doc.text(`Printed on : ${printedOn}`, margin, y, { width: contentWidth, align: 'right' });
 
-  doc.save();
-  doc.opacity(0.7);
-  doc.image(wmBuffer, wmX-10, wmY - 230, {
-    width: wmWidth,
-    height: wmHeight,
-  });
-  doc.restore();
+  y += 20;
 
-  doc.save();
-  doc.opacity(0.5);
-  doc.fontSize(15).fillColor('#cccccc').font('Helvetica');
-
-  const tileRows = 22;
-  const tileStep = 20;
-  for (let row = 0; row < tileRows; row++) {
-    const rowY = (row * tileStep)+20;
-    const lineText = `${watermarkText},  `.repeat(2);
-    doc.text(lineText, 30, rowY, { width: pageWidth, lineBreak: false });
+  // ── Logo (left) ──
+  const emblemX = margin + 5;
+  const emblemY = y;
+  if (fs.existsSync(logoPath)) {
+    const logoX = emblemX + 5;
+    const logoY = emblemY + 20;
+    const logoW = 100;
+    const logoH = 100;
+    doc.rect(logoX - 5, logoY - 5, logoW + 10, logoH + 10).fill('#ffffff');
+    doc.image(logoPath, logoX, logoY, { width: logoW, height: logoH });
+  } else {
+    doc.save();
+    doc.circle(emblemX + 35, emblemY + 35, 35).fillAndStroke('#f5f5f5', '#cccccc');
+    doc.fontSize(6).fillColor('#999999').font('Helvetica-Bold');
+    doc.text('GOVT. OF\nUTTAR PRADESH', emblemX + 5, emblemY + 28, { width: 60, align: 'center' });
+    doc.restore();
   }
-  doc.restore();
 
-  // ===== 2. HEADER SECTION =============================================
-  let y = 15;
-
-  doc.fontSize(10).fillColor('#000000').font('Helvetica');
-  doc.text('Receipt Printing Date :', margin, y);
-  doc.text(formattedDate, margin, y + 11);
-
-  const titleX = margin + 80;
-  const titleWidth = contentWidth - 170;
-
+  // ── Titles (center) ──
+  const titleX     = margin + 55;
+  const titleWidth = contentWidth - 160;
   doc.fontSize(13).font('Helvetica-Bold').fillColor('#000000');
-  doc.text(STATE_GOV_LABEL, titleX, y, { width: titleWidth, align: 'center', underline: true });
+  doc.text('GOVERNMENT OF UTTAR PRADESH', titleX, y + 55, { width: titleWidth, align: 'center', underline: true });
+  doc.fontSize(11).font('Helvetica');
+  doc.text('Department of Transport', titleX, y + 73, { width: titleWidth, align: 'center' });
+  doc.fontSize(10).font('Helvetica');
+  doc.text('Checkpost Tax e-Receipt', titleX, y + 88, { width: titleWidth, align: 'center' });
 
-  doc.fontSize(14).font('Helvetica');
-  doc.text(STATE_DEPT_LABEL, titleX, y + 13, { width: titleWidth, align: 'center' });
+  // ── QR code (right) ──
+  doc.rect(pageWidth - margin - 172, y, 138, 138).fill('#ffffff');
+  doc.image(qrBuffer, pageWidth - margin - 172, y, { width: 138, height: 138 });
 
-  doc.fontSize(12).font('Helvetica');
-  doc.text(STATE_RECEIPT_TITLE, titleX, y + 27, { width: titleWidth, align: 'center' });
+  y += 88 + 95;
 
-  doc.image(qrBuffer, pageWidth - margin - 85, y, { width: 80, height: 80 });
-
-  y += 48;
-
-  // ===== 4. FIELDS (two-column layout) =================================
-  const col1X = margin;
-  const col2X = pageWidth / 2 + 35;
-  const colWidth = contentWidth / 2 - 10;  // eslint-disable-line no-unused-vars
-  const fieldFontSize = 9.5;
-  const fieldLineHeight = 25;
-  const labelWidth = 80;
-  const colonWidth = 10;
+  // ── Field drawing helper ──
+  const labelWidth    = 95;
+  const colonWidth    = 8;
+  const fieldFontSize = 13.5;
+  const col1X         = margin;
+  const col2X         = pageWidth / 2 + 10;
+  const maxValueWidth = 155;
 
   function drawField(label, value, x, yPos) {
-    const maxValueWidth = 160;
     doc.fontSize(fieldFontSize).font('Helvetica').fillColor('#000000');
-    doc.text(label, x, yPos, { lineBreak: false, width: labelWidth });
-
-    doc.fontSize(fieldFontSize).font('Helvetica').fillColor('#000000');
+    doc.text(label, x, yPos, { lineBreak: true, width: labelWidth });
     doc.text(':', x + labelWidth, yPos, { lineBreak: false, width: colonWidth });
-
-    doc.fontSize(fieldFontSize).font('Helvetica').fillColor('#000000');
-    doc.text(value || '-', x + labelWidth + colonWidth, yPos, {
-      lineBreak: true,
-      width: maxValueWidth,
-    });
+    doc.text(value || '-', x + labelWidth + colonWidth, yPos, { lineBreak: true, width: maxValueWidth });
   }
 
-  // Row 1: Registration No. (bold) + Receipt No. — UP inspect 5996-6000.
-  doc.fontSize(fieldFontSize).font('Helvetica').fillColor('#000000');
-  doc.text('Registration No.', col1X, y, { lineBreak: false, width: labelWidth });
-  doc.text(':', col1X + labelWidth, y, { lineBreak: false, width: colonWidth });
-  doc.font('Helvetica-Bold');
-  doc.text(data.registrationNo || '-', col1X + labelWidth + colonWidth, y, { lineBreak: false });
-  doc.font('Helvetica');
-  drawField('Receipt No.', data.receiptNo || '-', col2X, y);
-  y += fieldLineHeight;
+  const fh  = 28;
+  const fh2 = fh * 1.5;
+  const fh3 = fh * 2;
 
-  // UP inspect HTML rows 6002-6080 — eleven additional rows.
-  drawField('Payment Initialization Date', data.paymentInitDate || formattedDate, col1X, y);
-  drawField('Owner Name',                  data.ownerName || '-',                col2X, y);
-  y += fieldLineHeight;
+  drawField('Registration\nNo.',             data.registrationNo    || '-', col1X, y);
+  drawField('Receipt No.',                   data.receiptNo         || '-', col2X, y);
+  y += fh * 1.6;
 
-  drawField('Chassis No.', data.chassisNo || '-', col1X, y);
-  drawField('Tax Mode',    data.taxMode   || '-', col2X, y);
-  y += fieldLineHeight;
+  drawField('Payment\nInitialization\nDate', data.paymentInitDate   || '-', col1X, y);
+  drawField('Owner Name',                    data.ownerName         || '-', col2X, y);
+  y += fh3;
 
-  drawField('Vehilce Type',  data.vehicleType  || '-', col1X, y);
-  drawField('Vehicle Class', data.vehicleClass || '-', col2X, y);
-  y += fieldLineHeight;
+  drawField('Chassis No.',                   data.chassisNo         || '-', col1X, y);
+  drawField('Tax Mode',                      data.taxMode           || '-', col2X, y);
+  y += fh;
 
-  drawField('Vehicle Category', data.vehicleCategory || '-', col1X, y);
-  drawField('Mobile No.',       data.mobileNo        || '-', col2X, y);
-  y += fieldLineHeight;
+  drawField('Vehilce Type',                  data.vehicleType       || '-', col1X, y);
+  drawField('Vehicle Class',                 data.vehicleClass      || '-', col2X, y);
+  y += fh3;
 
-  drawField('Checkpost Name',   data.checkpostName || '-',          col1X, y);
-  drawField('Seating Capacity', String(data.seatingCapacity ?? 0),  col2X, y);
-  y += fieldLineHeight;
+  drawField('Vehicle\nCategory',             data.vehicleCategory   || '-', col1X, y);
+  drawField('Mobile No.',                    data.mobileNo          || '-', col2X, y);
+  y += fh2;
 
-  drawField('Sleeper Cap.',  String(data.sleeperCap ?? 0), col1X, y);
-  drawField('Bank Ref. No.', data.bankRefNo || '-',        col2X, y);
-  y += fieldLineHeight;
+  drawField('Checkpost\nName',               data.checkpostName     || '-', col1X, y);
+  drawField('Seating\nCapacity',             String(data.seatingCapacity ?? ''), col2X, y);
+  y += fh2;
 
-  drawField('Payment Mode',  data.paymentMode  || 'ONLINE', col1X, y);
-  drawField('Permit Number', data.permitNumber || '-',      col2X, y);
-  y += fieldLineHeight;
+  drawField('Sleeper Cap.',                  String(data.sleeperCap ?? 0), col1X, y);
+  drawField('Bank Ref. No.',                 data.bankRefNo         || '-', col2X, y);
+  y += fh;
 
-  drawField('Permit Validity',  data.permitValidityText || '-', col1X, y);
-  drawField('Fitness Validity', data.fitnessValidity    || '-', col2X, y);
-  y += fieldLineHeight;
+  drawField('Payment\nMode',                 data.paymentMode       || 'ONLINE', col1X, y);
+  drawField('Permit\nNumber',                data.permitNumber      || '0000',   col2X, y);
+  y += fh2;
 
-  drawField('Insurance Validity', data.insuranceValidity || '-', col1X, y);
-  drawField('PUCC Validity',      data.puccValidity      || '-', col2X, y);
-  y += fieldLineHeight;
+  drawField('Permit\nValidity',              data.permitValidityText || '-', col1X, y);
+  drawField('Fitness\nValidity',             data.fitnessValidity   || '-', col2X, y);
+  y += fh2;
 
-  drawField('Service Type', data.serviceType || 'NOT APPLICABLE', col1X, y);
-  drawField('Permit Type',  data.permitType  || 'NOT APPLICABLE', col2X, y);
-  y += fieldLineHeight;
+  drawField('Insurance\nValidity',           data.insuranceValidity || '-', col1X, y);
+  drawField('PUCC Validity',                 data.puccValidity      || '-', col2X, y);
+  y += fh2;
 
-  drawField('Payment Confirmation Date', formattedDate, col1X, y);
-  y += fieldLineHeight * 1.5;
+  drawField('Service Type',                  data.serviceType       || '-', col1X, y);
+  drawField('Permit Type',                   data.permitType        || 'NOT APPLICABLE', col2X, y);
+  y += fh;
 
-  // ===== 5. TAX TABLE ==================================================
-  doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(1).stroke('#000000');
-  y += 4;
+  drawField('Payment\nConfirmation\nDate',   data.paymentDateText   || '-', col1X, y);
+  y += fh3 + 16;
 
+  // ── Tax table ──
   const col = {
     particular: margin,
-    fees: 350,
-    fine: 440,
-    total: 510,
+    fees:       360,
+    fine:       440,
+    total:      510,
   };
+  const tableStartY  = y;
+  const headerHeight = 30;
+  const rowHeight    = 35;
+  const borderColor  = '#87CEEB';
 
-  doc.fontSize(10.5).font('Helvetica-Bold').fillColor('#000000');
-  doc.text('Particular', col.particular, y);
-  doc.text('Fees/Tax', col.fees, y);
-  doc.text('Fine', col.fine, y);
-  doc.text('Total', col.total, y);
-  y += 13;
+  doc.rect(margin - 2, y, contentWidth + 4, headerHeight).lineWidth(0.8).stroke(borderColor);
+  doc.fontSize(11.5).font('Helvetica-Bold').fillColor('#000000');
+  doc.text('Tax/Fee Particular', col.particular + 4, y + 9, { width: col.fees - col.particular - 10 });
+  doc.text('Tax/Fees',           col.fees,            y + 9, { width: 60 });
+  doc.text('Fine',               col.fine,            y + 9, { width: 40 });
+  doc.text('Total',              col.total,           y + 9, { width: 50 });
+  y += headerHeight;
 
-  doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(0.5).stroke('#000000');
-  y += 5;
+  doc.moveTo(margin - 2, y).lineTo(pageWidth - margin + 2, y).lineWidth(0.5).stroke(borderColor);
 
-  doc.font('Helvetica').fontSize(10.5);
-  const taxItems = data.taxItems || [];
-  for (const item of taxItems) {
-    doc.text(item.particular, col.particular, y, { width: col.fees - col.particular - 10 });
-    doc.text(String(item.fees ?? 0), col.fees, y);
-    doc.text(String(item.fine ?? 0), col.fine, y);
-    doc.text(String(item.total ?? 0), col.total, y);
-    y += 14;
+  doc.font('Helvetica-Bold').fontSize(11.5).fillColor('#000000');
+  for (const item of (data.taxItems || [])) {
+    doc.text(String(item.particular), col.particular + 4, y + 10, { width: col.fees - col.particular - 10 });
+    doc.text(String(item.fees  ?? 0), col.fees,            y + 10, { width: 60 });
+    doc.text(String(item.fine  ?? 0), col.fine,            y + 10, { width: 40 });
+    doc.text(String(item.total ?? 0), col.total,           y + 10, { width: 50 });
+    y += rowHeight;
   }
 
-  doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(0.5).stroke('#000000');
-  y += 18;
+  doc.rect(margin - 2, tableStartY, contentWidth + 4, y - tableStartY).lineWidth(0.8).stroke(borderColor);
+  doc.moveTo(col.fees  - 5, tableStartY).lineTo(col.fees  - 5, y).lineWidth(0.5).stroke(borderColor);
+  doc.moveTo(col.fine  - 5, tableStartY).lineTo(col.fine  - 5, y).lineWidth(0.5).stroke(borderColor);
+  doc.moveTo(col.total - 5, tableStartY).lineTo(col.total - 5, y).lineWidth(0.5).stroke(borderColor);
 
-  doc.fontSize(9).font('Roboto-Bold');
-  doc.text(
-    `Grand Total : ₹ ${grandTotal}  ( ${grandTotalWords} ONLY/-)`,
-    margin, y
-  );
-  y += 18;
+  // =========================================================
+  // PAGE 2
+  // =========================================================
+  doc.addPage();
 
-  // ===== 6. NOTES (UP inspect HTML lines 6148-6188) ====================
-  doc.fontSize(10.5).font('Helvetica-Bold').fillColor('#000000');
-  doc.text('Note :', margin, y);
-  y += 14;
-  doc.text('Terms and Conditions:', margin, y);
-  y += 14;
+  let y2 = margin + 10;
 
-  doc.font('Helvetica').fontSize(10);
-  doc.text('1. This is a computer generated printout and no signature is required.', margin, y);
-  y += 13;
-  doc.text('2. Should not carry unlawful/unaccompanied goods.', margin, y);
-  y += 13;
-  doc.text(
-    '3. If any false information/discrepancies are found at later, necessary action will be taken against the vehicle owner/driver.',
-    margin, y, { width: contentWidth }
-  );
-  y += 26;
+  doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000');
+  doc.text(`Grand Total : Rs. ${grandTotal}/- ${grandTotalWords} Rupees Only`, margin, y2);
+  y2 += 25;
 
-  doc.font('Helvetica-Bold').fontSize(13);
-  doc.text('Scan the QR code for genuinity of the receipt.', margin, y);
+  doc.moveTo(margin, y2).lineTo(pageWidth - margin, y2).lineWidth(0.5).stroke('#000000');
+  y2 += 15;
 
-  // ===== 7. FINALIZE ===================================================
+  doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000');
+  doc.text('Note:', margin, y2);
+  y2 += 16;
+
+  doc.text('Terms and Conditions:', margin, y2);
+  y2 += 16;
+
+  for (let i = 0; i < TERMS.length; i++) {
+    doc.fontSize(12).font('Helvetica').fillColor('#000000');
+    doc.text(`${i + 1}. ${TERMS[i]}`, margin, y2, { width: contentWidth });
+    y2 += 22;
+  }
+
+  y2 += 20;
+  doc.fontSize(18).font('Helvetica-Bold').fillColor('#000000');
+  doc.text('Scan the QR code for genuinity of the receipt.', margin, y2, { width: contentWidth });
+
   doc.end();
   return pdfPromise;
 }

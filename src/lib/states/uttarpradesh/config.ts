@@ -13,7 +13,7 @@ export const uttarPradeshConfig: StateConfig = {
   govLabel:       "GOVERNMENT OF UTTAR PRADESH",
   deptLabel:      "Department of Transport",
   receiptTitle:   "Checkpost Tax e-Receipt",
-  watermarkImage: "/Images/Rajasthan-Transport-Department.png",
+  watermarkImage: "/Images/UP_logo.png",
   themeColor:     "#5d3a8e",
   collection:     "uttar_pradesh_transactions",
 };

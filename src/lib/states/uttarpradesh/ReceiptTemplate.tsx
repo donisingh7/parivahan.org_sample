@@ -3,25 +3,28 @@
 import type { ReceiptData } from "../types";
 import { uttarPradeshConfig } from "./config";
 
-// ── Watermark (matches the tiled vehicle/date overlay in the PDF) ───────────
+const TERMS = [
+  'This is a computer generated printout and no signature is required.',
+  'Should not carry unlawful/unaccompanied goods.',
+  'If any false information/discrepancies are found at later, necessary action will be taken against the vehicle owner/driver.',
+];
 
+// ── Text watermark (tiled) ─────────────────────────────────────────────────
 function Watermark({ text }: { text: string }) {
-  const items = Array.from({ length: 80 }, (_, i) => i);
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
-      {items.map((i) => (
+      {Array.from({ length: 80 }, (_, i) => (
         <span
           key={i}
           style={{
-            position: "absolute",
-            top:  `${Math.floor(i / 8) * 55}px`,
-            left: `${(i % 8) * 155 - 60}px`,
-            transform: "rotate(-30deg)",
-            fontSize: "10px",
+            position:   "absolute",
+            top:        `${Math.floor(i / 8) * 20}px`,
+            left:       `${(i % 8) * 170}px`,
+            fontSize:   "14.5px",
             fontWeight: 700,
             whiteSpace: "nowrap",
-            color: "rgba(0,0,0,0.09)",
-            fontFamily: "Arial, sans-serif",
+            color:      "rgba(170,170,170,0.5)",
+            fontFamily: "Helvetica, Arial, sans-serif",
           }}
         >
           {text}
@@ -31,315 +34,235 @@ function Watermark({ text }: { text: string }) {
   );
 }
 
-// ── Center emblem watermark (matches the greyscale image in the PDF) ────────
-
+// ── Image watermark (center-right offset, matches PDF) ─────────────────────
 function EmblemWatermark() {
   return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        paddingTop: "120px",
-        pointerEvents: "none",
-        zIndex: 0,
-        opacity: 0.08,
-      }}
-    >
+    <div style={{
+      position:      "absolute",
+      top:           "50%",
+      left:          "50%",
+      transform:     "translate(-50%, -50%) translateX(60px) translateY(-80px)",
+      pointerEvents: "none",
+      zIndex:        0,
+      opacity:       0.42,
+    }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={uttarPradeshConfig.watermarkImage}
         alt=""
-        style={{
-          width: "260px",
-          height: "auto",
-          filter: "grayscale(100%)",
-        }}
+        style={{ width: "260px", height: "280px", objectFit: "contain" }}
         onError={(e) => { e.currentTarget.style.display = "none"; }}
       />
     </div>
   );
 }
 
-// ── QR placeholder (replaced by a real QR via the PDF; React side keeps a
-//    visual stand-in until the user downloads the PDF) ─────────────────────
-
+// ── QR placeholder (138×138 same as PDF QR) ────────────────────────────────
 function QRPlaceholder({ value }: { value: string }) {
   return (
-    <div
-      style={{
-        width: 80,
-        height: 80,
-        border: "2px solid #000",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "7px",
-        textAlign: "center",
-        padding: "4px",
-        background: "#fff",
-        flexShrink: 0,
-      }}
-    >
-      <svg width="64" height="64" viewBox="0 0 7 7" style={{ imageRendering: "pixelated" }}>
-        {[
-          [0,0],[1,0],[2,0],[3,0],[4,0],[0,1],[4,1],[0,2],[1,2],[2,2],[3,2],[4,2],[0,3],[4,3],[0,4],[1,4],[2,4],[3,4],[4,4],
-          [6,0],[5,0],[6,1],[6,2],[5,2],[6,3],[5,4],[6,4],
-          [0,5],[1,5],[2,5],[0,6],[2,6],[1,6],
-          [5,5],[6,6],[5,6],[6,5],[3,5],[4,6],[3,6],
-        ].map(([x, y], i) => (
+    <div style={{
+      width:          138,
+      height:         138,
+      border:         "1px solid #000",
+      display:        "flex",
+      flexDirection:  "column",
+      alignItems:     "center",
+      justifyContent: "center",
+      background:     "#fff",
+      flexShrink:     0,
+    }}>
+      <svg width="110" height="110" viewBox="0 0 7 7" style={{ imageRendering: "pixelated" }}>
+        {([
+          [0,0],[1,0],[2,0],[3,0],[4,0],[0,1],[4,1],[0,2],[1,2],[2,2],[3,2],[4,2],
+          [0,3],[4,3],[0,4],[1,4],[2,4],[3,4],[4,4],[6,0],[5,0],[6,1],[6,2],[5,2],
+          [6,3],[5,4],[6,4],[0,5],[1,5],[2,5],[0,6],[2,6],[1,6],[5,5],[6,6],[5,6],
+          [6,5],[3,5],[4,6],[3,6],
+        ] as [number, number][]).map(([x, y], i) => (
           <rect key={i} x={x} y={y} width={1} height={1} fill="#000" />
         ))}
       </svg>
-      <div style={{ fontSize: "6px", marginTop: "2px", wordBreak: "break-all" }}>
-        {value.slice(0, 16)}
+      <div style={{ fontSize: "6px", marginTop: "2px", wordBreak: "break-all", textAlign: "center", padding: "0 4px" }}>
+        {value.slice(0, 24)}
       </div>
     </div>
   );
 }
 
-// ── Single field row helper (label : value), used everywhere ────────────────
-
-function FieldCell({
-  label,
-  value,
-  bold = false,
-  span = 1,
-}: {
-  label: string;
-  value: React.ReactNode;
-  bold?: boolean;
-  span?: 1 | 2;
-}) {
+// ── Field row (label : value) ──────────────────────────────────────────────
+function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <td colSpan={span === 2 ? 5 : 2} style={fieldCellStyle}>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <tbody>
-          <tr>
-            <td style={labelStyle}>{label}</td>
-            <td style={colonStyle}>:</td>
-            <td style={{ ...valueStyle, fontWeight: bold ? 700 : 400 }}>{value || "-"}</td>
-          </tr>
-        </tbody>
-      </table>
-    </td>
+    <div style={{ display: "flex", alignItems: "flex-start", marginBottom: "8px" }}>
+      <div style={{ width: "120px", fontSize: "13.5px", fontWeight: 400, flexShrink: 0, lineHeight: 1.4, whiteSpace: "pre-line" }}>
+        {label}
+      </div>
+      <div style={{ width: "14px", fontSize: "13.5px" }}>:</div>
+      <div style={{ fontSize: "13.5px", flex: 1, lineHeight: 1.4 }}>
+        {value ?? "-"}
+      </div>
+    </div>
   );
 }
 
-const fieldCellStyle: React.CSSProperties = {
-  padding: "6px 0",
-  fontFamily: "Arial, sans-serif",
-  fontSize: "11px",
-  verticalAlign: "top",
-};
-const labelStyle: React.CSSProperties = {
-  width: "115px",
-  fontWeight: 700,
-  padding: "0 4px",
-  whiteSpace: "nowrap",
-};
-const colonStyle: React.CSSProperties = {
-  width: "8px",
-  padding: 0,
-};
-const valueStyle: React.CSSProperties = {
-  padding: "0 4px",
+// ── Page wrapper ───────────────────────────────────────────────────────────
+const pageStyle: React.CSSProperties = {
+  position:   "relative",
+  maxWidth:   "794px",
+  margin:     "0 auto",
+  background: "#fff",
+  padding:    "20px 30px",
+  fontFamily: "Helvetica, Arial, sans-serif",
+  color:      "#000",
+  boxSizing:  "border-box",
+  minHeight:  "1123px",
+  overflow:   "hidden",
 };
 
-// ── Main Receipt ────────────────────────────────────────────────────────────
+// ── Table cell styles (sky-blue borders matching PDF) ─────────────────────
+const thStyle: React.CSSProperties = {
+  border:     "0.8px solid #87CEEB",
+  padding:    "8px 6px",
+  fontWeight: 600,
+  textAlign:  "center",
+  fontSize:   "11.5px",
+};
+const tdStyle: React.CSSProperties = {
+  border:     "0.8px solid #87CEEB",
+  padding:    "10px 6px",
+  fontSize:   "11.5px",
+  fontWeight: "bold",
+};
 
+// ── Main component ─────────────────────────────────────────────────────────
 export default function UttarPradeshReceiptTemplate({ data }: { data: ReceiptData }) {
+  const grandTotal    = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
+  const printedOn     = data.paymentDateText || "-";
+  const amountInWords = (data.amountInWords || "").toUpperCase();
+
   return (
-    <div
-      id="uttarpradesh-receipt"
-      style={{
-        position: "relative",
-        maxWidth: "800px",
-        margin: "0 auto",
-        background: "#fff",
-        padding: "20px 28px 24px",
-        fontFamily: "Arial, sans-serif",
-        color: "#000",
-        fontSize: "12px",
-        boxSizing: "border-box",
-        minHeight: "1100px",
-      }}
-    >
-      <EmblemWatermark />
-      <Watermark text={`${data.registrationNo} / ${data.paymentDateText}`} />
+    <div style={{ fontFamily: "Helvetica, Arial, sans-serif", color: "#000" }}>
 
-      {/* Header strip */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: "16px",
-        }}
-      >
-        <div style={{ fontSize: "10px", lineHeight: "1.6", minWidth: "150px" }}>
-          <strong>Receipt Printing Date :</strong>
-          <br />
-          {data.paymentDateText}
+      {/* ══════════════════ PAGE 1 ══════════════════ */}
+      <div style={pageStyle}>
+        <EmblemWatermark />
+        <Watermark text={`${data.registrationNo} ${printedOn}`} />
+
+        {/* Printed on — top right */}
+        <div style={{ position: "relative", zIndex: 1, textAlign: "right", fontSize: "11px", marginBottom: "4px" }}>
+          Printed on : {printedOn}
         </div>
 
-        <div style={{ textAlign: "center", flex: 1, padding: "0 16px" }}>
-          <div style={{ fontWeight: 900, fontSize: "15px", textDecoration: "underline" }}>
-            {uttarPradeshConfig.govLabel}
+        {/* Header: logo | titles | QR */}
+        <table style={{ position: "relative", zIndex: 1, width: "100%", borderCollapse: "collapse", marginBottom: "12px" }}>
+          <tbody>
+            <tr style={{ verticalAlign: "middle" }}>
+              {/* Logo */}
+              <td style={{ width: "20%", padding: "10px 5px" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={uttarPradeshConfig.watermarkImage}
+                  alt=""
+                  style={{ width: "100px", height: "100px", objectFit: "contain" }}
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
+              </td>
+              {/* Titles */}
+              <td style={{ width: "55%", textAlign: "center", verticalAlign: "top", paddingTop: "55px" }}>
+                <div style={{ fontSize: "13px", fontWeight: "bold", textDecoration: "underline" }}>
+                  GOVERNMENT OF UTTAR PRADESH
+                </div>
+                <div style={{ fontSize: "11px", marginTop: "5px" }}>Department of Transport</div>
+                <div style={{ fontSize: "10px", marginTop: "4px" }}>Checkpost Tax e-Receipt</div>
+              </td>
+              {/* QR */}
+              <td style={{ width: "25%", textAlign: "right", verticalAlign: "top" }}>
+                <QRPlaceholder value={data.receiptNo || data.qrUrl} />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Two-column fields */}
+        <div style={{ position: "relative", zIndex: 1, display: "flex", gap: "12px" }}>
+          {/* Left column */}
+          <div style={{ flex: 1 }}>
+            <Field label={"Registration\nNo."}              value={data.registrationNo} />
+            <Field label={"Payment\nInitialization\nDate"}  value={data.paymentInitDate} />
+            <Field label="Chassis No."                      value={data.chassisNo} />
+            <Field label="Vehilce Type"                     value={data.vehicleType} />
+            <Field label={"Vehicle\nCategory"}              value={data.vehicleCategory} />
+            <Field label={"Checkpost\nName"}                value={data.checkpostName} />
+            <Field label="Sleeper Cap."                     value={data.sleeperCap} />
+            <Field label={"Payment\nMode"}                  value={data.paymentMode} />
+            <Field label={"Permit\nValidity"}               value={data.permitValidityText} />
+            <Field label={"Insurance\nValidity"}            value={data.insuranceValidity} />
+            <Field label="Service Type"                     value={data.serviceType} />
+            <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentDateText} />
           </div>
-          <div style={{ fontSize: "13px", marginTop: "2px" }}>{uttarPradeshConfig.deptLabel}</div>
-          <div style={{ fontSize: "12px", marginTop: "2px" }}>{uttarPradeshConfig.receiptTitle}</div>
+          {/* Right column */}
+          <div style={{ flex: 1 }}>
+            <Field label="Receipt No."         value={data.receiptNo} />
+            <Field label="Owner Name"          value={data.ownerName} />
+            <Field label="Tax Mode"            value={data.taxMode} />
+            <Field label="Vehicle Class"       value={data.vehicleClass} />
+            <Field label="Mobile No."          value={data.mobileNo} />
+            <Field label={"Seating\nCapacity"} value={data.seatingCapacity} />
+            <Field label="Bank Ref. No."       value={data.bankRefNo} />
+            <Field label={"Permit\nNumber"}    value={data.permitNumber || "0000"} />
+            <Field label={"Fitness\nValidity"} value={data.fitnessValidity} />
+            <Field label="PUCC Validity"       value={data.puccValidity} />
+            <Field label="Permit Type"         value={data.permitType || "NOT APPLICABLE"} />
+          </div>
         </div>
 
-        <QRPlaceholder value={data.receiptNo} />
-      </div>
-
-      {/* Field grid — UP inspect HTML lines 5996-6080 dictate this exact
-          twelve-row order. Includes Permit Number / Permit Validity rows
-          and ends with Payment Confirmation Date. */}
-      <div style={{ position: "relative", zIndex: 1 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <tbody>
-            <tr>
-              <FieldCell label="Registration No." value={data.registrationNo} bold />
-              <FieldCell label="Receipt No."      value={data.receiptNo} />
-            </tr>
-            <tr>
-              <FieldCell label="Payment Initialization Date" value={data.paymentInitDate || data.paymentDateText} />
-              <FieldCell label="Owner Name"                  value={data.ownerName} />
-            </tr>
-            <tr>
-              <FieldCell label="Chassis No." value={data.chassisNo} />
-              <FieldCell label="Tax Mode"    value={data.taxMode} />
-            </tr>
-            <tr>
-              <FieldCell label="Vehilce Type"  value={data.vehicleType} />
-              <FieldCell label="Vehicle Class" value={data.vehicleClass} />
-            </tr>
-            <tr>
-              <FieldCell label="Vehicle Category" value={data.vehicleCategory} />
-              <FieldCell label="Mobile No."       value={data.mobileNo} />
-            </tr>
-            <tr>
-              <FieldCell label="Checkpost Name"   value={data.checkpostName} />
-              <FieldCell label="Seating Capacity" value={data.seatingCapacity || 0} />
-            </tr>
-            <tr>
-              <FieldCell label="Sleeper Cap." value={data.sleeperCap || 0} />
-              <FieldCell label="Bank Ref. No." value={data.bankRefNo} />
-            </tr>
-            <tr>
-              <FieldCell label="Payment Mode"  value={data.paymentMode} />
-              <FieldCell label="Permit Number" value={data.permitNumber} />
-            </tr>
-            <tr>
-              <FieldCell label="Permit Validity"  value={data.permitValidityText} />
-              <FieldCell label="Fitness Validity" value={data.fitnessValidity} />
-            </tr>
-            <tr>
-              <FieldCell label="Insurance Validity" value={data.insuranceValidity} />
-              <FieldCell label="PUCC Validity"      value={data.puccValidity} />
-            </tr>
-            <tr>
-              <FieldCell label="Service Type" value={data.serviceType} />
-              <FieldCell label="Permit Type"  value={data.permitType} />
-            </tr>
-            <tr>
-              <FieldCell label="Payment Confirmation Date" value={data.paymentDateText} span={2} />
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {/* Tax table */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          marginTop: "18px",
-          borderTop: "1px solid #000",
-          paddingTop: "6px",
-        }}
-      >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: "1px solid #000" }}>
-              <th style={{ ...taxCellStyle, textAlign: "left",   width: "60%" }}>Particular</th>
-              <th style={{ ...taxCellStyle, textAlign: "right" }}>Fees/Tax</th>
-              <th style={{ ...taxCellStyle, textAlign: "right" }}>Fine</th>
-              <th style={{ ...taxCellStyle, textAlign: "right" }}>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.taxItems.map((item, i) => (
-              <tr key={i}>
-                <td style={{ ...taxCellStyle, textAlign: "left" }}>{item.particular}</td>
-                <td style={{ ...taxCellStyle, textAlign: "right" }}>{item.fees}</td>
-                <td style={{ ...taxCellStyle, textAlign: "right" }}>{item.fine}</td>
-                <td style={{ ...taxCellStyle, textAlign: "right" }}>{item.total}</td>
+        {/* Tax table */}
+        <div style={{ position: "relative", zIndex: 1, marginTop: "20px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={{ ...thStyle, width: "60%", textAlign: "left", paddingLeft: "8px" }}>
+                  Tax/Fee Particular
+                </th>
+                <th style={thStyle}>Tax/Fees</th>
+                <th style={thStyle}>Fine</th>
+                <th style={thStyle}>Total</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <div style={{ borderTop: "1px solid #000", marginTop: "2px" }} />
-      </div>
-
-      {/* Grand Total */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          marginTop: "10px",
-          fontSize: "12px",
-          fontWeight: 700,
-        }}
-      >
-        Grand Total : &#8377; {data.amount} &nbsp; ( {data.amountInWords} ONLY/- )
-      </div>
-
-      {/* Notes — UP inspect HTML lines 6148-6188. */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          marginTop: "16px",
-          fontSize: "11px",
-          lineHeight: "1.6",
-        }}
-      >
-        <div style={{ fontWeight: 700 }}>Note :</div>
-        <div style={{ fontWeight: 700, marginTop: "4px" }}>Terms and Conditions:</div>
-        <div style={{ marginTop: "4px" }}>1. This is a computer generated printout and no signature is required.</div>
-        <div>2. Should not carry unlawful/unaccompanied goods.</div>
-        <div>
-          3. If any false information/discrepancies are found at later, necessary action will be
-          taken against the vehicle owner/driver.
+            </thead>
+            <tbody>
+              {(data.taxItems || []).map((item, i) => (
+                <tr key={i}>
+                  <td style={{ ...tdStyle, textAlign: "left", paddingLeft: "8px" }}>{item.particular}</td>
+                  <td style={{ ...tdStyle, textAlign: "center" }}>{item.fees}</td>
+                  <td style={{ ...tdStyle, textAlign: "center" }}>{item.fine}</td>
+                  <td style={{ ...tdStyle, textAlign: "center" }}>{item.total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          marginTop: "16px",
-          fontSize: "16px",
-          fontWeight: 700,
-        }}
-      >
-        Scan the QR code for genuinity of the receipt.
+      {/* ══════════════════ PAGE 2 ══════════════════ */}
+      <div style={{ ...pageStyle, minHeight: "auto", borderTop: "2px dashed #ccc", marginTop: "0" }}>
+        <div style={{ position: "relative", zIndex: 1 }}>
+          {/* Grand Total */}
+          <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "10px" }}>
+            Grand Total : Rs. {grandTotal}/- {amountInWords} Rupees Only
+          </div>
+          <hr style={{ border: "none", borderTop: "0.5px solid #000", marginBottom: "14px" }} />
+
+          <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "8px" }}>Note:</div>
+          <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "8px" }}>Terms and Conditions:</div>
+          {TERMS.map((term, i) => (
+            <div key={i} style={{ fontSize: "12px", marginBottom: "10px" }}>
+              {i + 1}. {term}
+            </div>
+          ))}
+          <div style={{ marginTop: "24px", fontSize: "18px", fontWeight: "bold" }}>
+            Scan the QR code for genuinity of the receipt.
+          </div>
+        </div>
       </div>
+
     </div>
   );
 }
-
-const taxCellStyle: React.CSSProperties = {
-  padding: "6px 8px",
-  fontFamily: "Arial, sans-serif",
-  fontSize: "11px",
-  verticalAlign: "top",
-};
