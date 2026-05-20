@@ -324,13 +324,22 @@ function GatewayFooter() {
   );
 }
 
-function generateReceiptNo(): string {
-  const d = new Date();
-  const yy  = String(d.getFullYear()).slice(2);
-  const mm  = String(d.getMonth() + 1).padStart(2, "0");
-  const dd  = String(d.getDate()).padStart(2, "0");
+function generateReceiptNo(stateCode?: string): string {
+  if (stateCode === "HR") {
+    // HRT + 13-digit timestamp = unique per millisecond, no random needed
+    return `HRT${Date.now()}`;
+  }
+  const d    = new Date();
+  const yy   = String(d.getFullYear()).slice(2);
+  const mm   = String(d.getMonth() + 1).padStart(2, "0");
+  const dd   = String(d.getDate()).padStart(2, "0");
   const rand = Math.floor(Math.random() * 9000000 + 1000000);
   return `RJT${yy}${mm}${dd}${rand}`;
+}
+
+function generateHRBankRef(): string {
+  // 9-digit random number: 100000000 – 999999999
+  return String(Math.floor(Math.random() * 900000000 + 100000000));
 }
 
 // Random transaction id generated up-front on the client so the success
@@ -371,8 +380,8 @@ function SBIContent() {
   const [txnId,          setTxnId]          = useState("");
   const [paidAt,         setPaidAt]         = useState<Date>(new Date());
   useEffect(() => {
-    setClientOrderRef(makeOrderRef(vehicleNo || "VH"));
-    setReceiptNo(generateReceiptNo());
+    setClientOrderRef(stateCode === "HR" ? generateHRBankRef() : makeOrderRef(vehicleNo || "VH"));
+    setReceiptNo(generateReceiptNo(stateCode));
     setTxnId(generateTransactionId());
     setPaidAt(new Date());
   }, []); // eslint-disable-line

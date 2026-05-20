@@ -16,7 +16,7 @@ export const haryanaConfig: StateConfig = {
   // Drop a real Haryana emblem at this path; until then both the on-screen
   // receipt (onError-hides) and the PDF generator (try-catch) gracefully
   // skip the watermark if the file is missing.
-  watermarkImage: "/Images/Haryana-Transport-Department.png",
+  watermarkImage: "/Images/haryana-emblem.png",
   themeColor:     "#154281",
   collection:     "haryana_transactions",
 };
