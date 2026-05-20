@@ -20,7 +20,7 @@ function Watermark({ text }: { text: string }) {
             position:   "absolute",
             top:        `${Math.floor(i / 8) * 20}px`,
             left:       `${(i % 8) * 170}px`,
-            fontSize:   "14.5px",
+            fontSize:   "15.5px",
             fontWeight: 700,
             whiteSpace: "nowrap",
             color:      "rgba(170,170,170,0.5)",
@@ -50,19 +50,19 @@ function EmblemWatermark() {
       <img
         src={uttarPradeshConfig.watermarkImage}
         alt=""
-        style={{ width: "260px", height: "280px", objectFit: "contain" }}
+        style={{ width: "260px", height: "260px", objectFit: "contain" }}
         onError={(e) => { e.currentTarget.style.display = "none"; }}
       />
     </div>
   );
 }
 
-// ── QR placeholder (138×138 same as PDF QR) ────────────────────────────────
+// ── QR placeholder (108×108 matching PDF QR) ──────────────────────────────
 function QRPlaceholder({ value }: { value: string }) {
   return (
     <div style={{
-      width:          138,
-      height:         138,
+      width:          108,
+      height:         108,
       border:         "1px solid #000",
       display:        "flex",
       flexDirection:  "column",
@@ -70,8 +70,9 @@ function QRPlaceholder({ value }: { value: string }) {
       justifyContent: "center",
       background:     "#fff",
       flexShrink:     0,
+      marginTop:      "20px",
     }}>
-      <svg width="110" height="110" viewBox="0 0 7 7" style={{ imageRendering: "pixelated" }}>
+      <svg width="84" height="84" viewBox="0 0 7 7" style={{ imageRendering: "pixelated" }}>
         {([
           [0,0],[1,0],[2,0],[3,0],[4,0],[0,1],[4,1],[0,2],[1,2],[2,2],[3,2],[4,2],
           [0,3],[4,3],[0,4],[1,4],[2,4],[3,4],[4,4],[6,0],[5,0],[6,1],[6,2],[5,2],
@@ -182,7 +183,7 @@ export default function UttarPradeshReceiptTemplate({ data }: { data: ReceiptDat
         </table>
 
         {/* Two-column fields */}
-        <div style={{ position: "relative", zIndex: 1, display: "flex", gap: "12px" }}>
+        <div style={{ position: "relative", zIndex: 1, display: "flex", gap: "4px" }}>
           {/* Left column */}
           <div style={{ flex: 1 }}>
             <Field label={"Registration\nNo."}              value={data.registrationNo} />

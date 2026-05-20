@@ -13,14 +13,14 @@ const TERMS = [
 function Watermark({ text }: { text: string }) {
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
-      {Array.from({ length: 80 }, (_, i) => (
+      {Array.from({ length: 60 }, (_, i) => (
         <span
           key={i}
           style={{
             position:   "absolute",
             top:        `${Math.floor(i / 8) * 20}px`,
             left:       `${(i % 8) * 170}px`,
-            fontSize:   "14.5px",
+            fontSize:   "16.5px",
             fontWeight: 700,
             whiteSpace: "nowrap",
             color:      "rgba(170,170,170,0.5)",

@@ -94,6 +94,10 @@ export function createTransactionSchema(): Schema<TransactionDoc> {
       permitNumber:     { type: String, default: "" },
       permitFrom:       { type: Date,   default: null },
       permitUpto:       { type: Date,   default: null },
+      // Haryana — time component of the tax window ("HH:MM", 24-hr).
+      // Stored separately so the Date fields stay date-only everywhere else.
+      taxFromTime:      { type: String, default: "" },
+      taxToTime:        { type: String, default: "" },
     },
     { timestamps: true }
   );

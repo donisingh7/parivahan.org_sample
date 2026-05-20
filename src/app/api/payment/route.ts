@@ -69,6 +69,8 @@ export async function POST(req: NextRequest) {
       fuelType,
       // ── Uttarakhand / Uttar Pradesh-specific (others send undefined) ─
       permitNumber, permitFrom, permitUpto,
+      // ── Haryana-specific — "HH:MM" time part of the tax window ─────────
+      taxFromTime, taxToTime,
     } = body;
 
     const missing: string[] = [];
@@ -146,6 +148,8 @@ export async function POST(req: NextRequest) {
       permitNumber:      permitNumber     ?? "",
       permitFrom:        toDateOrNull(permitFrom),
       permitUpto:        toDateOrNull(permitUpto),
+      taxFromTime:       typeof taxFromTime === "string" ? taxFromTime : "",
+      taxToTime:         typeof taxToTime   === "string" ? taxToTime   : "",
     });
 
     // ── Side-effects after a successful save ──────────────────────────────

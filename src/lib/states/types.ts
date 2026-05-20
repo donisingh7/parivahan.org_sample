@@ -146,6 +146,9 @@ export interface TxnLike {
   permitNumber?:      string;
   permitFrom?:        Date | string | null;
   permitUpto?:        Date | string | null;
+  // Haryana — "HH:MM" time component of the tax window
+  taxFromTime?:       string;
+  taxToTime?:         string;
 }
 
 // ── State module — the contract every state folder must satisfy. ────────────
@@ -275,6 +278,9 @@ export interface TransactionDoc {
   permitNumber?:       string;
   permitFrom?:         Date | null;
   permitUpto?:         Date | null;
+  // Haryana — "HH:MM" time component of the tax window
+  taxFromTime?:        string;
+  taxToTime?:          string;
 }
 
 // Re-export Schema for convenience in shared/baseSchema consumers.

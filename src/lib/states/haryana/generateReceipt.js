@@ -20,15 +20,6 @@ const TERMS = [
   'If any false information/discrepancies are found at later, necessary action will be taken against the vehicle owner/driver.',
 ];
 
-async function loadBlurredImage(imagePath) {
-  try {
-    if (!fs.existsSync(imagePath)) return null;
-    return await sharp(imagePath).blur(2).png().toBuffer();
-  } catch {
-    return null;
-  }
-}
-
 function numberToWords(num) {
   const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
     'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
@@ -55,13 +46,13 @@ async function generateQRCode(text) {
   return Buffer.from(base64, 'base64');
 }
 
-function drawTextWatermark(doc, watermarkText, pageWidth) {
+function drawTextWatermark(doc, watermarkText, pageWidth, limitY) {
   doc.save();
   doc.opacity(0.5);
-  doc.fontSize(14.5).fillColor('#aaaaaa').font('Helvetica');
+  doc.fontSize(16.5).fillColor('#aaaaaa').font('Helvetica');
   const tileStep = 20;
   const startY   = 25;
-  const endY     = 800;
+  const endY     = limitY || 600;
   const startX   = 25;
   for (let row = 0; ; row++) {
     const rowY = startY + row * tileStep;
@@ -73,8 +64,8 @@ function drawTextWatermark(doc, watermarkText, pageWidth) {
 }
 
 async function drawImageWatermark(doc, imagePath, pageWidth, pageHeight) {
-  const wmBuffer = await loadBlurredImage(imagePath);
-  if (!wmBuffer) return;
+  if (!imagePath || !fs.existsSync(imagePath)) return;
+  const wmBuffer = await sharp(imagePath).blur(2).png().toBuffer();
   const wmWidth  = 160;
   const wmHeight = 200;
   const wmX      = ((pageWidth - wmWidth) / 2) + 120;

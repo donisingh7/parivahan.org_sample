@@ -48,8 +48,8 @@ function fmtValidity(v: TxnLike["fitnessValidity"]): string {
 export function buildHaryanaReceiptData(txn: TxnLike): ReceiptData {
   const amount = Number(txn.amount) || 0;
 
-  const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null);
-  const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null);
+  const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null) + (txn.taxFromTime ? ` ${txn.taxFromTime}` : "");
+  const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null) + (txn.taxToTime   ? ` ${txn.taxToTime}`   : "");
   const paymentDate  = txn.paidAt ? new Date(txn.paidAt) : new Date();
 
   const receiptNo = txn.receiptNo || "-";

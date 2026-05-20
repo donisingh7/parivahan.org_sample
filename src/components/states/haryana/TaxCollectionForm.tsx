@@ -179,7 +179,9 @@ function TaxCollectionContent() {
   const [insuranceValidity, setInsuranceValidity] = useState("");
   const [puccValidity,      setPuccValidity]      = useState("");
   const [taxFrom,           setTaxFrom]           = useState("");
+  const [taxFromTime,       setTaxFromTime]       = useState("00:00");
   const [taxTo,             setTaxTo]             = useState("");
+  const [taxToTime,         setTaxToTime]         = useState("23:59");
   const [totalAmount,       setTotalAmount]       = useState("0");
 
   const [dateError,   setDateError]   = useState("");
@@ -260,7 +262,9 @@ function TaxCollectionContent() {
       insuranceValidity,
       puccValidity,
       taxFrom,
+      taxFromTime,
       taxTo,
+      taxToTime,
       amount: totalAmount || "0",
     });
     router.push(`/payment/sbi?${params.toString()}`);
@@ -271,7 +275,7 @@ function TaxCollectionContent() {
     setFromState(""); setVehicleType(""); setVehicleCategory(""); setVehicleClass("");
     setSeatingCap(""); setServiceType(""); setDistance(""); setTaxMode("");
     setBorderDistrict(""); setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity("");
-    setTaxFrom(""); setTaxTo(""); setTotalAmount("0");
+    setTaxFrom(""); setTaxFromTime("00:00"); setTaxTo(""); setTaxToTime("23:59"); setTotalAmount("0");
     setDateError(""); setFormError(""); setShowModal(false);
   };
 
@@ -692,7 +696,7 @@ function TaxCollectionContent() {
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Tax From Date</label>
+                        <label className="ui-outputlabel field-label-mandate">Tax From Date &amp; Time</label>
                       </div>
                       <div className="ui-calendar">
                         <input
@@ -704,10 +708,19 @@ function TaxCollectionContent() {
                           autoComplete="off"
                         />
                       </div>
+                      <div className="ui-calendar" style={{ marginTop: "4px" }}>
+                        <input
+                          type="time"
+                          className="ui-inputtext cp-date-input"
+                          value={taxFromTime}
+                          onChange={(e) => setTaxFromTime(e.target.value)}
+                          autoComplete="off"
+                        />
+                      </div>
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Tax Upto Date</label>
+                        <label className="ui-outputlabel field-label-mandate">Tax Upto Date &amp; Time</label>
                       </div>
                       <div className="ui-calendar">
                         <input
@@ -716,6 +729,15 @@ function TaxCollectionContent() {
                           value={taxTo}
                           min={taxFrom || undefined}
                           onChange={(e) => handleTaxToChange(e.target.value)}
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className="ui-calendar" style={{ marginTop: "4px" }}>
+                        <input
+                          type="time"
+                          className="ui-inputtext cp-date-input"
+                          value={taxToTime}
+                          onChange={(e) => setTaxToTime(e.target.value)}
                           autoComplete="off"
                         />
                       </div>
@@ -846,14 +868,14 @@ function TaxCollectionContent() {
                     <td><span className="small-text-font">{vehicleCategory}</span></td>
                   </tr>
                   <tr>
-                    <td><span className="small-text-font">Tax From Date</span></td>
+                    <td><span className="small-text-font">Tax From</span></td>
                     <td><span className="small-text-font">:</span></td>
-                    <td><span className="small-text-font">{taxFrom}</span></td>
+                    <td><span className="small-text-font">{taxFrom}{taxFromTime ? ` ${taxFromTime}` : ""}</span></td>
                   </tr>
                   <tr>
-                    <td><span className="small-text-font">Tax To Date</span></td>
+                    <td><span className="small-text-font">Tax Upto</span></td>
                     <td><span className="small-text-font">:</span></td>
-                    <td><span className="small-text-font">{taxTo}</span></td>
+                    <td><span className="small-text-font">{taxTo}{taxToTime ? ` ${taxToTime}` : ""}</span></td>
                   </tr>
                   <tr>
                     <td><span className="small-text-font-bold">Amount</span></td>

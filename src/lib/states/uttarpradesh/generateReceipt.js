@@ -55,7 +55,7 @@ async function generateQRCode(text) {
 function drawTextWatermark(doc, watermarkText, pageWidth) {
   doc.save();
   doc.opacity(0.5);
-  doc.fontSize(14.5).fillColor('#aaaaaa').font('Helvetica');
+  doc.fontSize(15.5).fillColor('#aaaaaa').font('Helvetica');
   const tileStep = 20;
   const startY   = 25;
   const endY     = 650;
@@ -73,7 +73,7 @@ async function drawImageWatermark(doc, imagePath, pageWidth, pageHeight) {
   const wmBuffer = await loadImage(imagePath);
   if (!wmBuffer) return;
   const wmWidth  = 260;
-  const wmHeight = 280;
+  const wmHeight = 260;
   const wmX      = ((pageWidth - wmWidth) / 2) + 120;
   const wmY      = (pageHeight - wmHeight) / 2 - 80;
   doc.save();
@@ -156,8 +156,8 @@ async function generateReceipt(data) {
   doc.text('Checkpost Tax e-Receipt', titleX, y + 88, { width: titleWidth, align: 'center' });
 
   // ── QR code (right) ──
-  doc.rect(pageWidth - margin - 172, y, 138, 138).fill('#ffffff');
-  doc.image(qrBuffer, pageWidth - margin - 172, y, { width: 138, height: 138 });
+  doc.rect(pageWidth - margin - 152, y + 20, 108, 108).fill('#ffffff');
+  doc.image(qrBuffer, pageWidth - margin - 152, y + 20, { width: 108, height: 108 });
 
   y += 88 + 95;
 
@@ -166,7 +166,7 @@ async function generateReceipt(data) {
   const colonWidth    = 8;
   const fieldFontSize = 13.5;
   const col1X         = margin;
-  const col2X         = pageWidth / 2 + 10;
+  const col2X         = pageWidth / 2 - 5;
   const maxValueWidth = 155;
 
   function drawField(label, value, x, yPos) {
