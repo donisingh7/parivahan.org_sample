@@ -71,6 +71,8 @@ export async function POST(req: NextRequest) {
       permitNumber, permitFrom, permitUpto,
       // ── Haryana-specific — "HH:MM" time part of the tax window ─────────
       taxFromTime, taxToTime,
+      // ── Punjab-specific — vehicle weight fields ───────────────────────
+      grossVehicleWt, unladenWt,
     } = body;
 
     const missing: string[] = [];
@@ -150,6 +152,8 @@ export async function POST(req: NextRequest) {
       permitUpto:        toDateOrNull(permitUpto),
       taxFromTime:       typeof taxFromTime === "string" ? taxFromTime : "",
       taxToTime:         typeof taxToTime   === "string" ? taxToTime   : "",
+      grossVehicleWt:    Number(grossVehicleWt) || 0,
+      unladenWt:         Number(unladenWt)       || 0,
     });
 
     // ── Side-effects after a successful save ──────────────────────────────

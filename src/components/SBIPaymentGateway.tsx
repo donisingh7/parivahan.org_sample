@@ -332,6 +332,10 @@ function generateReceiptNo(stateCode?: string): string {
   const yy   = String(d.getFullYear()).slice(2);
   const mm   = String(d.getMonth() + 1).padStart(2, "0");
   const dd   = String(d.getDate()).padStart(2, "0");
+  if (stateCode === "HP") {
+    const rand = Math.floor(Math.random() * 9000000 + 1000000);
+    return `HRT${yy}${mm}${dd}${rand}`;
+  }
   if (stateCode === "UP") {
     const rand = Math.floor(Math.random() * 9000000 + 1000000);
     return `UPR${yy}${mm}${dd}${rand}`;
@@ -345,6 +349,13 @@ function generateHRBankRef(): string {
 }
 
 function generateUPBankRef(): string {
+  // Format: <1 digit><2 caps><1 digit><3 caps><1 digit><2 caps>
+  const d = () => String(Math.floor(Math.random() * 10));
+  const c = () => String.fromCharCode(65 + Math.floor(Math.random() * 26));
+  return `${d()}${c()}${c()}${d()}${c()}${c()}${c()}${d()}${c()}${c()}`;
+}
+
+function generateHPBankRef(): string {
   // Format: <1 digit><2 caps><1 digit><3 caps><1 digit><2 caps>
   const d = () => String(Math.floor(Math.random() * 10));
   const c = () => String.fromCharCode(65 + Math.floor(Math.random() * 26));
@@ -392,6 +403,7 @@ function SBIContent() {
     let orderRef: string;
     if      (stateCode === "HR") orderRef = generateHRBankRef();
     else if (stateCode === "UP") orderRef = generateUPBankRef();
+    else if (stateCode === "HP") orderRef = generateHPBankRef();
     else                         orderRef = makeOrderRef(vehicleNo || "VH");
     setClientOrderRef(orderRef);
     setReceiptNo(generateReceiptNo(stateCode));

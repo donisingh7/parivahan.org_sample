@@ -89,6 +89,7 @@ export function buildUttarPradeshReceiptData(txn: TxnLike): ReceiptData {
     puccValidity:       fmtValidity(txn.puccValidity      ?? null),
     permitNumber:       passThrough(txn.permitNumber),
     permitValidityText,
+    permitValidity:     permitValidityText,
 
     qrUrl:           `https://kms.parivahan.gov.in/verify?receipt=${receiptNo}`,
     amount,

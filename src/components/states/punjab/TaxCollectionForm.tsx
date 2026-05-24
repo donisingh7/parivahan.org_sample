@@ -171,16 +171,20 @@ function TaxCollectionContent() {
   const [vehicleType,     setVehicleType]     = useState("");
   const [vehicleCategory, setVehicleCategory] = useState("");
   const [vehicleClass,    setVehicleClass]    = useState("");
-  const [seatingCap,      setSeatingCap]      = useState("0");
+  const [grossVehicleWt,  setGrossVehicleWt]  = useState("0");
+  const [unladenWt,       setUnladenWt]       = useState("0");
   const [serviceType,     setServiceType]     = useState("");
   const [taxMode,         setTaxMode]         = useState("");
   const [borderDistrict,  setBorderDistrict]  = useState("");
   const [checkpostName,   setCheckpostName]   = useState("");
   const [taxFrom,         setTaxFrom]         = useState("");
   const [taxTo,           setTaxTo]           = useState("");
-  const [totalAmount,     setTotalAmount]     = useState("0");
+  const [taxFromTime,     setTaxFromTime]     = useState("00:00");
+  const [taxToTime,       setTaxToTime]       = useState("23:59");
+  const [mvTax,           setMvTax]           = useState("0");
   const [userCharge,      setUserCharge]      = useState("0");
   const [infraCess,       setInfraCess]       = useState("0");
+  const [calculatedTotal, setCalculatedTotal] = useState("");
 
   const [dateError,   setDateError]   = useState("");
   const [formError,   setFormError]   = useState("");
@@ -227,7 +231,7 @@ function TaxCollectionContent() {
     if (!vehicleNo.trim())                            missing.push("Vehicle No.");
     if (!taxFrom)                                     missing.push("Tax From Date");
     if (!taxTo)                                       missing.push("Tax Upto Date");
-    if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("Total Amount");
+    if (!calculatedTotal || parseFloat(calculatedTotal) <= 0) missing.push("Total Amount (click Calculate Tax)");
     if (missing.length > 0) {
       setFormError(`Please fill the following before paying: ${missing.join(", ")}`);
       return;
@@ -249,16 +253,19 @@ function TaxCollectionContent() {
       vehicleType,
       vehicleCategory,
       vehicleClass,
-      seatingCap,
+      grossVehicleWt,
+      unladenWt,
       serviceType,
       taxMode,
       borderDistrict,
       checkpostName,
       taxFrom,
+      taxFromTime,
       taxTo,
-      amount:      totalAmount || "0",
-      userCharge:  userCharge  || "0",
-      infraCess:   infraCess   || "0",
+      taxToTime,
+      amount:      calculatedTotal || "0",
+      userCharge:  userCharge     || "0",
+      infraCess:   infraCess      || "0",
     });
     router.push(`/payment/sbi?${params.toString()}`);
   };
@@ -266,10 +273,10 @@ function TaxCollectionContent() {
   const handleReset = () => {
     setVehicleNo(""); setChassisNo(""); setOwnerName(""); setMobileNo("");
     setFromState(""); setVehicleType(""); setVehicleCategory(""); setVehicleClass("");
-    setSeatingCap("0"); setServiceType(""); setTaxMode("");
+    setGrossVehicleWt("0"); setUnladenWt("0"); setServiceType(""); setTaxMode("");
     setBorderDistrict(""); setCheckpostName("");
-    setTaxFrom(""); setTaxTo("");
-    setTotalAmount("0"); setUserCharge("0"); setInfraCess("0");
+    setTaxFrom(""); setTaxTo(""); setTaxFromTime("00:00"); setTaxToTime("23:59");
+    setMvTax("0"); setUserCharge("0"); setInfraCess("0"); setCalculatedTotal("");
     setDateError(""); setFormError(""); setShowModal(false);
   };
 
@@ -562,20 +569,34 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
-                  {/* Row 5: Seating Capacity + Service Type + Tax Mode */}
+                  {/* Row 5: Gross Vehicle Wt + Unladen Wt + Service Type + Tax Mode */}
                   <div className="ui-grid-row">
-                    <div className="ui-grid-col-6">
+                    <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Seating Capacity</label>
+                        <label className="ui-outputlabel field-label-mandate">Gross Vehicle Wt (In Kg.)</label>
                       </div>
                       <input
                         type="text"
                         className="ui-inputtext"
-                        value={seatingCap}
-                        onChange={(e) => setSeatingCap(e.target.value.replace(/\D/g, ""))}
-                        maxLength={3}
+                        value={grossVehicleWt}
+                        onChange={(e) => setGrossVehicleWt(e.target.value.replace(/\D/g, ""))}
+                        maxLength={7}
                         autoComplete="off"
-                        title="Seating Capacity"
+                        title="Gross Vehicle Weight in Kg"
+                      />
+                    </div>
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel field-label-mandate">Unladen Wt (In Kg.)</label>
+                      </div>
+                      <input
+                        type="text"
+                        className="ui-inputtext"
+                        value={unladenWt}
+                        onChange={(e) => setUnladenWt(e.target.value.replace(/\D/g, ""))}
+                        maxLength={7}
+                        autoComplete="off"
+                        title="Unladen Weight in Kg"
                       />
                     </div>
                     <div className="ui-grid-col-3">
@@ -652,7 +673,7 @@ function TaxCollectionContent() {
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Tax From Date</label>
+                        <label className="ui-outputlabel field-label-mandate">Tax From Date &amp; Time</label>
                       </div>
                       <div className="ui-calendar">
                         <input
@@ -663,13 +684,21 @@ function TaxCollectionContent() {
                           onChange={(e) => handleTaxFromChange(e.target.value)}
                           autoComplete="off"
                           title="Tax From Date"
-                          placeholder="DD-MM-YYYY HH:MM"
+                        />
+                      </div>
+                      <div className="ui-calendar" style={{ marginTop: "4px" }}>
+                        <input
+                          type="time"
+                          className="ui-inputtext cp-date-input"
+                          value={taxFromTime}
+                          onChange={(e) => setTaxFromTime(e.target.value)}
+                          autoComplete="off"
                         />
                       </div>
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Tax Upto Date</label>
+                        <label className="ui-outputlabel field-label-mandate">Tax Upto Date &amp; Time</label>
                       </div>
                       <div className="ui-calendar">
                         <input
@@ -680,7 +709,15 @@ function TaxCollectionContent() {
                           onChange={(e) => handleTaxToChange(e.target.value)}
                           autoComplete="off"
                           title="Tax Upto Date"
-                          placeholder="DD-MM-YYYY HH:MM"
+                        />
+                      </div>
+                      <div className="ui-calendar" style={{ marginTop: "4px" }}>
+                        <input
+                          type="time"
+                          className="ui-inputtext cp-date-input"
+                          value={taxToTime}
+                          onChange={(e) => setTaxToTime(e.target.value)}
+                          autoComplete="off"
                         />
                       </div>
                     </div>
@@ -727,51 +764,58 @@ function TaxCollectionContent() {
                     </div>
                   )}
 
-                  {/* Total Amount + User Charge + Infra Cess + buttons */}
+                  {/* MV Tax + Service/User Charge + Cess + buttons */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Total Amount.</label>
+                        <label className="ui-outputlabel field-label-mandate">MV Tax.</label>
                       </div>
                       <input
                         type="text"
                         className="ui-inputtext font-bold medium-text-font"
-                        value={totalAmount}
-                        onChange={(e) => { setTotalAmount(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        value={mvTax}
+                        onChange={(e) => { setMvTax(e.target.value.replace(/[^0-9.]/g, "")); setCalculatedTotal(""); setFormError(""); }}
                         placeholder="0"
-                        title="Total Amount"
+                        title="MV Tax"
                       />
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">User charge.</label>
+                        <label className="ui-outputlabel field-label-mandate">Service/User Charge.</label>
                       </div>
                       <input
                         type="text"
                         className="ui-inputtext"
                         value={userCharge}
-                        onChange={(e) => setUserCharge(e.target.value.replace(/[^0-9.]/g, ""))}
+                        onChange={(e) => { setUserCharge(e.target.value.replace(/[^0-9.]/g, "")); setCalculatedTotal(""); }}
                         placeholder="0"
-                        title="User Charge"
+                        title="Service/User Charge"
                       />
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Infra Cess</label>
+                        <label className="ui-outputlabel field-label-mandate">Cess</label>
                       </div>
                       <input
                         type="text"
                         className="ui-inputtext"
                         value={infraCess}
-                        onChange={(e) => setInfraCess(e.target.value.replace(/[^0-9.]/g, ""))}
+                        onChange={(e) => { setInfraCess(e.target.value.replace(/[^0-9.]/g, "")); setCalculatedTotal(""); }}
                         placeholder="0"
-                        title="Infra Cess"
+                        title="Cess"
                       />
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="ui-grid-row">
                         <div className="ui-grid-col-12 top_mar1 mar-left5">
-                          <button className="ui-button" type="button">
+                          <button
+                            className="ui-button"
+                            type="button"
+                            onClick={() => {
+                              const total = (parseFloat(mvTax) || 0) + (parseFloat(userCharge) || 0) + (parseFloat(infraCess) || 0);
+                              setCalculatedTotal(total.toString());
+                            }}
+                          >
                             <i className="fa fa-calculator"></i>
                             <span className="ui-button-text">Calculate Tax</span>
                           </button>
@@ -795,6 +839,15 @@ function TaxCollectionContent() {
                       </div>
                     </div>
                   </div>
+                  {calculatedTotal && (
+                    <div className="ui-grid-row" style={{ marginTop: "10px" }}>
+                      <div className="ui-grid-col-12">
+                        <div style={{ background: "#e8f4fd", border: "1.5px solid #87CEEB", borderRadius: "4px", padding: "10px 16px", fontSize: "15px", fontWeight: "bold", color: "#003366" }}>
+                          Total Tax Amount : &#8377; {calculatedTotal}/-
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               </div>
@@ -839,17 +892,17 @@ function TaxCollectionContent() {
                   <tr>
                     <td><span className="small-text-font">Tax From Date</span></td>
                     <td><span className="small-text-font">:</span></td>
-                    <td><span className="small-text-font">{taxFrom}</span></td>
+                    <td><span className="small-text-font">{taxFrom}{taxFromTime ? ` ${taxFromTime}` : ""}</span></td>
                   </tr>
                   <tr>
                     <td><span className="small-text-font">Tax To Date</span></td>
                     <td><span className="small-text-font">:</span></td>
-                    <td><span className="small-text-font">{taxTo}</span></td>
+                    <td><span className="small-text-font">{taxTo}{taxToTime ? ` ${taxToTime}` : ""}</span></td>
                   </tr>
                   <tr>
                     <td><span className="small-text-font-bold">Amount</span></td>
                     <td><span className="small-text-font-bold">:</span></td>
-                    <td><span className="small-text-font-bold">{totalAmount ? `${totalAmount}/-` : "/-"}</span></td>
+                    <td><span className="small-text-font-bold">{calculatedTotal ? `${calculatedTotal}/-` : "/-"}</span></td>
                   </tr>
                   <tr>
                     <td><span className="small-text-font">Payment Mode</span></td>

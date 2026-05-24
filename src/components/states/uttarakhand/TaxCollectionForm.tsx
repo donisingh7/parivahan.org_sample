@@ -200,8 +200,8 @@ function TaxCollectionContent() {
   const [vehicleClass,    setVehicleClass]    = useState("");
   const [vehicleType,     setVehicleType]     = useState("");
   const [permitType,      setPermitType]      = useState("");
-  const [seatingCap,      setSeatingCap]      = useState("0");
-  const [sleeperCap,      setSleeperCap]      = useState("0");
+  const [grossVehicleWt,  setGrossVehicleWt]  = useState("0");
+  const [unladenWt,       setUnladenWt]       = useState("0");
   const [serviceType,     setServiceType]     = useState("");
   const [district,        setDistrict]        = useState("");
   const [fitnessValidity, setFitnessValidity] = useState("");
@@ -214,9 +214,10 @@ function TaxCollectionContent() {
   const [noOfPeriods,     setNoOfPeriods]     = useState("");
   const [taxFrom,         setTaxFrom]         = useState("");
   const [taxTo,           setTaxTo]           = useState("");
-  const [totalAmount,     setTotalAmount]     = useState("0");
+  const [mvTax,           setMvTax]           = useState("0");
   const [userCharge,      setUserCharge]      = useState("0");
   const [infraCess,       setInfraCess]       = useState("0");
+  const [calculatedTotal, setCalculatedTotal] = useState("");
 
   const [dateError,   setDateError]   = useState("");
   const [formError,   setFormError]   = useState("");
@@ -263,7 +264,7 @@ function TaxCollectionContent() {
     if (!vehicleNo.trim())                            missing.push("Vehicle No.");
     if (!taxFrom)                                     missing.push("Tax From Date");
     if (!taxTo)                                       missing.push("Tax Upto Date");
-    if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("Tax Amount");
+    if (!calculatedTotal || parseFloat(calculatedTotal) <= 0) missing.push("Total Amount (click Calculate Tax)");
     if (missing.length > 0) {
       setFormError(`Please fill the following before paying: ${missing.join(", ")}`);
       return;
@@ -286,8 +287,8 @@ function TaxCollectionContent() {
       vehicleClass,
       vehicleType,
       permitType,
-      seatingCap,
-      sleeperCap,
+      grossVehicleWt,
+      unladenWt,
       serviceType,
       // District Name → borderDistrict, Barrier Name → checkpostName.
       // The receipt prints the Barrier Name as "Checkpost Name" per the
@@ -303,9 +304,9 @@ function TaxCollectionContent() {
       noOfPeriods,
       taxFrom,
       taxTo,
-      amount:      totalAmount || "0",
-      userCharge:  userCharge  || "0",
-      infraCess:   infraCess   || "0",
+      amount:      calculatedTotal || "0",
+      userCharge:  userCharge     || "0",
+      infraCess:   infraCess      || "0",
     });
     router.push(`/payment/sbi?${params.toString()}`);
   };
@@ -313,11 +314,11 @@ function TaxCollectionContent() {
   const handleReset = () => {
     setVehicleNo(""); setChassisNo(""); setOwnerName(""); setMobileNo("");
     setFromState(""); setVehicleCategory(""); setVehicleClass(""); setVehicleType("");
-    setPermitType(""); setSeatingCap("0"); setSleeperCap("0"); setServiceType("");
+    setPermitType(""); setGrossVehicleWt("0"); setUnladenWt("0"); setServiceType("");
     setDistrict(""); setFitnessValidity(""); setPuccValidity("");
     setPermitNumber(""); setBarrierName(""); setPermitFrom(""); setPermitUpto("");
     setTaxMode(""); setNoOfPeriods(""); setTaxFrom(""); setTaxTo("");
-    setTotalAmount("0"); setUserCharge("0"); setInfraCess("0");
+    setMvTax("0"); setUserCharge("0"); setInfraCess("0"); setCalculatedTotal("");
     setDateError(""); setFormError(""); setShowModal(false);
   };
 
@@ -628,34 +629,34 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
-                  {/* Row 5: Seating Capacity + Sleeper Cap + Service Type */}
+                  {/* Row 5: Gross Vehicle Wt + Unladen Wt + Service Type */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Seating Capacity</label>
+                        <label className="ui-outputlabel field-label-mandate">Gross Vehicle Wt (In Kg.)</label>
                       </div>
                       <input
                         type="text"
                         className="ui-inputtext"
-                        value={seatingCap}
-                        onChange={(e) => setSeatingCap(e.target.value.replace(/\D/g, ""))}
-                        maxLength={3}
+                        value={grossVehicleWt}
+                        onChange={(e) => setGrossVehicleWt(e.target.value.replace(/\D/g, ""))}
+                        maxLength={7}
                         autoComplete="off"
-                        title="Seating Capacity"
+                        title="Gross Vehicle Weight in Kg"
                       />
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel">Sleeper Cap</label>
+                        <label className="ui-outputlabel field-label-mandate">Unladen Wt (In Kg.)</label>
                       </div>
                       <input
                         type="text"
                         className="ui-inputtext"
-                        value={sleeperCap}
-                        onChange={(e) => setSleeperCap(e.target.value.replace(/\D/g, ""))}
-                        maxLength={3}
+                        value={unladenWt}
+                        onChange={(e) => setUnladenWt(e.target.value.replace(/\D/g, ""))}
+                        maxLength={7}
                         autoComplete="off"
-                        title="Sleeper Cap"
+                        title="Unladen Weight in Kg"
                       />
                     </div>
                     <div className="ui-grid-col-6">
@@ -907,19 +908,19 @@ function TaxCollectionContent() {
                     </div>
                   )}
 
-                  {/* Tax Amount + Service/User Charge + Civic Infra Cess + buttons */}
+                  {/* MV Tax + Service/User Charge + Cess + buttons */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Tax Amount.</label>
+                        <label className="ui-outputlabel field-label-mandate">MV Tax.</label>
                       </div>
                       <input
                         type="text"
                         className="ui-inputtext font-bold medium-text-font"
-                        value={totalAmount}
-                        onChange={(e) => { setTotalAmount(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        value={mvTax}
+                        onChange={(e) => { setMvTax(e.target.value.replace(/[^0-9.]/g, "")); setCalculatedTotal(""); setFormError(""); }}
                         placeholder="0"
-                        title="Tax Amount"
+                        title="MV Tax"
                       />
                     </div>
                     <div className="ui-grid-col-3">
@@ -930,28 +931,36 @@ function TaxCollectionContent() {
                         type="text"
                         className="ui-inputtext"
                         value={userCharge}
-                        onChange={(e) => setUserCharge(e.target.value.replace(/[^0-9.]/g, ""))}
+                        onChange={(e) => { setUserCharge(e.target.value.replace(/[^0-9.]/g, "")); setCalculatedTotal(""); }}
                         placeholder="0"
                         title="Service / User Charge"
                       />
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Civic Infra Cess</label>
+                        <label className="ui-outputlabel field-label-mandate">Cess</label>
                       </div>
                       <input
                         type="text"
                         className="ui-inputtext"
                         value={infraCess}
-                        onChange={(e) => setInfraCess(e.target.value.replace(/[^0-9.]/g, ""))}
+                        onChange={(e) => { setInfraCess(e.target.value.replace(/[^0-9.]/g, "")); setCalculatedTotal(""); }}
                         placeholder="0"
-                        title="Civic Infra Cess"
+                        title="Cess"
                       />
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="ui-grid-row">
                         <div className="ui-grid-col-12 top_mar1 mar-left5">
-                          <button className="ui-button" type="button" title="Click to Calculate Tax">
+                          <button
+                            className="ui-button"
+                            type="button"
+                            title="Click to Calculate Tax"
+                            onClick={() => {
+                              const total = (parseFloat(mvTax) || 0) + (parseFloat(userCharge) || 0) + (parseFloat(infraCess) || 0);
+                              setCalculatedTotal(total.toString());
+                            }}
+                          >
                             <i className="fa fa-calculator"></i>
                             <span className="ui-button-text">Calculate Tax</span>
                           </button>
@@ -977,6 +986,15 @@ function TaxCollectionContent() {
                       </div>
                     </div>
                   </div>
+                  {calculatedTotal && (
+                    <div className="ui-grid-row" style={{ marginTop: "10px" }}>
+                      <div className="ui-grid-col-12">
+                        <div style={{ background: "#e8f4fd", border: "1.5px solid #87CEEB", borderRadius: "4px", padding: "10px 16px", fontSize: "15px", fontWeight: "bold", color: "#003366" }}>
+                          Total Tax Amount : &#8377; {calculatedTotal}/-
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               </div>
@@ -1031,7 +1049,7 @@ function TaxCollectionContent() {
                   <tr>
                     <td><span className="small-text-font-bold">Amount</span></td>
                     <td><span className="small-text-font-bold">:</span></td>
-                    <td><span className="small-text-font-bold">{totalAmount ? `${totalAmount}/-` : "/-"}</span></td>
+                    <td><span className="small-text-font-bold">{calculatedTotal ? `${calculatedTotal}/-` : "/-"}</span></td>
                   </tr>
                   <tr>
                     <td><span className="small-text-font">Payment Mode</span></td>

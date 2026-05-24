@@ -37,10 +37,10 @@ function passThrough(v: string | undefined | null): string {
 }
 
 export function buildUttarakhandReceiptData(txn: TxnLike): ReceiptData {
-  const mvTax   = Number(txn.amount)     || 0;
+  const grand   = Number(txn.amount)     || 0;
   const userChg = Number(txn.userCharge) || 0;
   const infra   = Number(txn.infraCess)  || 0;
-  const grand   = mvTax + userChg + infra;
+  const mvTax   = Math.max(0, grand - userChg - infra);
 
   const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null);
   const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null);
@@ -97,9 +97,11 @@ export function buildUttarakhandReceiptData(txn: TxnLike): ReceiptData {
     puccValidity:       txn.puccValidity    ? upper(fmtTaxDate(txn.puccValidity))    : "",
     permitNumber:       passThrough(txn.permitNumber),
     permitValidityText,
+    permitValidity:     permitValidityText,
+    grossVehicleWt:     Number(txn.grossVehicleWt) || 0,
+    unladenWt:          Number(txn.unladenWt) || 0,
 
-    // Three rows — MV Tax, Civic Infra Cess, Service/User Charge — each
-    // labelled with the tax period as the inspect HTML does.
+    // Page 1: MV Tax; Page 2: Service/User Charge + Cess (slice(0,1)/slice(1))
     taxItems: [
       {
         particular: `MV Tax(${taxFromLabel} To ${taxToLabel})`,
@@ -108,16 +110,16 @@ export function buildUttarakhandReceiptData(txn: TxnLike): ReceiptData {
         total:      mvTax,
       },
       {
-        particular: `Civic Infra Cess ( ${taxFromLabel} To ${taxToLabel})`,
-        fees:       infra,
-        fine:       0,
-        total:      infra,
-      },
-      {
         particular: `Service/User Charge ( ${taxFromLabel} To ${taxToLabel})`,
         fees:       userChg,
         fine:       0,
         total:      userChg,
+      },
+      {
+        particular: `Cess ( ${taxFromLabel} To ${taxToLabel})`,
+        fees:       infra,
+        fine:       0,
+        total:      infra,
       },
     ],
   };

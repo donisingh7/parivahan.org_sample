@@ -100,7 +100,10 @@ function TaxCollectionContent() {
   const [noPeriods, setNoPeriods] = useState("");
   const [taxFrom, setTaxFrom] = useState("");
   const [taxTo, setTaxTo] = useState("");
-  const [totalAmount, setTotalAmount] = useState("");
+  const [totalAmount,   setTotalAmount]   = useState("");
+  const [mvTaxField,    setMvTaxField]    = useState("");
+  const [surchargeField,setSurchargeField]= useState("");
+  const [showBreakup,   setShowBreakup]   = useState(false);
   const [dateError, setDateError] = useState("");
 
   // Modal state
@@ -147,7 +150,7 @@ function TaxCollectionContent() {
     if (!vehicleNo.trim())            missing.push("Registration No.");
     if (!taxFrom)                     missing.push("Tax From Date");
     if (!taxTo)                       missing.push("Tax Upto Date");
-    if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("Total Amount");
+    if (!showBreakup) missing.push("Total Amount (click Calculate Tax first)");
     if (missing.length > 0) {
       setFormError(`Please fill the following before paying: ${missing.join(", ")}`);
       return;
@@ -181,7 +184,8 @@ function TaxCollectionContent() {
       noOfPeriods:      noPeriods,
       taxFrom,
       taxTo,
-      amount: totalAmount || "0",
+      amount:     String((parseFloat(mvTaxField) || 0) + (parseFloat(surchargeField) || 0)),
+      userCharge: surchargeField || "0",
     });
     router.push(`/payment/sbi?${params.toString()}`);
   };
@@ -192,7 +196,7 @@ function TaxCollectionContent() {
     setSeatingCap(""); setSleeperCap(""); setPermitType("-1");
     setCheckpostName(""); setDistrictEntering("-1"); setPurposeVisit("-1"); setAitpValidity("");
     setAitpAuthValidity(""); setTaxMode("-1"); setNoPeriods("");
-    setTaxFrom(""); setTaxTo(""); setTotalAmount(""); setDateError(""); setFormError(""); setShowModal(false);
+    setTaxFrom(""); setTaxTo(""); setTotalAmount(""); setMvTaxField(""); setSurchargeField(""); setShowBreakup(false); setDateError(""); setFormError(""); setShowModal(false);
   };
 
   const [navOpen, setNavOpen] = useState(false);
@@ -730,14 +734,31 @@ function TaxCollectionContent() {
                         type="text"
                         className="ui-inputtext font-bold medium-text-font"
                         value={totalAmount}
-                        onChange={(e) => { setTotalAmount(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        onChange={(e) => {
+                          setTotalAmount(e.target.value.replace(/[^0-9.]/g, ""));
+                          setShowBreakup(false);
+                          setMvTaxField("");
+                          setSurchargeField("");
+                          setFormError("");
+                        }}
                         placeholder="0.00"
                       />
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="ui-grid-row">
                         <div className="ui-grid-col-12 top_mar1 mar-left5">
-                          <button className="ui-button" type="button">
+                          <button
+                            className="ui-button"
+                            type="button"
+                            onClick={() => {
+                              const amt = parseFloat(totalAmount) || 0;
+                              const mv  = Math.round(amt * 15 / 16);
+                              setMvTaxField(String(mv));
+                              setSurchargeField(String(amt - mv));
+                              setShowBreakup(true);
+                              setFormError("");
+                            }}
+                          >
                             <i className="fa fa-calculator"></i>
                             <span className="ui-button-text">Calculate Tax</span>
                           </button>
@@ -761,6 +782,41 @@ function TaxCollectionContent() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Tax breakup — appears after Calculate Tax is clicked */}
+                  {showBreakup && (
+                    <div className="ui-grid-row" style={{ marginTop: "10px" }}>
+                      <div className="ui-grid-col-4">
+                        <div className="field-label resp-label-section">
+                          <label className="ui-outputlabel field-label-mandate">MV Tax</label>
+                        </div>
+                        <input
+                          type="text"
+                          className="ui-inputtext font-bold medium-text-font"
+                          value={mvTaxField}
+                          onChange={(e) => setMvTaxField(e.target.value.replace(/[^0-9.]/g, ""))}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="ui-grid-col-4">
+                        <div className="field-label resp-label-section">
+                          <label className="ui-outputlabel field-label-mandate">Surcharge Fee</label>
+                        </div>
+                        <input
+                          type="text"
+                          className="ui-inputtext"
+                          value={surchargeField}
+                          onChange={(e) => setSurchargeField(e.target.value.replace(/[^0-9.]/g, ""))}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="ui-grid-col-4" style={{ display: "flex", alignItems: "flex-end" }}>
+                        <div style={{ background: "#e8f4fd", border: "1.5px solid #87CEEB", borderRadius: "4px", padding: "10px 16px", fontSize: "15px", fontWeight: "bold", color: "#003366", width: "100%" }}>
+                          Total : &#8377; {(parseFloat(mvTaxField) || 0) + (parseFloat(surchargeField) || 0)}/-
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               </div>
@@ -810,7 +866,7 @@ function TaxCollectionContent() {
                   <tr>
                     <td><span className="small-text-font-bold">Amount</span></td>
                     <td><span className="small-text-font-bold">:</span></td>
-                    <td><span className="small-text-font-bold">{totalAmount ? `${totalAmount}/-` : "/-"}</span></td>
+                    <td><span className="small-text-font-bold">{showBreakup ? `${(parseFloat(mvTaxField)||0) + (parseFloat(surchargeField)||0)}/-` : "/-"}</span></td>
                   </tr>
                   <tr>
                     <td><span className="small-text-font">Payment Mode</span></td>

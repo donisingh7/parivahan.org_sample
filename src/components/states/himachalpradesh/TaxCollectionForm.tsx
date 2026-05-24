@@ -178,9 +178,12 @@ function TaxCollectionContent() {
   const [puccValidity,      setPuccValidity]      = useState("");
   const [taxFrom,           setTaxFrom]           = useState("");
   const [taxTo,             setTaxTo]             = useState("");
-  const [totalAmount,       setTotalAmount]       = useState("0");
+  const [taxFromTime,       setTaxFromTime]       = useState("00:00");
+  const [taxToTime,         setTaxToTime]         = useState("23:59");
+  const [specialRoadTax,    setSpecialRoadTax]    = useState("0");
   const [userCharge,        setUserCharge]        = useState("0");
   const [infraCess,         setInfraCess]         = useState("0");
+  const [calculatedTotal,   setCalculatedTotal]   = useState("");
 
   const [dateError,   setDateError]   = useState("");
   const [formError,   setFormError]   = useState("");
@@ -224,10 +227,10 @@ function TaxCollectionContent() {
       return;
     }
     const missing: string[] = [];
-    if (!vehicleNo.trim())                            missing.push("Vehicle No.");
-    if (!taxFrom)                                     missing.push("Tax From Date");
-    if (!taxTo)                                       missing.push("Tax Upto Date");
-    if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("Total Amount");
+    if (!vehicleNo.trim())                              missing.push("Vehicle No.");
+    if (!taxFrom)                                       missing.push("Tax From Date");
+    if (!taxTo)                                         missing.push("Tax Upto Date");
+    if (!calculatedTotal || parseFloat(calculatedTotal) <= 0) missing.push("Total Amount (click Calculate Tax)");
     if (missing.length > 0) {
       setFormError(`Please fill the following before paying: ${missing.join(", ")}`);
       return;
@@ -259,8 +262,10 @@ function TaxCollectionContent() {
       insuranceValidity,
       puccValidity,
       taxFrom,
+      taxFromTime,
       taxTo,
-      amount:     totalAmount || "0",
+      taxToTime,
+      amount:     calculatedTotal || "0",
       userCharge: userCharge  || "0",
       infraCess:  infraCess   || "0",
     });
@@ -273,8 +278,8 @@ function TaxCollectionContent() {
     setServiceType(""); setSeatingCap(""); setSleeperCap("0"); setFuelType("");
     setTaxMode(""); setBorderDistrict("");
     setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity("");
-    setTaxFrom(""); setTaxTo("");
-    setTotalAmount("0"); setUserCharge("0"); setInfraCess("0");
+    setTaxFrom(""); setTaxTo(""); setTaxFromTime("00:00"); setTaxToTime("23:59");
+    setSpecialRoadTax("0"); setUserCharge("0"); setInfraCess("0"); setCalculatedTotal("");
     setDateError(""); setFormError(""); setShowModal(false);
   };
 
@@ -685,7 +690,7 @@ function TaxCollectionContent() {
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Tax From Date</label>
+                        <label className="ui-outputlabel field-label-mandate">Tax From Date &amp; Time</label>
                       </div>
                       <div className="ui-calendar">
                         <input
@@ -697,10 +702,19 @@ function TaxCollectionContent() {
                           autoComplete="off"
                         />
                       </div>
+                      <div className="ui-calendar" style={{ marginTop: "4px" }}>
+                        <input
+                          type="time"
+                          className="ui-inputtext cp-date-input"
+                          value={taxFromTime}
+                          onChange={(e) => setTaxFromTime(e.target.value)}
+                          autoComplete="off"
+                        />
+                      </div>
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Tax Upto Date</label>
+                        <label className="ui-outputlabel field-label-mandate">Tax Upto Date &amp; Time</label>
                       </div>
                       <div className="ui-calendar">
                         <input
@@ -709,6 +723,15 @@ function TaxCollectionContent() {
                           value={taxTo}
                           min={taxFrom || undefined}
                           onChange={(e) => handleTaxToChange(e.target.value)}
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className="ui-calendar" style={{ marginTop: "4px" }}>
+                        <input
+                          type="time"
+                          className="ui-inputtext cp-date-input"
+                          value={taxToTime}
+                          onChange={(e) => setTaxToTime(e.target.value)}
                           autoComplete="off"
                         />
                       </div>
@@ -758,22 +781,8 @@ function TaxCollectionContent() {
                     </div>
                   )}
 
-                  {/* Total Amount + Service/User Charge + Cess + buttons.
-                      Inspect HTML 4335-4368 places the three numeric inputs
-                      (col-3 each) alongside the action buttons (col-3). */}
+                  {/* Service/User Charge + Cess + Special Road Tax + buttons */}
                   <div className="ui-grid-row">
-                    <div className="ui-grid-col-3">
-                      <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Total Amount.</label>
-                      </div>
-                      <input
-                        type="text"
-                        className="ui-inputtext font-bold medium-text-font"
-                        value={totalAmount}
-                        onChange={(e) => { setTotalAmount(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
-                        placeholder="0.00"
-                      />
-                    </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Service/User Charge.</label>
@@ -782,7 +791,7 @@ function TaxCollectionContent() {
                         type="text"
                         className="ui-inputtext"
                         value={userCharge}
-                        onChange={(e) => setUserCharge(e.target.value.replace(/[^0-9.]/g, ""))}
+                        onChange={(e) => { setUserCharge(e.target.value.replace(/[^0-9.]/g, "")); setCalculatedTotal(""); }}
                         placeholder="0"
                       />
                     </div>
@@ -794,14 +803,33 @@ function TaxCollectionContent() {
                         type="text"
                         className="ui-inputtext"
                         value={infraCess}
-                        onChange={(e) => setInfraCess(e.target.value.replace(/[^0-9.]/g, ""))}
+                        onChange={(e) => { setInfraCess(e.target.value.replace(/[^0-9.]/g, "")); setCalculatedTotal(""); }}
                         placeholder="0"
+                      />
+                    </div>
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel field-label-mandate">Special Road Tax.</label>
+                      </div>
+                      <input
+                        type="text"
+                        className="ui-inputtext font-bold medium-text-font"
+                        value={specialRoadTax}
+                        onChange={(e) => { setSpecialRoadTax(e.target.value.replace(/[^0-9.]/g, "")); setCalculatedTotal(""); setFormError(""); }}
+                        placeholder="0.00"
                       />
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="ui-grid-row">
                         <div className="ui-grid-col-12 top_mar1 mar-left5">
-                          <button className="ui-button" type="button">
+                          <button
+                            className="ui-button"
+                            type="button"
+                            onClick={() => {
+                              const total = (parseFloat(userCharge)||0) + (parseFloat(infraCess)||0) + (parseFloat(specialRoadTax)||0);
+                              setCalculatedTotal(total.toString());
+                            }}
+                          >
                             <i className="fa fa-calculator"></i>
                             <span className="ui-button-text">Calculate Tax</span>
                           </button>
@@ -825,6 +853,25 @@ function TaxCollectionContent() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Calculated total box — appears after Calculate Tax is clicked */}
+                  {calculatedTotal && (
+                    <div className="ui-grid-row" style={{ marginTop: "10px" }}>
+                      <div className="ui-grid-col-12">
+                        <div style={{
+                          background: "#e8f4fd",
+                          border: "1.5px solid #87CEEB",
+                          borderRadius: "4px",
+                          padding: "10px 16px",
+                          fontSize: "15px",
+                          fontWeight: "bold",
+                          color: "#003366",
+                        }}>
+                          Total Tax Amount : &#8377; {calculatedTotal}/-
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               </div>
@@ -864,17 +911,17 @@ function TaxCollectionContent() {
                   <tr>
                     <td><span className="small-text-font">Tax From Date</span></td>
                     <td><span className="small-text-font">:</span></td>
-                    <td><span className="small-text-font">{taxFrom}</span></td>
+                    <td><span className="small-text-font">{taxFrom}{taxFromTime ? ` ${taxFromTime}` : ""}</span></td>
                   </tr>
                   <tr>
                     <td><span className="small-text-font">Tax To Date</span></td>
                     <td><span className="small-text-font">:</span></td>
-                    <td><span className="small-text-font">{taxTo}</span></td>
+                    <td><span className="small-text-font">{taxTo}{taxToTime ? ` ${taxToTime}` : ""}</span></td>
                   </tr>
                   <tr>
                     <td><span className="small-text-font-bold">Amount</span></td>
                     <td><span className="small-text-font-bold">:</span></td>
-                    <td><span className="small-text-font-bold">{totalAmount ? `${totalAmount}/-` : "/-"}</span></td>
+                    <td><span className="small-text-font-bold">{calculatedTotal ? `${calculatedTotal}/-` : "/-"}</span></td>
                   </tr>
                   <tr>
                     <td><span className="small-text-font">Payment Mode</span></td>

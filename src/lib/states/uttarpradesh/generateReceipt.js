@@ -194,11 +194,11 @@ async function generateReceipt(data) {
 
   drawField('Vehilce Type',                  data.vehicleType       || '-', col1X, y);
   drawField('Vehicle Class',                 data.vehicleClass      || '-', col2X, y);
-  y += fh3;
+  y += fh2-8;
 
   drawField('Vehicle\nCategory',             data.vehicleCategory   || '-', col1X, y);
   drawField('Mobile No.',                    data.mobileNo          || '-', col2X, y);
-  y += fh2;
+  y += fh3;
 
   drawField('Checkpost\nName',               data.checkpostName     || '-', col1X, y);
   drawField('Seating\nCapacity',             String(data.seatingCapacity ?? ''), col2X, y);
@@ -212,7 +212,7 @@ async function generateReceipt(data) {
   drawField('Permit\nNumber',                data.permitNumber      || '0000',   col2X, y);
   y += fh2;
 
-  drawField('Permit\nValidity',              data.permitValidityText || '-', col1X, y);
+  drawField('Permit\nValidity',              data.permitValidity    || '-', col1X, y);
   drawField('Fitness\nValidity',             data.fitnessValidity   || '-', col2X, y);
   y += fh2;
 

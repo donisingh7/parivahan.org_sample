@@ -98,6 +98,9 @@ export function createTransactionSchema(): Schema<TransactionDoc> {
       // Stored separately so the Date fields stay date-only everywhere else.
       taxFromTime:      { type: String, default: "" },
       taxToTime:        { type: String, default: "" },
+      // Punjab — vehicle weight fields (Gross Vehicle Wt / Unladen Wt in Kg).
+      grossVehicleWt:   { type: Number, default: 0 },
+      unladenWt:        { type: Number, default: 0 },
     },
     { timestamps: true }
   );

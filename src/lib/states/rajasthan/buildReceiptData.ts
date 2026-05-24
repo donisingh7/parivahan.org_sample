@@ -24,10 +24,11 @@ import { numberToWords } from "../shared/numberToWords";
 import type { ReceiptData, TxnLike } from "../types";
 
 export function buildRajasthanReceiptData(txn: TxnLike): ReceiptData {
-  const amount    = Number(txn.amount) || 0;
-  // 15/16 split is the Rajasthan Motor-Vehicle-Tax + Surcharge convention.
-  const mvTax     = Math.round(amount * 15 / 16);
-  const surcharge = amount - mvTax;
+  const amount = Number(txn.amount) || 0;
+  // userCharge stores the Surcharge Fee the operator confirmed (or modified).
+  // Fall back to 15/16 split for legacy records that predate this field.
+  const surcharge = txn.userCharge != null ? Number(txn.userCharge) : amount - Math.round(amount * 15 / 16);
+  const mvTax     = Math.max(0, amount - surcharge);
 
   const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null);
   const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null);

@@ -28,10 +28,17 @@ import {
 import { numberToWords } from "../shared/numberToWords";
 import type { ReceiptData, TxnLike } from "../types";
 
-// HP's form submits text values (e.g. "WEEKLY", "MOTOR CYCLE", "PETROL")
-// rather than numeric codes, so no resolveLabel-style lookup is needed.
 function passThrough(v: string | undefined | null): string {
   return v && String(v).trim() ? String(v) : "-";
+}
+
+function fmt12Hour(hhmm: string | undefined | null): string {
+  if (!hhmm) return "";
+  const [h, m] = hhmm.split(":").map(Number);
+  if (isNaN(h) || isNaN(m)) return "";
+  const period = h < 12 ? "AM" : "PM";
+  const hour12 = h % 12 || 12;
+  return ` ${String(hour12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${period}`;
 }
 
 // Validity dates are persisted as ISO Date strings; the HP receipt prints
@@ -48,13 +55,13 @@ function fmtValidity(v: TxnLike["fitnessValidity"]): string {
 }
 
 export function buildHimachalPradeshReceiptData(txn: TxnLike): ReceiptData {
-  const mvTax   = Number(txn.amount)     || 0;
+  const grand   = Number(txn.amount)     || 0;
   const userChg = Number(txn.userCharge) || 0;
   const infra   = Number(txn.infraCess)  || 0;
-  const grand   = mvTax + userChg + infra;
+  const mvTax   = Math.max(0, grand - userChg - infra);
 
-  const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null);
-  const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null);
+  const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null) + fmt12Hour(txn.taxFromTime);
+  const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null) + fmt12Hour(txn.taxToTime);
   const paymentDate  = txn.paidAt ? new Date(txn.paidAt) : new Date();
 
   const receiptNo = txn.receiptNo || "-";
@@ -94,14 +101,14 @@ export function buildHimachalPradeshReceiptData(txn: TxnLike): ReceiptData {
     amount:          grand,
     amountInWords:   numberToWords(grand),
 
-    // Three rows mirroring the HP inspect HTML (lines 4791-4832): Special
-    // Road Tax, Civic Infra Cess and Service/User Charge.
+    // Three rows: Service/User Charge (page 1), Civic Infra Cess (page 2),
+    // Special Road Tax (page 2).
     taxItems: [
       {
-        particular: `Special Road Tax ( ${taxFromLabel} TO ${taxToLabel} )`,
-        fees:       mvTax,
+        particular: `Service/User Charge ( ${taxFromLabel} To ${taxToLabel}) `,
+        fees:       userChg,
         fine:       0,
-        total:      mvTax,
+        total:      userChg,
       },
       {
         particular: `Civic Infra Cess ( ${taxFromLabel} To ${taxToLabel})`,
@@ -110,10 +117,10 @@ export function buildHimachalPradeshReceiptData(txn: TxnLike): ReceiptData {
         total:      infra,
       },
       {
-        particular: `Service/User Charge ( ${taxFromLabel} To ${taxToLabel}) `,
-        fees:       userChg,
+        particular: `Special Road Tax ( ${taxFromLabel} TO ${taxToLabel} )`,
+        fees:       mvTax,
         fine:       0,
-        total:      userChg,
+        total:      mvTax,
       },
     ],
   };

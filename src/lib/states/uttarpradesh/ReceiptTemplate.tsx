@@ -90,9 +90,9 @@ function QRPlaceholder({ value }: { value: string }) {
 }
 
 // ── Field row (label : value) ──────────────────────────────────────────────
-function Field({ label, value }: { label: string; value: React.ReactNode }) {
+function Field({ label, value, mb }: { label: string; value: React.ReactNode; mb?: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", marginBottom: "8px" }}>
+    <div style={{ display: "flex", alignItems: "flex-start", marginBottom: mb ?? "8px" }}>
       <div style={{ width: "120px", fontSize: "13.5px", fontWeight: 400, flexShrink: 0, lineHeight: 1.4, whiteSpace: "pre-line" }}>
         {label}
       </div>
@@ -190,11 +190,11 @@ export default function UttarPradeshReceiptTemplate({ data }: { data: ReceiptDat
             <Field label={"Payment\nInitialization\nDate"}  value={data.paymentInitDate} />
             <Field label="Chassis No."                      value={data.chassisNo} />
             <Field label="Vehilce Type"                     value={data.vehicleType} />
-            <Field label={"Vehicle\nCategory"}              value={data.vehicleCategory} />
+            <Field label={"Vehicle\nCategory"}              value={data.vehicleCategory} mb="21px" />
             <Field label={"Checkpost\nName"}                value={data.checkpostName} />
             <Field label="Sleeper Cap."                     value={data.sleeperCap} />
             <Field label={"Payment\nMode"}                  value={data.paymentMode} />
-            <Field label={"Permit\nValidity"}               value={data.permitValidityText} />
+            <Field label={"Permit\nValidity"}               value={data.permitValidity} />
             <Field label={"Insurance\nValidity"}            value={data.insuranceValidity} />
             <Field label="Service Type"                     value={data.serviceType} />
             <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentDateText} />
@@ -205,7 +205,7 @@ export default function UttarPradeshReceiptTemplate({ data }: { data: ReceiptDat
             <Field label="Owner Name"          value={data.ownerName} />
             <Field label="Tax Mode"            value={data.taxMode} />
             <Field label="Vehicle Class"       value={data.vehicleClass} />
-            <Field label="Mobile No."          value={data.mobileNo} />
+            <Field label="Mobile No."          value={data.mobileNo} mb="21px" />
             <Field label={"Seating\nCapacity"} value={data.seatingCapacity} />
             <Field label="Bank Ref. No."       value={data.bankRefNo} />
             <Field label={"Permit\nNumber"}    value={data.permitNumber || "0000"} />

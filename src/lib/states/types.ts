@@ -105,6 +105,10 @@ export interface ReceiptData {
   paymentInitDate?:     string;  // "Payment Initialization Date" — distinct from confirmation date
   permitNumber?:        string;
   permitValidityText?:  string;  // e.g. "12-MAY-2026 to 26-MAY-2026"
+  // Punjab-specific vehicle weight fields
+  grossVehicleWt?:      number;
+  unladenWt?:           number;
+  permitValidity?:      string;  // derived from permitUpto
 }
 
 // Loose Mongo doc shape — both lean()'d documents and POJOs work for the
@@ -149,6 +153,9 @@ export interface TxnLike {
   // Haryana — "HH:MM" time component of the tax window
   taxFromTime?:       string;
   taxToTime?:         string;
+  // Punjab vehicle weight fields
+  grossVehicleWt?:    number;
+  unladenWt?:         number;
 }
 
 // ── State module — the contract every state folder must satisfy. ────────────
@@ -215,7 +222,11 @@ export interface GenerateReceiptInput {
   paymentInitDate?:    string;
   permitNumber?:       string;
   permitValidityText?: string;
+  permitValidity?:     string;
   fuelType?:           string;
+  grossVehicleWt?:     number;
+  unladenWt?:          number;
+  paymentDateText?:    string;
 }
 
 // ── TransactionDoc — Mongo document shape. State-specific models all live
@@ -281,6 +292,9 @@ export interface TransactionDoc {
   // Haryana — "HH:MM" time component of the tax window
   taxFromTime?:        string;
   taxToTime?:          string;
+  // Punjab vehicle weight fields
+  grossVehicleWt?:     number;
+  unladenWt?:          number;
 }
 
 // Re-export Schema for convenience in shared/baseSchema consumers.
