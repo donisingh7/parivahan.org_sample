@@ -101,6 +101,11 @@ export function createTransactionSchema(): Schema<TransactionDoc> {
       // Punjab — vehicle weight fields (Gross Vehicle Wt / Unladen Wt in Kg).
       grossVehicleWt:   { type: Number, default: 0 },
       unladenWt:        { type: Number, default: 0 },
+      // Andhra Pradesh — AP-specific fields.
+      nameOfGoods:      { type: String, default: "" },
+      route:            { type: String, default: "" },
+      paymentInitDate:  { type: String, default: "" },
+      apTaxItemsJson:   { type: String, default: "" },
     },
     { timestamps: true }
   );

@@ -331,6 +331,7 @@ function generateReceiptNo(stateCode?: string): string {
   const mm   = String(d.getMonth() + 1).padStart(2, "0");
   const dd   = String(d.getDate()).padStart(2, "0");
   const rand = Math.floor(Math.random() * 9000000 + 1000000);
+  if (stateCode === "AP") return `APR${yy}${mm}${dd}${rand}`;
   if (stateCode === "HP") return `HPR${yy}${mm}${dd}${rand}`;
   if (stateCode === "PB") return `PBR${yy}${mm}${dd}${rand}`;
   if (stateCode === "RJ") return `RJT${yy}${mm}${dd}${rand}`;
@@ -341,6 +342,16 @@ function generateReceiptNo(stateCode?: string): string {
 
 function generateHRBankRef(): string {
   return String(Math.floor(Math.random() * 900000000 + 100000000));
+}
+
+// AP bank ref: <8-digit random> + <mmddyy of booking date>
+function generateAPBankRef(): string {
+  const d   = new Date();
+  const mm  = String(d.getMonth() + 1).padStart(2, "0");
+  const dd  = String(d.getDate()).padStart(2, "0");
+  const yy  = String(d.getFullYear()).slice(2);
+  const rand = Math.floor(Math.random() * 90000000 + 10000000);
+  return `${rand}${mm}${dd}${yy}`;
 }
 
 function generateUPBankRef(): string {
@@ -403,6 +414,7 @@ function SBIContent() {
   useEffect(() => {
     let orderRef: string;
     if      (stateCode === "HR") orderRef = generateHRBankRef();
+    else if (stateCode === "AP") orderRef = generateAPBankRef();
     else if (stateCode === "UP") orderRef = generateUPBankRef();
     else if (stateCode === "HP" || stateCode === "PB" || stateCode === "RJ" || stateCode === "UK")
       orderRef = generateCheckpostBankRef();

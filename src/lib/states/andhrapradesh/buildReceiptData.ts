@@ -3,14 +3,11 @@
  *
  * Both the on-screen ReceiptTemplate and the PDF generator (generateReceipt.js)
  * consume the shape produced here, so a single Mongo Transaction document
- * drives identical output everywhere. Other states have their own
- * buildReceiptData under src/lib/states/<state>/ — duplication is intentional
- * so each state can later diverge without entangled file edits.
+ * drives identical output everywhere.
  */
 
 import {
   fmtPaymentDate,
-  fmtTaxDate,
   maskChassis,
   maskMobile,
   maskName,
@@ -21,45 +18,83 @@ import {
   VEHICLE_TYPE_LABELS,
 } from "../shared/masking";
 import { numberToWords } from "../shared/numberToWords";
-import type { ReceiptData, TxnLike } from "../types";
+import type { ReceiptData, TaxItem, TxnLike } from "../types";
+
+function fmtValidity(v: Date | string | null | undefined): string {
+  if (!v) return "-";
+  const d = new Date(v as string);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+  }).toUpperCase().replace(/ /g, "-");
+}
+
+function fmtInitDate(s: string | undefined): string {
+  if (!s) return "-";
+  // If it's a raw ISO date (YYYY-MM-DD) format it for display
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+  }).toUpperCase().replace(/ /g, "-");
+}
 
 export function buildAndhraPradeshReceiptData(txn: TxnLike): ReceiptData {
-  const amount    = Number(txn.amount) || 0;
-  // 15/16 split is the Andhra Pradesh Motor-Vehicle-Tax + Surcharge convention.
-  const mvTax     = Math.round(amount * 15 / 16);
-  const surcharge = amount - mvTax;
+  const amount      = Number(txn.amount) || 0;
+  const paymentDate = txn.paidAt ? new Date(txn.paidAt) : new Date();
+  const receiptNo   = txn.receiptNo || "-";
 
-  const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null);
-  const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null);
-  const paymentDate  = txn.paidAt ? new Date(txn.paidAt) : new Date();
-
-  const receiptNo = txn.receiptNo || "-";
+  // Parse operator-entered tax rows; fall back to a single amount row for
+  // legacy records that predate the apTaxItemsJson field.
+  let taxItems: TaxItem[];
+  try {
+    const raw = txn.apTaxItemsJson ? JSON.parse(txn.apTaxItemsJson as string) : [];
+    if (Array.isArray(raw) && raw.length > 0) {
+      taxItems = (raw as Record<string, unknown>[]).map((item) => ({
+        particular: String(item.particular ?? ""),
+        fees:       Number(item.fees)  || 0,
+        fine:       Number(item.fine)  || 0,
+        total:      Number(item.total) || 0,
+      }));
+    } else {
+      taxItems = [{ particular: "MV Tax", fees: amount, fine: 0, total: amount }];
+    }
+  } catch {
+    taxItems = [{ particular: "MV Tax", fees: amount, fine: 0, total: amount }];
+  }
 
   return {
-    registrationNo:  txn.vehicleNo || "-",
+    registrationNo:   txn.vehicleNo    || "-",
     receiptNo,
-    paymentDate:     paymentDate.toISOString(),
-    paymentDateText: fmtPaymentDate(paymentDate),
-    ownerName:       maskName(txn.ownerName  ?? ""),
-    chassisNo:       maskChassis(txn.chassisNo ?? ""),
-    mobileNo:        maskMobile(txn.mobileNo ?? ""),
-    taxMode:         resolveLabel(TAX_MODE_LABELS,      txn.taxMode      ?? ""),
-    vehicleType:     resolveLabel(VEHICLE_TYPE_LABELS,  txn.vehicleType  ?? ""),
-    vehicleClass:    resolveLabel(VEHICLE_CLASS_LABELS, txn.vehicleClass ?? ""),
-    permitType:      resolveLabel(PERMIT_TYPE_LABELS,   txn.permitType   ?? ""),
-    permitCategory:  "",
-    checkpostName:   txn.checkpostName || "-",
-    sleeperCap:      Number(txn.sleeperCap) || 0,
-    seatingCapacity: Number(txn.seatingCap) || 0,
-    bankRefNo:       txn.orderRef || "-",
-    paymentMode:     txn.paymentMethod || "ONLINE",
-    serviceType:     "NOT APPLICABLE",
-    qrUrl:           `https://kms.parivahan.gov.in/verify?receipt=${receiptNo}`,
+    paymentDate:      paymentDate.toISOString(),
+    paymentDateText:  fmtPaymentDate(paymentDate),
+    paymentInitDate:  fmtInitDate(txn.paymentInitDate),
+    ownerName:        maskName(txn.ownerName    ?? ""),
+    chassisNo:        maskChassis(txn.chassisNo ?? ""),
+    mobileNo:         maskMobile(txn.mobileNo   ?? ""),
+    taxMode:          resolveLabel(TAX_MODE_LABELS,      txn.taxMode      ?? ""),
+    vehicleType:      resolveLabel(VEHICLE_TYPE_LABELS,  txn.vehicleType  ?? ""),
+    vehicleClass:     resolveLabel(VEHICLE_CLASS_LABELS, txn.vehicleClass ?? ""),
+    permitType:       resolveLabel(PERMIT_TYPE_LABELS,   txn.permitType   ?? ""),
+    permitCategory:   "",
+    vehicleCategory:  txn.vehicleCategory || "",
+    checkpostName:    txn.checkpostName   || "-",
+    grossVehicleWt:   Number(txn.grossVehicleWt) || 0,
+    unladenWt:        Number(txn.unladenWt)       || 0,
+    sleeperCap:       0,
+    seatingCapacity:  0,
+    bankRefNo:        txn.orderRef        || "-",
+    paymentMode:      txn.paymentMethod   || "ONLINE",
+    serviceType:      txn.serviceType     || "NOT APPLICABLE",
+    fitnessValidity:  fmtValidity(txn.fitnessValidity),
+    insuranceValidity: fmtValidity(txn.insuranceValidity),
+    puccValidity:     fmtValidity(txn.puccValidity),
+    permitValidity:   fmtValidity(txn.permitUpto),
+    nameOfGoods:      txn.nameOfGoods || "-",
+    route:            txn.route       || "-",
+    qrUrl:            `https://apparivahan.gov.in/verify?receipt=${receiptNo}`,
     amount,
-    amountInWords:   numberToWords(amount),
-    taxItems: [
-      { particular: `MV Tax(${taxFromLabel} TO ${taxToLabel})`, fees: mvTax,     fine: 0, total: mvTax     },
-      { particular: "Surcharge fee",                            fees: surcharge, fine: 0, total: surcharge },
-    ],
+    amountInWords:    numberToWords(amount),
+    taxItems,
   };
 }

@@ -109,6 +109,10 @@ export interface ReceiptData {
   grossVehicleWt?:      number;
   unladenWt?:           number;
   permitValidity?:      string;  // derived from permitUpto
+  // Andhra Pradesh-specific fields
+  nameOfGoods?:         string;
+  route?:               string;
+  apTaxItemsJson?:      string;  // JSON array of {particular,fees,fine,total} rows
 }
 
 // Loose Mongo doc shape — both lean()'d documents and POJOs work for the
@@ -156,6 +160,11 @@ export interface TxnLike {
   // Punjab vehicle weight fields
   grossVehicleWt?:    number;
   unladenWt?:         number;
+  // Andhra Pradesh-specific
+  nameOfGoods?:       string;
+  route?:             string;
+  paymentInitDate?:   string;
+  apTaxItemsJson?:    string;
 }
 
 // ── State module — the contract every state folder must satisfy. ────────────
@@ -227,6 +236,10 @@ export interface GenerateReceiptInput {
   grossVehicleWt?:     number;
   unladenWt?:          number;
   paymentDateText?:    string;
+  // Andhra Pradesh-specific
+  nameOfGoods?:        string;
+  route?:              string;
+  paymentConfirmDate?: string;
 }
 
 // ── TransactionDoc — Mongo document shape. State-specific models all live
@@ -295,6 +308,11 @@ export interface TransactionDoc {
   // Punjab vehicle weight fields
   grossVehicleWt?:     number;
   unladenWt?:          number;
+  // Andhra Pradesh-specific
+  nameOfGoods?:        string;
+  route?:              string;
+  paymentInitDate?:    string;
+  apTaxItemsJson?:     string;
 }
 
 // Re-export Schema for convenience in shared/baseSchema consumers.

@@ -73,6 +73,8 @@ export async function POST(req: NextRequest) {
       taxFromTime, taxToTime,
       // ── Punjab-specific — vehicle weight fields ───────────────────────
       grossVehicleWt, unladenWt,
+      // ── Andhra Pradesh-specific ───────────────────────────────────────
+      nameOfGoods, route, paymentInitDate, apTaxItemsJson,
     } = body;
 
     const missing: string[] = [];
@@ -154,6 +156,10 @@ export async function POST(req: NextRequest) {
       taxToTime:         typeof taxToTime   === "string" ? taxToTime   : "",
       grossVehicleWt:    Number(grossVehicleWt) || 0,
       unladenWt:         Number(unladenWt)       || 0,
+      nameOfGoods:       nameOfGoods      ?? "",
+      route:             route            ?? "",
+      paymentInitDate:   paymentInitDate  ?? "",
+      apTaxItemsJson:    apTaxItemsJson   ?? "",
     });
 
     // ── Side-effects after a successful save ──────────────────────────────
