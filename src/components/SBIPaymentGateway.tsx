@@ -325,22 +325,17 @@ function GatewayFooter() {
 }
 
 function generateReceiptNo(stateCode?: string): string {
-  if (stateCode === "HR") {
-    return `HRT${Date.now()}`;
-  }
+  if (stateCode === "HR") return `HRT${Date.now()}`;
   const d    = new Date();
   const yy   = String(d.getFullYear()).slice(2);
   const mm   = String(d.getMonth() + 1).padStart(2, "0");
   const dd   = String(d.getDate()).padStart(2, "0");
-  if (stateCode === "HP") {
-    const rand = Math.floor(Math.random() * 9000000 + 1000000);
-    return `HRT${yy}${mm}${dd}${rand}`;
-  }
-  if (stateCode === "UP") {
-    const rand = Math.floor(Math.random() * 9000000 + 1000000);
-    return `UPR${yy}${mm}${dd}${rand}`;
-  }
   const rand = Math.floor(Math.random() * 9000000 + 1000000);
+  if (stateCode === "HP") return `HPR${yy}${mm}${dd}${rand}`;
+  if (stateCode === "PB") return `PBR${yy}${mm}${dd}${rand}`;
+  if (stateCode === "RJ") return `RJT${yy}${mm}${dd}${rand}`;
+  if (stateCode === "UK") return `UKR${yy}${mm}${dd}${rand}`;
+  if (stateCode === "UP") return `UPR${yy}${mm}${dd}${rand}`;
   return `RJT${yy}${mm}${dd}${rand}`;
 }
 
@@ -355,11 +350,17 @@ function generateUPBankRef(): string {
   return `${d()}${c()}${c()}${d()}${c()}${c()}${c()}${d()}${c()}${c()}`;
 }
 
-function generateHPBankRef(): string {
-  // Format: <1 digit><2 caps><1 digit><3 caps><1 digit><2 caps>
-  const d = () => String(Math.floor(Math.random() * 10));
-  const c = () => String.fromCharCode(65 + Math.floor(Math.random() * 26));
-  return `${d()}${c()}${c()}${d()}${c()}${c()}${c()}${d()}${c()}${c()}`;
+// Generates bank ref for HP / PB / RJ / UK:
+// 9-char string (6 uppercase letters + 3 digits, randomly permuted) + 1 random digit = 10 chars.
+function generateCheckpostBankRef(): string {
+  const chars: string[] = [];
+  for (let i = 0; i < 6; i++) chars.push(String.fromCharCode(65 + Math.floor(Math.random() * 26)));
+  for (let i = 0; i < 3; i++) chars.push(String(Math.floor(Math.random() * 10)));
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("") + String(Math.floor(Math.random() * 10));
 }
 
 // Random transaction id generated up-front on the client so the success
@@ -403,8 +404,9 @@ function SBIContent() {
     let orderRef: string;
     if      (stateCode === "HR") orderRef = generateHRBankRef();
     else if (stateCode === "UP") orderRef = generateUPBankRef();
-    else if (stateCode === "HP") orderRef = generateHPBankRef();
-    else                         orderRef = makeOrderRef(vehicleNo || "VH");
+    else if (stateCode === "HP" || stateCode === "PB" || stateCode === "RJ" || stateCode === "UK")
+      orderRef = generateCheckpostBankRef();
+    else orderRef = makeOrderRef(vehicleNo || "VH");
     setClientOrderRef(orderRef);
     setReceiptNo(generateReceiptNo(stateCode));
     setTxnId(generateTransactionId());
