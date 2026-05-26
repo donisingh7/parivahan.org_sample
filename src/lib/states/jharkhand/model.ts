@@ -28,6 +28,19 @@ export function getJharkhandTransactionModel(): Model<TransactionDoc> {
   }
 
   const schema = createTransactionSchema();
+
+  // Jharkhand-specific string fields that differ from the base schema types
+  // (base schema stores grossVehicleWt/unladenWt as Number, fitnessValidity
+  // etc. as Date — JH captures them as free-text strings from the form).
+  // NOTE: grossCombinationWeight is now in the shared base schema.
+  schema.add({
+    jhFitnessValidity:      { type: String, default: "" },
+    jhInsuranceValidity:    { type: String, default: "" },
+    jhPuccValidity:         { type: String, default: "" },
+    jhGrossVehicleWt:       { type: String, default: "" },
+    jhUnladenWt:            { type: String, default: "" },
+  });
+
   cached = mongoose.model<TransactionDoc>(
     "JharkhandTransaction",
     schema,

@@ -106,6 +106,22 @@ export function createTransactionSchema(): Schema<TransactionDoc> {
       route:            { type: String, default: "" },
       paymentInitDate:  { type: String, default: "" },
       apTaxItemsJson:   { type: String, default: "" },
+      // Jharkhand / Bihar / multi-state — string weight & validity fields.
+      // Stored as strings because these states capture them as free-text in
+      // the form rather than structured Date/Number inputs.
+      grossCombinationWeight: { type: String, default: "" },
+      // Bihar-specific string fields
+      brGrossVehicleWt:   { type: String, default: "" },
+      brUnladenWt:        { type: String, default: "" },
+      brFitnessValidity:  { type: String, default: "" },
+      brInsuranceValidity:{ type: String, default: "" },
+      brPuccValidity:     { type: String, default: "" },
+      // Maharashtra-specific string weight fields (different names from base Number fields)
+      mhLadenWeight:      { type: String, default: "" },
+      mhUnladenWeight:    { type: String, default: "" },
+      // Maharashtra-specific tax split fields
+      mhMvTax:            { type: Number, default: 0 },
+      mhPermitFee:        { type: Number, default: 0 },
     },
     { timestamps: true }
   );

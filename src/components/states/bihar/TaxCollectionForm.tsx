@@ -1,21 +1,15 @@
-"use client";
+﻿"use client";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { biharConfig } from "@/lib/states/bihar/config";
 
-// Per-state form. The state code + label are hard-coded here (rather than
-// looked up from the URL ?state=) because /checkpost/page.tsx dispatches
-// based on ?state= and renders the per-state form component directly. Other
-// states get their own copy of this file under src/components/states/<state>/
-// so each state's design can be tweaked independently.
 const STATE_CODE  = biharConfig.code;
 const STATE_LABEL = biharConfig.label;
 
-const BASE = "https://checkpost.parivahan.gov.in";
-const LOGO = `${BASE}/checkpost/faces/javax.faces.resource/checkpost-logo.png?ln=images`;
+const BASE   = "https://checkpost.parivahan.gov.in";
+const LOGO   = `${BASE}/checkpost/faces/javax.faces.resource/checkpost-logo.png?ln=images`;
 const EVAHAN = `${BASE}/checkpost/faces/javax.faces.resource/e-vahan-logo.png?ln=images`;
 
-// All Indian states for "From State"
 const allStates = [
   { value: "-1", label: "---Select State---" },
   { value: "AN", label: "ANDAMAN & NICOBAR" },
@@ -54,85 +48,95 @@ const allStates = [
   { value: "WB", label: "WEST BENGAL" },
 ];
 
-const vehicleTypes = [
-  { value: "-1", label: "---Select Vehicle Type---" },
-  { value: "1",  label: "CONTRACT CARRIAGE/PASSENGER VEHICLES" },
-  { value: "3",  label: "GOODS VEHICLE" },
-  { value: "7",  label: "TEMPORARY REGISTERED VEHICLES" },
-  { value: "9",  label: "CONSTRUCTION EQUIPMENT VEHICLE" },
-];
-
-// vehicleClasses and permitTypes lookup tables are intentionally not declared
-// here — the corresponding <select> elements inline their <option> entries
-// directly. The shared lookup tables live in src/lib/states/shared/masking.ts
-// and are used by buildReceiptData when resolving codes back to labels.
-
-const purposeOptions = [
-  { value: "-1", label: "---Select Purpose of visit---" },
-  { value: "4", label: "RAMDEVRA FAIR" },
-  { value: "6", label: "URS FAIR" },
-];
-
 function TaxCollectionContent() {
-  // The state itself comes from the per-state config so the form always knows
-  // which state it belongs to regardless of the URL — /checkpost/page.tsx
-  // dispatches based on ?state= and renders this component directly.
-  const stateCode = STATE_CODE;
-  const stateLabel = STATE_LABEL;
-
-  // Form state
-  const [vehicleNo, setVehicleNo] = useState("");
-  const [chassisNo, setChassisNo] = useState("");
-  const [ownerName, setOwnerName] = useState("");
-  const [mobileNo, setMobileNo] = useState("");
-  const [fromState, setFromState] = useState("-1");
-  const [vehicleType, setVehicleType] = useState("-1");
-  const [vehicleClass, setVehicleClass] = useState("-1");
-  const [seatingCap, setSeatingCap] = useState("");
-  const [sleeperCap, setSleeperCap] = useState("");
-  const [permitType, setPermitType] = useState("-1");
-  const [districtEntering, setDistrictEntering] = useState("-1");
-  const [checkpostName, setCheckpostName] = useState("");
-  const [purposeVisit, setPurposeVisit] = useState("-1");
-  const [aitpValidity, setAitpValidity] = useState("");
-  const [aitpAuthValidity, setAitpAuthValidity] = useState("");
-  const [taxMode, setTaxMode] = useState("-1");
-  const [noPeriods, setNoPeriods] = useState("");
-  const [taxFrom, setTaxFrom] = useState("");
-  const [taxTo, setTaxTo] = useState("");
-  const [totalAmount, setTotalAmount] = useState("");
-  const [dateError, setDateError] = useState("");
-
-  // Modal state
-  const [showModal, setShowModal] = useState(false);
   const router = useRouter();
 
-  const handleGetDetails = () => {
+  // Core vehicle fields
+  const [vehicleNo,  setVehicleNo]  = useState("");
+  const [chassisNo,  setChassisNo]  = useState("");
+  const [ownerName,  setOwnerName]  = useState("");
+  const [mobileNo,   setMobileNo]   = useState("");
+  const [fromState,  setFromState]  = useState("-1");
+
+  // Text-string inputs
+  const [vehicleType,            setVehicleType]            = useState("");
+  const [vehicleClass,           setVehicleClass]           = useState("");
+  const [vehicleCategory,        setVehicleCategory]        = useState("");
+  const [checkpostName,          setCheckpostName]          = useState("");
+  const [brGrossVehicleWt,       setBrGrossVehicleWt]       = useState("");
+  const [brUnladenWt,            setBrUnladenWt]            = useState("");
+  const [seatingCap,             setSeatingCap]             = useState("");
+  const [sleeperCap,             setSleeperCap]             = useState("0");
+  const [serviceType,            setServiceType]            = useState("");
+  const [grossCombinationWeight, setGrossCombinationWeight] = useState("");
+
+  // Dropdown fields
+  const [taxMode,       setTaxMode]       = useState("");
+  const [permitType,    setPermitType]    = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("ONLINE");
+
+  // Validity text fields
+  const [brFitnessValidity,   setBrFitnessValidity]   = useState("");
+  const [brInsuranceValidity, setBrInsuranceValidity] = useState("");
+  const [brPuccValidity,      setBrPuccValidity]      = useState("");
+
+  // Tax window
+  const [taxFrom,    setTaxFrom]    = useState("");
+  const [taxTo,      setTaxTo]      = useState("");
+  const [dateError,  setDateError]  = useState("");
+
+  // MV Tax / total
+  const [mvTax,       setMvTax]       = useState("");
+  const [totalAmount, setTotalAmount] = useState("");
+
+  // UI state
+  const [formError,    setFormError]    = useState("");
+  const [showModal,    setShowModal]    = useState(false);
+  const [pdfLoading,   setPdfLoading]   = useState(false);
+  const [pdfError,     setPdfError]     = useState("");
+  const [navOpen,      setNavOpen]      = useState(false);
+  const [reportsOpen,  setReportsOpen]  = useState(false);
+
+  const [detailsWarning, setDetailsWarning] = useState("");
+
+  const handleGetDetails = async () => {
+    setDetailsWarning("");
     if (!vehicleNo.trim()) return;
-    // Pre-fill fields on Get Details — user can still edit them
-    if (!chassisNo) setChassisNo("MBLHA10ANZZM12345");
-    if (!ownerName) setOwnerName("JOHN DOE");
+    try {
+      const res = await fetch(`/api/vehicle/cache/${encodeURIComponent(vehicleNo.trim().toUpperCase().replace(/\s/g, ""))}`);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) { setDetailsWarning("VEHICLE DATA DOES NOT EXIST"); return; }
+      const d = json.data;
+      if (d.chassisNo)       setChassisNo(d.chassisNo);
+      if (d.ownerName)       setOwnerName(d.ownerName);
+      if (d.vehicleType)     setVehicleType(d.vehicleType);
+      if (d.vehicleCategory) setVehicleCategory(d.vehicleCategory);
+      if (d.vehicleClass)    setVehicleClass(d.vehicleClass);
+      if (d.seatingCap)      setSeatingCap(d.seatingCap);
+      if (d.sleeperCap)      setSleeperCap(d.sleeperCap);
+      if (d.grossVehicleWt)  setBrGrossVehicleWt(d.grossVehicleWt);
+      if (d.unladenWt)       setBrUnladenWt(d.unladenWt);
+    } catch { setDetailsWarning("VEHICLE DATA DOES NOT EXIST"); }
   };
 
   const handleTaxFromChange = (val: string) => {
     setTaxFrom(val);
-    if (taxTo && val && val > taxTo) {
-      setDateError("Tax From Date cannot be after Tax Upto Date.");
-    } else {
-      setDateError("");
-    }
+    if (taxTo && val && val > taxTo) setDateError("Tax From Date cannot be after Tax Upto Date.");
+    else setDateError("");
   };
 
   const handleTaxToChange = (val: string) => {
     setTaxTo(val);
-    if (taxFrom && val && taxFrom > val) {
-      setDateError("Tax Upto Date cannot be before Tax From Date.");
-    } else {
-      setDateError("");
-    }
+    if (taxFrom && val && taxFrom > val) setDateError("Tax Upto Date cannot be before Tax From Date.");
+    else setDateError("");
   };
 
-  const [formError, setFormError] = useState("");
+  const handleCalculateTax = () => {
+    const mv = parseFloat(mvTax) || 0;
+    setTotalAmount(mv > 0 ? String(mv) : "");
+    if (mv <= 0) setFormError("Please enter a valid MV Tax amount.");
+    else setFormError("");
+  };
 
   const handlePayTax = () => {
     setFormError("");
@@ -141,27 +145,21 @@ function TaxCollectionContent() {
       setDateError("Tax From Date must be before Tax Upto Date.");
       return;
     }
-    // Required-field gate. Without these, /api/payment will 400 and the
-    // success screen would never render the receipt.
     const missing: string[] = [];
-    if (!vehicleNo.trim())            missing.push("Registration No.");
-    if (!taxFrom)                     missing.push("Tax From Date");
-    if (!taxTo)                       missing.push("Tax Upto Date");
-    if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("Total Amount");
+    if (!vehicleNo.trim())                            missing.push("Vehicle No.");
+    if (!taxFrom)                                     missing.push("Tax From Date");
+    if (!taxTo)                                       missing.push("Tax Upto Date");
+    if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("MV Tax (calculate first)");
     if (missing.length > 0) {
-      setFormError(`Please fill the following before paying: ${missing.join(", ")}`);
+      setFormError(`Please fill: ${missing.join(", ")}`);
       return;
     }
     setShowModal(true);
   };
 
   const handleConfirmPayment = () => {
-    // We forward the raw form codes (e.g. vehicleType="1") rather than labels.
-    // Mongo is the single source of truth — labels are resolved at render time
-    // by the state's buildReceiptData so the on-screen receipt and the PDF
-    // stay in sync no matter what.
     const params = new URLSearchParams({
-      state:            stateCode,
+      state:                 STATE_CODE,
       vehicleNo,
       ownerName,
       chassisNo,
@@ -169,16 +167,18 @@ function TaxCollectionContent() {
       fromState,
       vehicleType,
       vehicleClass,
-      seatingCap,
-      sleeperCap,
-      permitType,
-      districtEntering,
+      vehicleCategory,
       checkpostName,
-      purposeOfVisit:   purposeVisit,
-      aitpValidity,
-      aitpAuthValidity,
       taxMode,
-      noOfPeriods:      noPeriods,
+      serviceType,
+      grossCombinationWeight,
+      brGrossVehicleWt,
+      brUnladenWt,
+      paymentMethod,
+      brFitnessValidity,
+      brInsuranceValidity,
+      brPuccValidity,
+      permitType,
       taxFrom,
       taxTo,
       amount: totalAmount || "0",
@@ -188,20 +188,47 @@ function TaxCollectionContent() {
 
   const handleReset = () => {
     setVehicleNo(""); setChassisNo(""); setOwnerName(""); setMobileNo("");
-    setFromState("-1"); setVehicleType("-1"); setVehicleClass("-1");
-    setSeatingCap(""); setSleeperCap(""); setPermitType("-1");
-    setCheckpostName(""); setDistrictEntering("-1"); setPurposeVisit("-1"); setAitpValidity("");
-    setAitpAuthValidity(""); setTaxMode("-1"); setNoPeriods("");
-    setTaxFrom(""); setTaxTo(""); setTotalAmount(""); setDateError(""); setFormError(""); setShowModal(false);
+    setFromState("-1"); setVehicleType(""); setVehicleClass(""); setVehicleCategory("");
+    setCheckpostName(""); setBrGrossVehicleWt(""); setBrUnladenWt(""); setSeatingCap(""); setSleeperCap("0");
+    setServiceType(""); setGrossCombinationWeight("");
+    setTaxMode(""); setPermitType(""); setPaymentMethod("ONLINE");
+    setBrFitnessValidity(""); setBrInsuranceValidity(""); setBrPuccValidity("");
+    setTaxFrom(""); setTaxTo(""); setMvTax(""); setTotalAmount("");
+    setDateError(""); setFormError(""); setShowModal(false); setPdfError("");
+    setNavOpen(false); setReportsOpen(false);
   };
 
-  const [navOpen, setNavOpen] = useState(false);
-  const [reportsOpen, setReportsOpen] = useState(false);
+  const handleGetPdf = async () => {
+    setPdfError("");
+    if (dateError) return;
+    const missing: string[] = [];
+    if (!vehicleNo.trim())                            missing.push("Registration No.");
+    if (!taxFrom)                                     missing.push("Tax From Date");
+    if (!taxTo)                                       missing.push("Tax Upto Date");
+    if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("Total Amount");
+    if (missing.length > 0) { setPdfError(`Please fill the following before downloading: ${missing.join(", ")}`); return; }
+    const d = new Date(); const yy = String(d.getFullYear()).slice(2); const mm = String(d.getMonth()+1).padStart(2,"0"); const dd2 = String(d.getDate()).padStart(2,"0");
+    const rand = Math.floor(Math.random()*9000000+1000000);
+    const receiptNo = `BRR${yy}${mm}${dd2}${rand}`;
+    const transactionId = `TXN${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+    setPdfLoading(true);
+    try {
+      const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transactionId, state: STATE_CODE, visitingState: STATE_CODE, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleClass, vehicleCategory, checkpostName, taxMode, serviceType, grossCombinationWeight, brGrossVehicleWt, brUnladenWt, paymentMethod, brFitnessValidity, brInsuranceValidity, brPuccValidity, permitType, taxFrom, taxTo, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`, noOfPeriods:1, seatingCap, sleeperCap }) });
+      const json = await res.json().catch(()=>({}));
+      if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
+      const savedId = json.transactionId || transactionId;
+      const link = document.createElement("a"); link.href=`/api/receipt/${savedId}?state=BR&download=1`; link.download=`receipt_${savedId}.pdf`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    } catch(err) { setPdfError(err instanceof Error ? err.message : "PDF download failed."); }
+    finally { setPdfLoading(false); }
+  };
+
+  const isGoodsVehicle = vehicleType === "GOODS VEHICLE";
 
   return (
     <div id="masterlaoyoutbody">
 
-      {/* ── Top bar ── */}
+      {/* Top bar */}
       <div className="cp-topbar">
         <div className="container-fluid">
           <div className="cp-topbar-row">
@@ -223,7 +250,7 @@ function TaxCollectionContent() {
         </div>
       </div>
 
-      {/* ── Header logos ── */}
+      {/* Header logos */}
       <div className="cp-header">
         <div className="container-fluid">
           <div className="cp-header-row">
@@ -242,24 +269,16 @@ function TaxCollectionContent() {
         </div>
       </div>
 
-      {/* ── Navbar ── */}
+      {/* Navbar */}
       <nav className="cp-navbar" id="navbar">
         <div className="container-fluid">
           <div className="cp-navbar-inner">
-            <button
-              className="cp-nav-toggler"
-              onClick={() => setNavOpen(!navOpen)}
-              aria-label="Toggle navigation"
-            >
+            <button className="cp-nav-toggler" onClick={() => setNavOpen(!navOpen)} aria-label="Toggle navigation">
               <i className="fa fa-bars"></i>
             </button>
             <div className={`cp-nav-collapse${navOpen ? " open" : ""}`}>
               <ul className="nav-list">
-                <li>
-                  <a href="https://parivahan.gov.in/" className="active">
-                    <i className="fa fa-home"></i> Home
-                  </a>
-                </li>
+                <li><a href="https://parivahan.gov.in/" className="active"><i className="fa fa-home"></i> Home</a></li>
                 <li>
                   <a href={`${BASE}/checkpost/faces/public/payment/ChecklTransactionStatus.xhtml`}>
                     <i className="fa fa-user"></i> Check Pending Transaction
@@ -270,56 +289,40 @@ function TaxCollectionContent() {
                   onMouseEnter={() => setReportsOpen(true)}
                   onMouseLeave={() => setReportsOpen(false)}
                 >
-                  <a href="#">
-                    <i className="fa fa-print"></i> Reports ▾
-                  </a>
+                  <a href="#"><i className="fa fa-print"></i> Reports ▾</a>
                   {reportsOpen && (
                     <div className="cp-dropdown-menu">
-                      <a href={`${BASE}/checkpost/faces/public/reports/PaymentReceipt.xhtml`}>
-                        ▶ Print Payment Receipt
-                      </a>
-                      <a href={`${BASE}/checkpost/faces/public/reports/PermitReceiptPrinting.xhtml`}>
-                        ▶ Print Permit Receipt
-                      </a>
-                      <a href={`${BASE}/checkpost/faces/public/reports/CheckReceiptDetails.xhtml`}>
-                        ▶ Check Receipt Details
-                      </a>
+                      <a href={`${BASE}/checkpost/faces/public/reports/PaymentReceipt.xhtml`}>▶ Print Payment Receipt</a>
+                      <a href={`${BASE}/checkpost/faces/public/reports/CheckReceiptDetails.xhtml`}>▶ Check Receipt Details</a>
                     </div>
                   )}
                 </li>
               </ul>
             </div>
-            <a
-              href={`${BASE}/checkpost/faces/admin/pages/login.xhtml`}
-              className="login-btn"
-            >
-              Log In
-            </a>
+            <a href={`${BASE}/checkpost/faces/admin/pages/login.xhtml`} className="login-btn">Log In</a>
           </div>
         </div>
       </nav>
 
-      {/* ── News ticker ── */}
+      {/* News ticker */}
       <div className="cp-news-bar">
         <div className="container-fluid cp-news-scroll-wrap">
           <div className="cp-news-scroll">
             Verify the validity of the receipt by sending sms&nbsp;
-            <strong className="cp-news-highlight">VAHAN &lt;STATE CODE&gt; CP &lt;VEHICLE NO&gt;</strong>
-            &nbsp;to 7738299899 (e.g.&nbsp;
-            <strong className="cp-news-highlight">VAHAN XX CP XXXXXXXXXX</strong>)
+            <strong className="cp-news-highlight">VAHAN BR CP &lt;VEHICLE NO&gt;</strong>
+            &nbsp;to 7738299899
           </div>
         </div>
       </div>
 
-      {/* ── Main ── */}
+      {/* Main */}
       <div className="container-fluid" id="skip-main-content">
         <div className="ui-grid ui-grid-responsive">
 
-          {/* Page heading */}
           <div className="ui-grid-row top-space center-position contents-Space">
             <h1 className="header-main">
-              <span style={{color: "#0e7c43", fontWeight: "bold"}}>BORDER TAX PAYMENT FOR ENTRY INTO</span>
-              <span className="red"> {stateLabel || "STATE"}</span>
+              <span style={{ color: "#0e7c43", fontWeight: "bold" }}>BORDER TAX PAYMENT FOR ENTRY INTO</span>
+              <span className="red"> {STATE_LABEL}</span>
             </h1>
           </div>
 
@@ -327,7 +330,7 @@ function TaxCollectionContent() {
             <div className="ui-grid-col-12 center-position contents-Space"></div>
           </div>
 
-          {/* ── Tax Payment Panel ── */}
+          {/* Tax Payment Panel */}
           <div className="ui-grid-row top-space">
             <div className="ui-grid-col-1 resp-blank-height"></div>
             <div className="ui-grid-col-10">
@@ -341,24 +344,14 @@ function TaxCollectionContent() {
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Vehicle No.</label>
                       </div>
-                      <input
-                        type="text"
-                        className="ui-inputtext"
-                        maxLength={10}
-                        value={vehicleNo}
-                        onChange={(e) => setVehicleNo(e.target.value.toUpperCase())}
-                        autoComplete="off"
-                        placeholder="e.g. BR14AB1234"
-                      />
+                      <input type="text" className="ui-inputtext" maxLength={10}
+                        value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value.toUpperCase())}
+                        autoComplete="off" placeholder="e.g. BR14AB1234" />
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="ui-grid-row">
                         <div className="ui-grid-col-12 top_mar1 mar-left5">
-                          <button
-                            className="ui-button"
-                            type="button"
-                            onClick={handleGetDetails}
-                          >
+                          <button className="ui-button" type="button" onClick={handleGetDetails}>
                             <i className="ui-icon fa fa-arrow-down"></i>
                             <span className="ui-button-text">Get Details</span>
                           </button>
@@ -367,33 +360,31 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
-                  {/* Row 2: Chassis No + Owner Name */}
-                  <div className="ui-grid-row">
-                    <div className="ui-grid-col-6">
-                      <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Chassis No.</label>
+                  {detailsWarning && (
+                    <div className="ui-grid-row">
+                      <div className="ui-grid-col-12">
+                        <div className="cp-date-err-msg">{detailsWarning}</div>
                       </div>
-                      <input
-                        type="text"
-                        className="ui-inputtext"
-                        value={chassisNo}
-                        onChange={(e) => setChassisNo(e.target.value.toUpperCase())}
-                        maxLength={30}
-                        autoComplete="off"
-                      />
                     </div>
+                  )}
+
+                  {/* Row 2: Owner Name + Chassis No */}
+                  <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Owner Name</label>
                       </div>
-                      <input
-                        type="text"
-                        className="ui-inputtext"
-                        value={ownerName}
-                        onChange={(e) => setOwnerName(e.target.value.toUpperCase())}
-                        maxLength={50}
-                        autoComplete="off"
-                      />
+                      <input type="text" className="ui-inputtext input-autofilled"
+                        value={ownerName} onChange={(e) => setOwnerName(e.target.value.toUpperCase())}
+                        maxLength={50} autoComplete="off" />
+                    </div>
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel field-label-mandate">Chassis No.</label>
+                      </div>
+                      <input type="text" className="ui-inputtext input-autofilled"
+                        value={chassisNo} onChange={(e) => setChassisNo(e.target.value.toUpperCase())}
+                        maxLength={30} autoComplete="off" />
                     </div>
                   </div>
 
@@ -403,27 +394,16 @@ function TaxCollectionContent() {
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Mobile No.</label>
                       </div>
-                      <input
-                        type="text"
-                        className="ui-inputtext"
-                        maxLength={10}
-                        value={mobileNo}
-                        onChange={(e) => setMobileNo(e.target.value)}
-                        autoComplete="off"
-                        placeholder="SMS about payment will be sent to this number."
-                        title="SMS about payment will be sent to this number."
-                      />
+                      <input type="text" className="ui-inputtext" maxLength={10}
+                        value={mobileNo} onChange={(e) => setMobileNo(e.target.value)}
+                        autoComplete="off" placeholder="SMS receipt will be sent here" />
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">From State</label>
                       </div>
                       <div className="ui-selectonemenu">
-                        <select
-                          value={fromState}
-                          onChange={(e) => setFromState(e.target.value)}
-                          autoComplete="off"
-                        >
+                        <select value={fromState} onChange={(e) => setFromState(e.target.value)} autoComplete="off">
                           {allStates.map((s) => (
                             <option key={s.value} value={s.value}>{s.label}</option>
                           ))}
@@ -437,227 +417,210 @@ function TaxCollectionContent() {
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Vehicle Type</label>
+                        <label className="ui-outputlabel field-label-mandate">Vehicle Type<span style={{color:"#FF0000"}}> *</span></label>
                       </div>
                       <div className="ui-selectonemenu">
-                        <select
-                          value={vehicleType}
-                          onChange={(e) => setVehicleType(e.target.value)}
-                        >
-                          {vehicleTypes.map((t) => (
-                            <option key={t.value} value={t.value}>{t.label}</option>
-                          ))}
+                        <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className="select-autofilled">
+                          <option value="">-- Select Vehicle Type --</option>
+                          <option value="CONTRACT CARRIAGE/PASSENGER VEHICLES">CONTRACT CARRIAGE/PASSENGER VEHICLES</option>
+                          <option value="PRIVATE SERVICE VEHICLE">PRIVATE SERVICE VEHICLE</option>
+                          <option value="GOODS VEHICLE">GOODS VEHICLE</option>
+                          <option value="STAGE CARRIAGE">STAGE CARRIAGE</option>
+                          <option value="CONSTRUCTION EQUIPMENT VEHICLE">CONSTRUCTION EQUIPMENT VEHICLE</option>
+                          <option value="TEMPORARY REGISTERED VEHICLE">TEMPORARY REGISTERED VEHICLE</option>
                         </select>
                         <span className="ui-selectonemenu-arrow">▼</span>
                       </div>
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Vehicle Class</label>
+                        <label className="ui-outputlabel field-label-mandate">Vehicle Class<span style={{color:"#FF0000"}}> *</span></label>
                       </div>
                       <div className="ui-selectonemenu">
-                        <select value={vehicleClass} onChange={(e) => setVehicleClass(e.target.value)}>
-                          <option value="-1">---Select Vehicle Class---</option>
-                          <option value="1">MOTOR CAB</option>
-                          <option value="2">MAXI CAB</option>
-                          <option value="3">BUS</option>
-                          <option value="4">GOODS VEHICLE (LMV)</option>
-                          <option value="5">GOODS VEHICLE (HGV)</option>
-                          <option value="6">TRACTOR</option>
-                          <option value="7">ARTICULATED VEHICLE</option>
+                        <select value={vehicleClass} onChange={(e) => setVehicleClass(e.target.value)} className="select-autofilled">
+                          <option value="">-- Select Vehicle Class --</option>
+                          <option value="MOTOR CYCLE">MOTOR CYCLE</option>
+                          <option value="THREE WHEELER(PASSENGER)">THREE WHEELER(PASSENGER)</option>
+                          <option value="MOTOR CAB">MOTOR CAB</option>
+                          <option value="MAXI CAB">MAXI CAB</option>
+                          <option value="OMNI BUS">OMNI BUS</option>
+                          <option value="BUS">BUS</option>
+                          <option value="SLEEPER BUS">SLEEPER BUS</option>
+                          <option value="VOLVO OR MERECEDEZ ETC">VOLVO OR MERECEDEZ ETC</option>
+                          <option value="EDUCATIONAL BUS">EDUCATIONAL BUS</option>
+                          <option value="EDUCATIONAL BUS USED BY SCHOOL">EDUCATIONAL BUS USED BY SCHOOL</option>
+                          <option value="PRIVATE ORGANIZATIONS">PRIVATE ORGANIZATIONS</option>
+                          <option value="CRANE MOUNTED VEHICLE">CRANE MOUNTED VEHICLE</option>
+                          <option value="LIGHT GOODS VEHICLE">LIGHT GOODS VEHICLE</option>
+                          <option value="MEDIUM GOODS VEHICLE">MEDIUM GOODS VEHICLE</option>
+                          <option value="HEAVY GOODS VEHICLE">HEAVY GOODS VEHICLE</option>
                         </select>
                         <span className="ui-selectonemenu-arrow">▼</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Row 5: Seating Cap + Sleeper Cap + Permit Type */}
+                  {/* Row 5: Vehicle Category (Bihar-specific) + Checkpost Name */}
                   <div className="ui-grid-row">
-                    <div className="ui-grid-col-3">
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel field-label-mandate">Vehicle Category<span style={{color:"#FF0000"}}> *</span></label>
+                      </div>
+                      <div className="ui-selectonemenu">
+                        <select value={vehicleCategory} onChange={(e) => setVehicleCategory(e.target.value)} className="select-autofilled">
+                          <option value="">-- Select Vehicle Category --</option>
+                          <option value="MOTOR CYCLE">MOTOR CYCLE</option>
+                          <option value="THREE WHEELER(PASSENGER)">THREE WHEELER(PASSENGER)</option>
+                          <option value="MOTOR CAB">MOTOR CAB</option>
+                          <option value="MAXI CAB">MAXI CAB</option>
+                          <option value="OMNI BUS">OMNI BUS</option>
+                          <option value="BUS">BUS</option>
+                          <option value="SLEEPER BUS">SLEEPER BUS</option>
+                          <option value="VOLVO OR MERECEDEZ ETC">VOLVO OR MERECEDEZ ETC</option>
+                          <option value="EDUCATIONAL BUS">EDUCATIONAL BUS</option>
+                          <option value="EDUCATIONAL BUS USED BY SCHOOL">EDUCATIONAL BUS USED BY SCHOOL</option>
+                          <option value="PRIVATE ORGANIZATIONS">PRIVATE ORGANIZATIONS</option>
+                          <option value="CRANE MOUNTED VEHICLE">CRANE MOUNTED VEHICLE</option>
+                          <option value="LIGHT GOODS VEHICLE">LIGHT GOODS VEHICLE</option>
+                          <option value="MEDIUM GOODS VEHICLE">MEDIUM GOODS VEHICLE</option>
+                          <option value="HEAVY GOODS VEHICLE">HEAVY GOODS VEHICLE</option>
+                        </select>
+                        <span className="ui-selectonemenu-arrow">▼</span>
+                      </div>
+                    </div>
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel field-label-mandate">CheckPost Name</label>
+                      </div>
+                      <input type="text" className="ui-inputtext"
+                        value={checkpostName} onChange={(e) => setCheckpostName(e.target.value.toUpperCase())}
+                        maxLength={80} autoComplete="off" placeholder="e.g. RAXAUL CHECKPOST" />
+                    </div>
+                  </div>
+
+                  {/* Row 6: [Seating Cap / Gross Vehicle Wt] + [Sleeper Cap / Unladen Wt] */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel">
-                          Seating Cap<span style={{color:"#FF0000"}}>*</span>
+                          {isGoodsVehicle ? "Gross Vehicle Wt. (In Kg)" : "Seating Capacity"}
                         </label>
                       </div>
-                      <input
-                        type="text"
-                        className="ui-inputtext"
-                        value={seatingCap}
-                        onChange={(e) => setSeatingCap(e.target.value.replace(/\D/g, ""))}
-                        maxLength={2}
-                        autoComplete="off"
-                      />
+                      <input type="text" className="ui-inputtext"
+                        value={isGoodsVehicle ? brGrossVehicleWt : seatingCap}
+                        onChange={(e) => isGoodsVehicle
+                          ? setBrGrossVehicleWt(e.target.value)
+                          : setSeatingCap(e.target.value.replace(/\D/g, ""))}
+                        maxLength={20} autoComplete="off" placeholder="e.g. 5000" />
                     </div>
-                    <div className="ui-grid-col-3">
+                    <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel">Sleeper Cap</label>
+                        <label className="ui-outputlabel">
+                          {isGoodsVehicle ? "Unladen Wt. (In Kg)" : "Sleeper Cap"}
+                        </label>
                       </div>
-                      <input
-                        type="text"
-                        className="ui-inputtext"
-                        value={sleeperCap}
-                        onChange={(e) => setSleeperCap(e.target.value.replace(/\D/g, ""))}
-                        maxLength={2}
-                        autoComplete="off"
-                      />
+                      <input type="text" className="ui-inputtext"
+                        value={isGoodsVehicle ? brUnladenWt : sleeperCap}
+                        onChange={(e) => isGoodsVehicle
+                          ? setBrUnladenWt(e.target.value)
+                          : setSleeperCap(e.target.value.replace(/\D/g, ""))}
+                        maxLength={20} autoComplete="off" placeholder="e.g. 2000" />
                     </div>
-                    <div className="ui-grid-col-3">
-                      <div className="field-label resp-label-section"></div>
+                  </div>
+
+                  {/* Row 7: Service Type + Gross Combination Wt */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Service Type</label>
+                      </div>
+                      <input type="text" className="ui-inputtext"
+                        value={serviceType} onChange={(e) => setServiceType(e.target.value.toUpperCase())}
+                        maxLength={60} autoComplete="off" placeholder="e.g. CONTRACT CARRIAGE" />
                     </div>
-                    <div className="ui-grid-col-3">
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Gross Combination Wt. (In Kg)</label>
+                      </div>
+                      <input type="text" className="ui-inputtext"
+                        value={grossCombinationWeight} onChange={(e) => setGrossCombinationWeight(e.target.value)}
+                        maxLength={20} autoComplete="off" placeholder="e.g. 12000" />
+                    </div>
+                  </div>
+
+                  {/* Row 8: Permit Type (dropdown) + Payment Mode (dropdown) */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Permit Type</label>
                       </div>
                       <div className="ui-selectonemenu">
                         <select value={permitType} onChange={(e) => setPermitType(e.target.value)}>
-                          <option value="-1">---Select Permit Type---</option>
-                          <option value="1">AITP</option>
-                          <option value="2">NATIONAL PERMIT</option>
-                          <option value="3">SPECIAL PERMIT</option>
-                          <option value="4">CONTRACT CARRIAGE PERMIT</option>
-                        </select>
-                        <span className="ui-selectonemenu-arrow">▼</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Row 6: District + Purpose + Checkpost Name */}
-                  <div className="ui-grid-row">
-                    <div className="ui-grid-col-3">
-                      <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">District through Entering</label>
-                      </div>
-                      <div className="ui-selectonemenu">
-                        <select
-                          value={districtEntering}
-                          onChange={(e) => setDistrictEntering(e.target.value)}
-                        >
-                          <option value="-1">---Select District/Barrier---</option>
-                          <option value="2">ALWAR</option>
-                          <option value="3">BANSWARA</option>
-                          <option value="28">BARAN</option>
-                          <option value="5">BHARATPUR</option>
-                          <option value="9">CHITTORGARH</option>
-                          <option value="10">CHURU</option>
-                          <option value="11">DHOLPUR</option>
-                          <option value="12">DUNGARPUR</option>
-                          <option value="13">GANGANAGAR</option>
-                          <option value="31">HANUMANGARH</option>
-                          <option value="14">JAIPUR</option>
-                          <option value="16">JALORE</option>
-                          <option value="17">JHALAWAR</option>
-                          <option value="18">JHUNJHUNU</option>
-                          <option value="35">PRATAPGARH</option>
-                          <option value="24">SIROHI</option>
-                        </select>
-                        <span className="ui-selectonemenu-arrow">▼</span>
-                      </div>
-                    </div>
-                    <div className="ui-grid-col-3">
-                      <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Purpose of visit</label>
-                      </div>
-                      <div className="ui-selectonemenu">
-                        <select
-                          value={purposeVisit}
-                          onChange={(e) => setPurposeVisit(e.target.value)}
-                        >
-                          {purposeOptions.map((p) => (
-                            <option key={p.value} value={p.value}>{p.label}</option>
-                          ))}
+                          <option value="">---Select Permit Type---</option>
+                          <option value="TEMPORARY PERMIT">TEMPORARY PERMIT</option>
+                          <option value="TOURIST PERMIT">TOURIST PERMIT</option>
+                          <option value="SPECIAL PERMIT">SPECIAL PERMIT</option>
+                          <option value="NOT APPLICABLE">NOT APPLICABLE</option>
                         </select>
                         <span className="ui-selectonemenu-arrow">▼</span>
                       </div>
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Check Post Name Through Entering</label>
-                      </div>
-                      <input
-                        type="text"
-                        className="ui-inputtext"
-                        value={checkpostName}
-                        onChange={(e) => setCheckpostName(e.target.value.toUpperCase())}
-                        maxLength={80}
-                        autoComplete="off"
-                        placeholder="e.g. AAKERA MOD, ALWAR"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Row 7: AITP dates */}
-                  <div className="ui-grid-row">
-                    <div className="ui-grid-col-6">
-                      <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">AITP Permit Validity</label>
-                      </div>
-                      <div className="ui-calendar">
-                        <input
-                          type="date"
-                          className="ui-inputtext cp-date-input"
-                          value={aitpValidity}
-                          onChange={(e) => setAitpValidity(e.target.value)}
-                          autoComplete="off"
-                        />
-                      </div>
-                    </div>
-                    <div className="ui-grid-col-6">
-                      <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">AITP Permit Auth Validity</label>
-                      </div>
-                      <div className="ui-calendar">
-                        <input
-                          type="date"
-                          className="ui-inputtext cp-date-input"
-                          value={aitpAuthValidity}
-                          onChange={(e) => setAitpAuthValidity(e.target.value)}
-                          autoComplete="off"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Row 8: Tax Mode + No of Periods + Tax From/To */}
-                  <div className="ui-grid-row">
-                    <div className="ui-grid-col-3">
-                      <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Tax Mode</label>
+                        <label className="ui-outputlabel field-label-mandate">Payment Mode</label>
                       </div>
                       <div className="ui-selectonemenu">
-                        <select value={taxMode} onChange={(e) => setTaxMode(e.target.value)}>
-                          <option value="-1">---Select Payment Mode---</option>
-                          <option value="1">ONLINE</option>
-                          <option value="2">CASH</option>
+                        <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                          <option value="ONLINE">ONLINE</option>
+                          <option value="CASH">CASH</option>
                         </select>
                         <span className="ui-selectonemenu-arrow">▼</span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Row 9: Fitness Validity + Insurance Validity */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Fitness Validity</label>
+                      </div>
+                      <input type="text" className="ui-inputtext"
+                        value={brFitnessValidity} onChange={(e) => setBrFitnessValidity(e.target.value.toUpperCase())}
+                        maxLength={30} autoComplete="off" placeholder="e.g. 31-DEC-2026" />
+                    </div>
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Insurance Validity</label>
+                      </div>
+                      <input type="text" className="ui-inputtext"
+                        value={brInsuranceValidity} onChange={(e) => setBrInsuranceValidity(e.target.value.toUpperCase())}
+                        maxLength={30} autoComplete="off" placeholder="e.g. 31-DEC-2026" />
+                    </div>
+                  </div>
+
+                  {/* Row 10: PUCC Validity + Tax From/Upto dates */}
+                  <div className="ui-grid-row">
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">No of Periods</label>
+                        <label className="ui-outputlabel">PUCC Validity</label>
                       </div>
-                      <input
-                        type="text"
-                        className="ui-inputtext"
-                        value={noPeriods}
-                        onChange={(e) => setNoPeriods(e.target.value.replace(/\D/g, ""))}
-                        maxLength={2}
-                        autoComplete="off"
-                      />
+                      <input type="text" className="ui-inputtext"
+                        value={brPuccValidity} onChange={(e) => setBrPuccValidity(e.target.value.toUpperCase())}
+                        maxLength={30} autoComplete="off" placeholder="e.g. 30-JUN-2026" />
+                    </div>
+                    <div className="ui-grid-col-3">
+                      {/* spacer */}
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Tax From Date</label>
                       </div>
                       <div className="ui-calendar">
-                        <input
-                          type="date"
+                        <input type="date"
                           className={`ui-inputtext cp-date-input${dateError && taxFrom > taxTo && taxTo ? " cp-date-error" : ""}`}
-                          value={taxFrom}
-                          max={taxTo || undefined}
-                          onChange={(e) => handleTaxFromChange(e.target.value)}
-                          autoComplete="off"
-                        />
+                          value={taxFrom} max={taxTo || undefined}
+                          onChange={(e) => handleTaxFromChange(e.target.value)} autoComplete="off" />
                       </div>
                     </div>
                     <div className="ui-grid-col-3">
@@ -665,19 +628,15 @@ function TaxCollectionContent() {
                         <label className="ui-outputlabel field-label-mandate">Tax Upto Date</label>
                       </div>
                       <div className="ui-calendar">
-                        <input
-                          type="date"
+                        <input type="date"
                           className={`ui-inputtext cp-date-input${dateError && taxFrom > taxTo && taxFrom ? " cp-date-error" : ""}`}
-                          value={taxTo}
-                          min={taxFrom || undefined}
-                          onChange={(e) => handleTaxToChange(e.target.value)}
-                          autoComplete="off"
-                        />
+                          value={taxTo} min={taxFrom || undefined}
+                          onChange={(e) => handleTaxToChange(e.target.value)} autoComplete="off" />
                       </div>
                     </div>
                   </div>
 
-                  {/* Date validation error */}
+                  {/* Date error */}
                   {dateError && (
                     <div className="ui-grid-row">
                       <div className="ui-grid-col-12">
@@ -686,7 +645,7 @@ function TaxCollectionContent() {
                     </div>
                   )}
 
-                  {/* Tax table */}
+                  {/* Tax table with Tax Mode dropdown */}
                   <br />
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-12">
@@ -696,22 +655,48 @@ function TaxCollectionContent() {
                             <tr>
                               <th className="collumn-width">Sl. No.</th>
                               <th>Particulars</th>
-                              <th>Tax From</th>
-                              <th>Tax Upto</th>
-                              <th>Amount</th>
+                              <th>Tax Mode</th>
+                              <th>Tax/Fees (Rs.)</th>
+                              <th>Fine (Rs.)</th>
+                              <th>Total (Rs.)</th>
                             </tr>
                           </thead>
                           <tbody className="ui-datatable-data">
-                            <tr className="ui-datatable-empty-message">
-                              <td colSpan={5}>No records found.</td>
-                            </tr>
+                            {totalAmount && parseFloat(totalAmount) > 0 ? (
+                              <tr>
+                                <td>1</td>
+                                <td>MV Tax</td>
+                                <td>
+                                  <div className="ui-selectonemenu" style={{ minWidth: "130px" }}>
+                                    <select value={taxMode} onChange={(e) => setTaxMode(e.target.value)}>
+                                      <option value="">---Select---</option>
+                                      <option value="DAYS">DAYS</option>
+                                      <option value="WEEKLY">WEEKLY</option>
+                                      <option value="FORTNIGHT">FORTNIGHT</option>
+                                      <option value="MONTHLY">MONTHLY</option>
+                                      <option value="QUARTERLY">QUARTERLY</option>
+                                      <option value="HALF YEARLY">HALF YEARLY</option>
+                                      <option value="YEARLY">YEARLY</option>
+                                    </select>
+                                    <span className="ui-selectonemenu-arrow">▼</span>
+                                  </div>
+                                </td>
+                                <td>{totalAmount}</td>
+                                <td>0</td>
+                                <td>{totalAmount}</td>
+                              </tr>
+                            ) : (
+                              <tr className="ui-datatable-empty-message">
+                                <td colSpan={6}>Enter MV Tax and click Calculate Tax.</td>
+                              </tr>
+                            )}
                           </tbody>
                         </table>
                       </div>
                     </div>
                   </div>
 
-                  {/* Inline form error (e.g. missing required fields) */}
+                  {/* Form error */}
                   {formError && (
                     <div className="ui-grid-row">
                       <div className="ui-grid-col-12">
@@ -720,47 +705,61 @@ function TaxCollectionContent() {
                     </div>
                   )}
 
-                  {/* Total amount + action buttons */}
+                  {/* MV Tax input + buttons */}
                   <div className="ui-grid-row">
-                    <div className="ui-grid-col-6">
+                    <div className="ui-grid-col-4">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Total Amount</label>
+                        <label className="ui-outputlabel field-label-mandate">MV Tax (Rs.)</label>
+                      </div>
+                      <input
+                        type="number"
+                        className="ui-inputtext"
+                        value={mvTax}
+                        onChange={(e) => {
+                          setMvTax(e.target.value.replace(/[^0-9.]/g, ""));
+                          setFormError("");
+                        }}
+                        placeholder="Enter MV Tax amount"
+                        min="0"
+                      />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel field-label-mandate">Total Amount (Rs.)</label>
                       </div>
                       <input
                         type="text"
                         className="ui-inputtext font-bold medium-text-font"
                         value={totalAmount}
-                        onChange={(e) => { setTotalAmount(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        readOnly
                         placeholder="0.00"
+                        style={{ background: "#f5f5f5" }}
                       />
                     </div>
-                    <div className="ui-grid-col-6">
+                    <div className="ui-grid-col-4">
                       <div className="ui-grid-row">
                         <div className="ui-grid-col-12 top_mar1 mar-left5">
-                          <button className="ui-button" type="button">
+                          <button className="ui-button" type="button" onClick={handleCalculateTax}>
                             <i className="fa fa-calculator"></i>
                             <span className="ui-button-text">Calculate Tax</span>
                           </button>
-                          <button
-                            className="ui-button"
-                            type="button"
-                            onClick={handlePayTax}
-                          >
+                          <button className="ui-button" type="button" onClick={handlePayTax}>
                             <i className="fa fa-forward"></i>
                             <span className="ui-button-text">Pay Tax</span>
                           </button>
-                          <button
-                            className="ui-button"
-                            type="button"
-                            onClick={handleReset}
-                          >
+                          <button className="ui-button" type="button" onClick={handleReset}>
                             <i className="fa fa-refresh"></i>
                             <span className="ui-button-text">Reset</span>
+                          </button>
+                          <button className="ui-button ui-button-pdf" type="button" onClick={handleGetPdf} disabled={pdfLoading}>
+                            <i className={pdfLoading ? "fa fa-spinner fa-spin" : "fa fa-file-pdf-o"}></i>
+                            <span className="ui-button-text">{pdfLoading ? "Generating..." : "Get PDF"}</span>
                           </button>
                         </div>
                       </div>
                     </div>
                   </div>
+                  {pdfError && (<div className="ui-grid-row"><div className="ui-grid-col-12"><div className="cp-date-err-msg">{pdfError}</div></div></div>)}
 
                 </div>
               </div>
@@ -771,7 +770,7 @@ function TaxCollectionContent() {
         </div>
       </div>
 
-      {/* ── Confirmation Modal ── */}
+      {/* Confirmation Modal */}
       {showModal && (
         <div className="cp-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="cp-modal" onClick={(e) => e.stopPropagation()}>
@@ -793,9 +792,29 @@ function TaxCollectionContent() {
                     <td><span className="small-text-font">{ownerName}</span></td>
                   </tr>
                   <tr>
-                    <td><span className="small-text-font">Chassis Number</span></td>
+                    <td><span className="small-text-font">Chassis No.</span></td>
                     <td><span className="small-text-font">:</span></td>
                     <td><span className="small-text-font">{chassisNo}</span></td>
+                  </tr>
+                  <tr>
+                    <td><span className="small-text-font">Vehicle Type</span></td>
+                    <td><span className="small-text-font">:</span></td>
+                    <td><span className="small-text-font">{vehicleType}</span></td>
+                  </tr>
+                  <tr>
+                    <td><span className="small-text-font">Vehicle Category</span></td>
+                    <td><span className="small-text-font">:</span></td>
+                    <td><span className="small-text-font">{vehicleCategory}</span></td>
+                  </tr>
+                  <tr>
+                    <td><span className="small-text-font">Permit Type</span></td>
+                    <td><span className="small-text-font">:</span></td>
+                    <td><span className="small-text-font">{permitType || "NOT APPLICABLE"}</span></td>
+                  </tr>
+                  <tr>
+                    <td><span className="small-text-font">Tax Mode</span></td>
+                    <td><span className="small-text-font">:</span></td>
+                    <td><span className="small-text-font">{taxMode}</span></td>
                   </tr>
                   <tr>
                     <td><span className="small-text-font">Tax From Date</span></td>
@@ -808,14 +827,14 @@ function TaxCollectionContent() {
                     <td><span className="small-text-font">{taxTo}</span></td>
                   </tr>
                   <tr>
-                    <td><span className="small-text-font-bold">Amount</span></td>
+                    <td><span className="small-text-font-bold">MV Tax Amount</span></td>
                     <td><span className="small-text-font-bold">:</span></td>
-                    <td><span className="small-text-font-bold">{totalAmount ? `${totalAmount}/-` : "/-"}</span></td>
+                    <td><span className="small-text-font-bold">Rs. {totalAmount || "0"}/-</span></td>
                   </tr>
                   <tr>
                     <td><span className="small-text-font">Payment Mode</span></td>
                     <td><span className="small-text-font">:</span></td>
-                    <td><span className="small-text-font">ONLINE</span></td>
+                    <td><span className="small-text-font">{paymentMethod}</span></td>
                   </tr>
                 </tbody>
               </table>

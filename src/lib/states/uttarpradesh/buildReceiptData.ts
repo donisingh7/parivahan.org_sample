@@ -104,5 +104,9 @@ export function buildUttarPradeshReceiptData(txn: TxnLike): ReceiptData {
         total:      amount,
       },
     ],
+    cap1Label: (String(txn.vehicleCategory || '')).toUpperCase() === 'GOODS CARRIER' ? 'Gross Vehicle\nWt(In. Kg)' : 'Seating\nCapacity',
+    cap2Label: (String(txn.vehicleCategory || '')).toUpperCase() === 'GOODS CARRIER' ? 'Unladen\nWt(In Kg.)' : 'Sleeper Cap',
+    cap1Value: (String(txn.vehicleCategory || '')).toUpperCase() === 'GOODS CARRIER' ? (Number(txn.grossVehicleWt) || 0) : (Number(txn.seatingCap) || 0),
+    cap2Value: (String(txn.vehicleCategory || '')).toUpperCase() === 'GOODS CARRIER' ? (Number(txn.unladenWt) || 0) : (Number(txn.sleeperCap) || 0),
   };
 }

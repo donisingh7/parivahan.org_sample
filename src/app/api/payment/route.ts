@@ -7,6 +7,7 @@ import { sendReceiptSms } from "@/lib/aws/sns";
 import { signQrToken, buildQrPageUrl } from "@/lib/qrToken";
 import { isSupportedState } from "@/lib/states/registry";
 import { getStateServer } from "@/lib/states/registry.server";
+import VehicleCache from "@/models/VehicleCache";
 
 export const runtime = "nodejs";
 
@@ -74,7 +75,13 @@ export async function POST(req: NextRequest) {
       // ── Punjab-specific — vehicle weight fields ───────────────────────
       grossVehicleWt, unladenWt,
       // ── Andhra Pradesh-specific ───────────────────────────────────────
-      nameOfGoods, route, paymentInitDate, apTaxItemsJson,
+      nameOfGoods, route, paymentInitDate, apTaxItemsJson,      // ── Jharkhand-specific — string weight/validity fields ─────────────────────
+      grossCombinationWeight, jhFitnessValidity, jhInsuranceValidity,
+      jhPuccValidity, jhGrossVehicleWt, jhUnladenWt,
+      // ── Bihar-specific — string weight/validity fields ───────────────────────
+      brGrossVehicleWt, brUnladenWt, brFitnessValidity, brInsuranceValidity, brPuccValidity,
+      // ── Maharashtra-specific ─────────────────────────────────────────
+      mhLadenWeight, mhUnladenWeight, mhMvTax, mhPermitFee,
     } = body;
 
     const missing: string[] = [];
@@ -88,6 +95,17 @@ export async function POST(req: NextRequest) {
         { success: false, message: `Missing required field(s): ${missing.join(", ")}` },
         { status: 400 }
       );
+    }
+
+    // ── Mock mode: skip DB save, S3, and SMS — return a fake transactionId ───
+    if (process.env.MOCK_DB === "true") {
+      const mockTxnId = makeTransactionId();
+      return NextResponse.json({
+        success: true,
+        transactionId: mockTxnId,
+        receiptNo: receiptNo ?? "MOCK-RECEIPT",
+        _mock: true,
+      });
     }
 
     await connectDB();
@@ -160,7 +178,58 @@ export async function POST(req: NextRequest) {
       route:             route            ?? "",
       paymentInitDate:   paymentInitDate  ?? "",
       apTaxItemsJson:    apTaxItemsJson   ?? "",
+      // ── Jharkhand-specific (silently ignored by other states' Mongoose schemas)
+      grossCombinationWeight: grossCombinationWeight ?? "",
+      jhFitnessValidity:      jhFitnessValidity      ?? "",
+      jhInsuranceValidity:    jhInsuranceValidity    ?? "",
+      jhPuccValidity:         jhPuccValidity         ?? "",
+      jhGrossVehicleWt:       jhGrossVehicleWt       ?? "",
+      jhUnladenWt:            jhUnladenWt            ?? "",
+      // ── Bihar-specific (silently ignored by other states' Mongoose schemas)
+      brGrossVehicleWt:       brGrossVehicleWt       ?? "",
+      brUnladenWt:            brUnladenWt            ?? "",
+      brFitnessValidity:      brFitnessValidity      ?? "",
+      brInsuranceValidity:    brInsuranceValidity    ?? "",
+      brPuccValidity:         brPuccValidity         ?? "",
+      // ── Maharashtra-specific (silently ignored by other states' Mongoose schemas)
+      mhLadenWeight:          mhLadenWeight          ?? "",
+      mhUnladenWeight:        mhUnladenWeight        ?? "",
+      mhMvTax:                Number(mhMvTax)         || 0,
+      mhPermitFee:            Number(mhPermitFee)     || 0,
     });
+
+    // ── Upsert VehicleCache with grey-field values ────────────────────────
+    // Fire-and-forget: a cache failure must never block the payment response.
+    // Weight fields are normalised across state-specific naming conventions so
+    // a single grossVehicleWt / unladenWt pair covers all states.
+    try {
+      const normVehicleNo = String(vehicleNo).toUpperCase().trim();
+      const resolvedGvw  = String(grossVehicleWt  || jhGrossVehicleWt  || brGrossVehicleWt  || mhLadenWeight  || "");
+      const resolvedUwt  = String(unladenWt        || jhUnladenWt       || brUnladenWt       || mhUnladenWeight || "");
+      await VehicleCache.findOneAndUpdate(
+        { vehicleNo: normVehicleNo },
+        {
+          $set: {
+            chassisNo:       chassisNo        ?? "",
+            ownerName:       ownerName        ?? "",
+            vehicleType:     vehicleType      ?? "",
+            vehicleCategory: vehicleCategory  ?? "",
+            vehicleClass:    vehicleClass     ?? "",
+            seatingCap:      String(seatingCap  ?? ""),
+            sleeperCap:      String(sleeperCap  ?? ""),
+            grossVehicleWt:  resolvedGvw,
+            unladenWt:       resolvedUwt,
+            permitType:      permitType       ?? "",
+            permitNumber:    permitNumber     ?? "",
+            taxMode:         taxMode          ?? "",
+            noPeriods:       String(noOfPeriods ?? ""),
+          },
+        },
+        { upsert: true, new: true }
+      );
+    } catch (cacheErr) {
+      console.error("[payment] vehicle cache upsert failed:", cacheErr);
+    }
 
     // ── Side-effects after a successful save ──────────────────────────────
     // 1. Compute the canonical S3 key  <state>/<portalUserId>/<MonthName>/<txnId>.pdf

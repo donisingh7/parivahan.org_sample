@@ -198,11 +198,11 @@ async function generateReceipt(data) {
 
   // Row 6
   drawField('CheckPost\nName',               data.checkpostName    || '-', col1X, y);
-  drawField('Gross Vehicle\nWt(In. Kg)',      String(data.grossVehicleWt ?? ''), col2X, y);
+  drawField(data.cap1Label || 'Gross Vehicle\nWt(In. Kg)', String(data.cap1Value ?? data.grossVehicleWt ?? ''), col2X, y);
   y += fh2;
 
   // Row 7
-  drawField('Unladen\nWt(In Kg.)',           String(data.unladenWt ?? 0), col1X, y);
+  drawField(data.cap2Label || 'Unladen\nWt(In Kg.)', String(data.cap2Value ?? data.unladenWt ?? 0), col1X, y);
   drawField('Bank Ref.\nNo.',                data.bankRefNo        || '-', col2X, y);
   y += fh2;
 

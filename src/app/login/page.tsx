@@ -1,14 +1,15 @@
-"use client";
+﻿"use client";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+const BG_URL = "/Images/preview.png";
+
 function LoginForm() {
   const searchParams = useSearchParams();
-  const redirect     = searchParams.get("redirect") || "/en/node/579";
+  const redirect     = searchParams.get("redirect") || "/checkpost";
 
   const [userId,   setUserId]   = useState("");
   const [password, setPassword] = useState("");
-  const [showPwd,  setShowPwd]  = useState(false);
   const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
 
@@ -33,120 +34,90 @@ function LoginForm() {
   };
 
   return (
-    <div className="portal-login-page">
-      {/* Header */}
-      <div className="portal-login-topbar">
-        <div className="portal-login-topbar-inner">
-          <img
-            src="https://parivahan.gov.in/sites/default/files/Parivahan_logo1.png"
-            alt="Parivahan"
-            className="portal-login-logo-img"
-          />
-          <div className="portal-login-brand">
-            <div className="portal-login-brand-title">परिवहन सेवा</div>
-            <div className="portal-login-brand-sub">Ministry of Road Transport &amp; Highways — Govt. of India</div>
-          </div>
-        </div>
-      </div>
+    <div
+      className="full-page-bg"
+      style={{ backgroundImage: `url("${BG_URL}")`, minHeight: "730px" }}
+    >
+      <div className="log-overlay"></div>
+      <div className="full-page-bg-inner">
+        <div className="rto-form-row">
 
-      {/* Orange divider */}
-      <div className="portal-login-divider"></div>
+          <div className="log-right">
+            <div className="login-form text-center">
 
-      {/* Page title bar */}
-      <div className="portal-login-titlebar">
-        <div className="portal-login-titlebar-inner">
-          <i className="fa fa-lock"></i>&nbsp; Checkpost Portal — Secure Login
-        </div>
-      </div>
+              {error && (
+                <div className="login-error-msg">
+                  <i className="fa fa-exclamation-triangle"></i> {error}
+                </div>
+              )}
 
-      {/* Card */}
-      <div className="portal-login-body">
-        <div className="portal-login-card">
-          <div className="portal-login-card-header">
-            <div className="portal-login-card-icon">
-              <i className="fa fa-user-circle"></i>
+              <form name="form1" onSubmit={handleLogin}>
+
+                {/* Username */}
+                <div className="form-group">
+                  <div className="input-group">
+                    <span className="input-group-addon">
+                      <i className="fa fa-user"></i>
+                    </span>
+                    <input
+                      name="txtUserName"
+                      type="text"
+                      className="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all form-control"
+                      autoComplete="off"
+                      placeholder="User Name"
+                      value={userId}
+                      onChange={(e) => setUserId(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Password */}
+                <div className="form-group">
+                  <div className="input-group">
+                    <span className="input-group-addon">
+                      <i className="fa fa-lock"></i>
+                    </span>
+                    <input
+                      name="txtPassword"
+                      type="password"
+                      className="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all form-control"
+                      autoComplete="off"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Submit */}
+                <div className="form-group">
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-12 center-position">
+                      <button
+                        id="btnisValidate"
+                        type="submit"
+                        style={{ backgroundColor: "#b73333" }}
+                        className="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-left btn btn-primary btn-login"
+                        disabled={loading}
+                      >
+                        <span className="ui-button-icon-left ui-icon ui-c">
+                          <i className={loading ? "fa fa-spinner fa-spin" : "fa fa-unlock"}></i>
+                        </span>
+                        <span className="ui-button-text ui-c">
+                          {loading ? "Submitting..." : "Submit"}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </form>
             </div>
-            <h2>User Login</h2>
-            <p>Enter your credentials to access the Checkpost Tax Payment portal</p>
           </div>
 
-          <form className="portal-login-form" onSubmit={handleLogin}>
-            {error && (
-              <div className="portal-login-error">
-                <i className="fa fa-exclamation-triangle"></i> {error}
-              </div>
-            )}
-
-            <div className="portal-login-field">
-              <label>User ID</label>
-              <div className="portal-login-input-wrap">
-                <i className="fa fa-id-card portal-login-icon"></i>
-                <input
-                  type="text"
-                  placeholder="Enter your User ID"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  autoComplete="username"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="portal-login-field">
-              <label>Password</label>
-              <div className="portal-login-input-wrap">
-                <i className="fa fa-lock portal-login-icon"></i>
-                <input
-                  type={showPwd ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  required
-                />
-                <button
-                  type="button"
-                  className="portal-login-eye"
-                  onClick={() => setShowPwd(!showPwd)}
-                  tabIndex={-1}
-                >
-                  <i className={`fa fa-eye${showPwd ? "-slash" : ""}`}></i>
-                </button>
-              </div>
-            </div>
-
-            <button type="submit" className="portal-login-btn" disabled={loading}>
-              {loading
-                ? <><i className="fa fa-spinner fa-spin"></i> Signing in...</>
-                : <><i className="fa fa-sign-in"></i> Login to Portal</>}
-            </button>
-          </form>
-
-          <div className="portal-login-footer-note">
-            <i className="fa fa-info-circle"></i>&nbsp;
-            Contact your RTO office if you don&apos;t have login credentials.
-          </div>
         </div>
-
-        {/* Info box */}
-        <div className="portal-login-info">
-          <div className="portal-login-info-title">
-            <i className="fa fa-shield"></i> Secure Portal Access
-          </div>
-          <ul className="portal-login-info-list">
-            <li><i className="fa fa-check"></i> Your User ID is provided by the RTO office</li>
-            <li><i className="fa fa-check"></i> Credentials are required to pay checkpost tax</li>
-            <li><i className="fa fa-check"></i> Session expires after 8 hours of inactivity</li>
-            <li><i className="fa fa-check"></i> All transactions are recorded and traceable</li>
-          </ul>
-          <div className="portal-login-helpline">
-            <i className="fa fa-phone"></i>&nbsp; Helpline: <strong>1800-XXX-XXXX</strong>
-          </div>
-        </div>
-      </div>
-
-      <div className="portal-login-page-footer">
-        © 2026 Ministry of Road Transport &amp; Highways, Govt. of India. All rights reserved.
       </div>
     </div>
   );
@@ -156,7 +127,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
-        <i className="fa fa-spinner fa-spin" style={{ fontSize: 32, color: "#1a3060" }}></i>
+        <i className="fa fa-spinner fa-spin" style={{ fontSize: 32 }}></i>
       </div>
     }>
       <LoginForm />

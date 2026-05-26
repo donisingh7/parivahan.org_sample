@@ -208,8 +208,8 @@ async function generateReceipt(data) {
   y += fieldLineHeight * 1.4;
 
   const row8Y = y;
-  drawField('Sleeper Cap.', String(data.sleeperCap ?? 0), col1X, row8Y);
-  drawField('Seating Capacity', String(data.seatingCapacity ?? 0), col2X, row8Y);
+  drawField(data.cap2Label || 'Sleeper Cap', String(data.cap2Value ?? data.sleeperCap ?? 0), col1X, row8Y);
+  drawField(data.cap1Label || 'Seating Capacity', String(data.cap1Value ?? data.seatingCapacity ?? 0), col2X, row8Y);
   y += fieldLineHeight;
 
   const row9Y = y;

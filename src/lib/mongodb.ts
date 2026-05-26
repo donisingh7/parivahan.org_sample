@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
 
+const MOCK_DB    = process.env.MOCK_DB === "true";
 const MONGODB_URI = process.env.MONGODB_URI as string;
 
-if (!MONGODB_URI) {
+if (!MOCK_DB && !MONGODB_URI) {
   throw new Error("Please define the MONGODB_URI environment variable in .env.local");
 }
 
@@ -18,6 +19,11 @@ if (!cached) {
 }
 
 export async function connectDB() {
+  // ── Mock mode: skip real connection when MOCK_DB=true in .env.local ─────────
+  // This env var is never set in production/deployment, so the real
+  // MongoDB path runs unchanged there.
+  if (MOCK_DB) return null as unknown as typeof mongoose;
+
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {

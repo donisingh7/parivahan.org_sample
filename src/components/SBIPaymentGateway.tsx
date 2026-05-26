@@ -332,7 +332,10 @@ function generateReceiptNo(stateCode?: string): string {
   const dd   = String(d.getDate()).padStart(2, "0");
   const rand = Math.floor(Math.random() * 9000000 + 1000000);
   if (stateCode === "AP") return `APR${yy}${mm}${dd}${rand}`;
+  if (stateCode === "BR") return `BRR${yy}${mm}${dd}${rand}`;
+  if (stateCode === "MH") return `MHT${yy}${mm}${dd}${rand}`;
   if (stateCode === "HP") return `HPR${yy}${mm}${dd}${rand}`;
+  if (stateCode === "JH") return `JHR${yy}${mm}${dd}${rand}`;
   if (stateCode === "PB") return `PBR${yy}${mm}${dd}${rand}`;
   if (stateCode === "RJ") return `RJT${yy}${mm}${dd}${rand}`;
   if (stateCode === "UK") return `UKR${yy}${mm}${dd}${rand}`;
@@ -359,6 +362,23 @@ function generateUPBankRef(): string {
   const d = () => String(Math.floor(Math.random() * 10));
   const c = () => String.fromCharCode(65 + Math.floor(Math.random() * 26));
   return `${d()}${c()}${c()}${d()}${c()}${c()}${c()}${d()}${c()}${c()}`;
+}
+
+// Generates bank ref for MH: 12-digit number.
+function generateMHBankRef(): string {
+  return String(Math.floor(Math.random() * 900000000000 + 100000000000));
+}
+
+// Generates bank ref for BR: 7 uppercase letters + 3 digits, randomly permuted = 10 chars.
+function generateBRBankRef(): string {
+  const chars: string[] = [];
+  for (let i = 0; i < 7; i++) chars.push(String.fromCharCode(65 + Math.floor(Math.random() * 26)));
+  for (let i = 0; i < 3; i++) chars.push(String(Math.floor(Math.random() * 10)));
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
 }
 
 // Generates bank ref for HP / PB / RJ / UK:
@@ -415,6 +435,9 @@ function SBIContent() {
     let orderRef: string;
     if      (stateCode === "HR") orderRef = generateHRBankRef();
     else if (stateCode === "AP") orderRef = generateAPBankRef();
+    else if (stateCode === "BR") orderRef = generateBRBankRef();
+    else if (stateCode === "MH") orderRef = generateMHBankRef();
+    else if (stateCode === "JH") orderRef = String(Math.floor(Math.random() * 9000000000000 + 1000000000000));
     else if (stateCode === "UP") orderRef = generateUPBankRef();
     else if (stateCode === "HP" || stateCode === "PB" || stateCode === "RJ" || stateCode === "UK")
       orderRef = generateCheckpostBankRef();
@@ -476,7 +499,7 @@ function SBIContent() {
           seatingCap:       parseInt(seatingCap)  || 0,
           sleeperCap:       parseInt(sleeperCap)  || 0,
           amount:           parseFloat(amount)    || 0,
-          paymentMethod:    "ONLINE",
+          paymentMethod:    forwarded.paymentMethod ?? "ONLINE",
           orderRef:         clientOrderRef,
           receiptNo,
         }),

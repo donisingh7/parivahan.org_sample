@@ -46,7 +46,7 @@ export default async function TaxPaymentPage({
   // No state, or an unsupported one, sends the user back to the state picker
   // (/en/node/579) where the dropdown only offers the 10 supported states.
   if (!isSupportedState(state)) {
-    redirect("/en/node/579");
+    redirect("/checkpost");
   }
   const Form = FORM_COMPONENTS[state];
   return <Form />;

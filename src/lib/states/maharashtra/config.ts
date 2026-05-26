@@ -13,7 +13,7 @@ export const maharashtraConfig: StateConfig = {
   govLabel:       "GOVERNMENT OF MAHARASHTRA",
   deptLabel:      "Department of Transport",
   receiptTitle:   "Checkpost Tax e-Receipt",
-  watermarkImage: "/Images/Rajasthan-Transport-Department.png",
+  watermarkImage: "/Images/MMVD_logo.jpg",
   themeColor:     "#a83232",
   collection:     "maharashtra_transactions",
 };

@@ -13,7 +13,7 @@ export const biharConfig: StateConfig = {
   govLabel:       "GOVERNMENT OF BIHAR",
   deptLabel:      "Department of Transport",
   receiptTitle:   "Checkpost Tax e-Receipt",
-  watermarkImage: "/Images/Rajasthan-Transport-Department.png",
+  watermarkImage: "/Images/bihar_logo.png",
   themeColor:     "#0e7c43",
   collection:     "bihar_transactions",
 };

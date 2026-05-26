@@ -48,6 +48,16 @@ const allStates = [
   { value: "WB", label: "WEST BENGAL" },
 ];
 
+const VEHICLE_TYPE_OPTIONS = [
+  { value: "",                                     label: "-- Select Vehicle Type --" },
+  { value: "CONTRACT CARRIAGE/PASSENGER VEHICLES", label: "CONTRACT CARRIAGE/PASSENGER VEHICLES" },
+  { value: "PRIVATE SERVICE VEHICLE",              label: "PRIVATE SERVICE VEHICLE" },
+  { value: "GOODS VEHICLE",                        label: "GOODS VEHICLE" },
+  { value: "STAGE CARRIAGE",                       label: "STAGE CARRIAGE" },
+  { value: "CONSTRUCTION EQUIPMENT VEHICLE",       label: "CONSTRUCTION EQUIPMENT VEHICLE" },
+  { value: "TEMPORARY REGISTERED VEHICLE",         label: "TEMPORARY REGISTERED VEHICLE" },
+];
+
 const TAX_ROW_NAMES = [
   "Permit Fee",
   "MV Tax",
@@ -83,12 +93,14 @@ function TaxCollectionContent() {
   const [checkpostName,    setCheckpostName]    = useState("");
   const [permitType,       setPermitType]       = useState("-1");
   const [permitValidity,   setPermitValidity]   = useState("");
-  const [taxMode,          setTaxMode]          = useState("-1");
+  const [taxMode,          setTaxMode]          = useState("");
   const [paymentMode,      setPaymentMode]      = useState("Online");
 
   // ── Weight fields (AP-specific) ─────────────────────────────────────────
   const [grossVehicleWt,   setGrossVehicleWt]   = useState("");
   const [unladenWt,        setUnladenWt]        = useState("");
+  const [seatingCap,       setSeatingCap]       = useState("");
+  const [sleeperCap,       setSleeperCap]       = useState("0");
 
   // ── Validity dates ──────────────────────────────────────────────────────
   const [fitnessValidity,   setFitnessValidity]   = useState("");
@@ -114,15 +126,33 @@ function TaxCollectionContent() {
   const [dateError,   setDateError]   = useState("");
   const [formError,   setFormError]   = useState("");
   const [showModal,   setShowModal]   = useState(false);
+  const [pdfLoading,  setPdfLoading]  = useState(false);
+  const [pdfError,    setPdfError]    = useState("");
 
   const [navOpen,     setNavOpen]     = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
-  const handleGetDetails = () => {
+  const [detailsWarning, setDetailsWarning] = useState("");
+
+  const handleGetDetails = async () => {
+    setDetailsWarning("");
     if (!vehicleNo.trim()) return;
-    if (!chassisNo) setChassisNo("MBLHA10ANZZM12345");
-    if (!ownerName) setOwnerName("JOHN DOE");
+    try {
+      const res = await fetch(`/api/vehicle/cache/${encodeURIComponent(vehicleNo.trim().toUpperCase().replace(/\s/g, ""))}`);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) { setDetailsWarning("VEHICLE DATA DOES NOT EXIST"); return; }
+      const d = json.data;
+      if (d.chassisNo)       setChassisNo(d.chassisNo);
+      if (d.ownerName)       setOwnerName(d.ownerName);
+      if (d.vehicleType)     setVehicleType(d.vehicleType);
+      if (d.vehicleCategory) setVehicleCategory(d.vehicleCategory);
+      if (d.vehicleClass)    setVehicleClass(d.vehicleClass);
+      if (d.seatingCap)      setSeatingCap(d.seatingCap);
+      if (d.sleeperCap)      setSleeperCap(d.sleeperCap);
+      if (d.grossVehicleWt)  setGrossVehicleWt(d.grossVehicleWt);
+      if (d.unladenWt)       setUnladenWt(d.unladenWt);
+    } catch { setDetailsWarning("VEHICLE DATA DOES NOT EXIST"); }
   };
 
   const handleTaxFromChange = (val: string) => {
@@ -193,6 +223,8 @@ function TaxCollectionContent() {
       paymentInitDate,
       grossVehicleWt,
       unladenWt,
+      seatingCap,
+      sleeperCap,
       fitnessValidity,
       insuranceValidity,
       puccValidity,
@@ -210,14 +242,93 @@ function TaxCollectionContent() {
     setVehicleNo(""); setChassisNo(""); setOwnerName(""); setMobileNo("");
     setFromState("-1"); setVehicleType(""); setVehicleClass("");
     setVehicleCategory(""); setCheckpostName(""); setPermitType("-1");
-    setPermitValidity(""); setTaxMode("-1"); setPaymentMode("Online");
-    setGrossVehicleWt(""); setUnladenWt("");
+    setPermitValidity(""); setTaxMode(""); setPaymentMode("Online");
+    setGrossVehicleWt(""); setUnladenWt(""); setSeatingCap(""); setSleeperCap("0");
     setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity("");
     setServiceType(""); setNameOfGoods(""); setRoute("");
     setTaxFrom(""); setTaxTo(""); setPaymentInitDate("");
     setTaxRows([emptyRow(), emptyRow(), emptyRow(), emptyRow()]);
     setTotalAmount(""); setDateError(""); setFormError(""); setShowModal(false);
+    setPdfError(""); setNavOpen(false); setReportsOpen(false);
   };
+
+  const handleGetPdf = async () => {
+    setPdfError("");
+    if (dateError) return;
+    const missing: string[] = [];
+    if (!vehicleNo.trim())                            missing.push("Registration No.");
+    if (!taxFrom)                                     missing.push("Tax From Date");
+    if (!taxTo)                                       missing.push("Tax Upto Date");
+    if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("Total Amount");
+    if (missing.length > 0) {
+      setPdfError(`Please fill the following before downloading: ${missing.join(", ")}`);
+      return;
+    }
+
+    // Generate receipt no using same AP format as SBIPaymentGateway
+    const d    = new Date();
+    const yy   = String(d.getFullYear()).slice(2);
+    const mm   = String(d.getMonth() + 1).padStart(2, "0");
+    const dd   = String(d.getDate()).padStart(2, "0");
+    const rand = Math.floor(Math.random() * 9000000 + 1000000);
+    const receiptNo    = `APR${yy}${mm}${dd}${rand}`;
+    const ts           = Date.now().toString(36).toUpperCase();
+    const randTxn      = Math.random().toString(36).slice(2, 6).toUpperCase();
+    const transactionId = `TXN${ts}${randTxn}`;
+
+    const apTaxItems = taxRows.map((r, i) => ({
+      particular: TAX_ROW_NAMES[i],
+      fees:  parseFloat(r.fees) || 0,
+      fine:  parseFloat(r.fine) || 0,
+      total: (parseFloat(r.fees) || 0) + (parseFloat(r.fine) || 0),
+    }));
+
+    setPdfLoading(true);
+    try {
+      const res = await fetch("/api/payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transactionId,
+          state:            stateCode,
+          visitingState:    stateCode,
+          vehicleNo,        chassisNo,     ownerName,       mobileNo,
+          fromState,        vehicleType,   vehicleClass,    vehicleCategory,
+          permitType,       checkpostName, taxMode,         paymentMethod: paymentMode,
+          taxFrom,          taxTo,         paymentInitDate,
+          grossVehicleWt,   unladenWt,
+          fitnessValidity,  insuranceValidity, puccValidity,
+          serviceType,      nameOfGoods,   route,
+          permitUpto:       permitValidity,
+          apTaxItemsJson:   JSON.stringify(apTaxItems),
+          amount:           parseFloat(totalAmount) || 0,
+          receiptNo,
+          orderRef:         `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`,
+          noOfPeriods:      1,
+          seatingCap,
+          sleeperCap,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Failed to save transaction");
+      }
+      const savedId = json.transactionId || transactionId;
+      // Trigger PDF download
+      const link = document.createElement("a");
+      link.href = `/api/receipt/${savedId}?state=AP&download=1`;
+      link.download = `receipt_${savedId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      setPdfError(err instanceof Error ? err.message : "PDF download failed. Please try again.");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const isGoodsVehicle = vehicleType === "GOODS VEHICLE";
 
   return (
     <div id="masterlaoyoutbody">
@@ -360,20 +471,28 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
+                  {detailsWarning && (
+                    <div className="ui-grid-row">
+                      <div className="ui-grid-col-12">
+                        <div className="cp-date-err-msg">{detailsWarning}</div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Row: Chassis No + Owner Name */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Chassis No.</label>
                       </div>
-                      <input type="text" className="ui-inputtext" value={chassisNo}
+                      <input type="text" className="ui-inputtext input-autofilled" value={chassisNo}
                         onChange={(e) => setChassisNo(e.target.value.toUpperCase())} maxLength={30} autoComplete="off" />
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Owner Name</label>
                       </div>
-                      <input type="text" className="ui-inputtext" value={ownerName}
+                      <input type="text" className="ui-inputtext input-autofilled" value={ownerName}
                         onChange={(e) => setOwnerName(e.target.value.toUpperCase())} maxLength={50} autoComplete="off" />
                     </div>
                   </div>
@@ -384,7 +503,7 @@ function TaxCollectionContent() {
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Mobile No.</label>
                       </div>
-                      <input type="text" className="ui-inputtext" maxLength={10}
+                      <input type="text" className="ui-inputtext input-autofilled" maxLength={10}
                         value={mobileNo} onChange={(e) => setMobileNo(e.target.value)}
                         autoComplete="off" placeholder="SMS about payment will be sent to this number." />
                     </div>
@@ -407,17 +526,40 @@ function TaxCollectionContent() {
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Vehicle Type</label>
                       </div>
-                      <input type="text" className="ui-inputtext" value={vehicleType}
-                        onChange={(e) => setVehicleType(e.target.value.toUpperCase())}
-                        maxLength={60} autoComplete="off" placeholder="e.g. GOODS VEHICLE" />
+                      <div className="ui-selectonemenu">
+                        <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)}>
+                          {VEHICLE_TYPE_OPTIONS.map((t) => (
+                            <option key={t.value} value={t.value}>{t.label}</option>
+                          ))}
+                        </select>
+                        <span className="ui-selectonemenu-arrow">▼</span>
+                      </div>
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Vehicle Class</label>
                       </div>
-                      <input type="text" className="ui-inputtext" value={vehicleClass}
-                        onChange={(e) => setVehicleClass(e.target.value.toUpperCase())}
-                        maxLength={60} autoComplete="off" placeholder="e.g. BUS" />
+                      <div className="ui-selectonemenu">
+                        <select value={vehicleClass} onChange={(e) => setVehicleClass(e.target.value)}>
+                          <option value="">-- Select Vehicle Class --</option>
+                          <option value="MOTOR CYCLE">MOTOR CYCLE</option>
+                          <option value="THREE WHEELER(PASSENGER)">THREE WHEELER(PASSENGER)</option>
+                          <option value="MOTOR CAB">MOTOR CAB</option>
+                          <option value="MAXI CAB">MAXI CAB</option>
+                          <option value="OMNI BUS">OMNI BUS</option>
+                          <option value="BUS">BUS</option>
+                          <option value="SLEEPER BUS">SLEEPER BUS</option>
+                          <option value="VOLVO OR MERECEDEZ ETC">VOLVO OR MERECEDEZ ETC</option>
+                          <option value="EDUCATIONAL BUS">EDUCATIONAL BUS</option>
+                          <option value="EDUCATIONAL BUS USED BY SCHOOL">EDUCATIONAL BUS USED BY SCHOOL</option>
+                          <option value="PRIVATE ORGANIZATIONS">PRIVATE ORGANIZATIONS</option>
+                          <option value="CRANE MOUNTED VEHICLE">CRANE MOUNTED VEHICLE</option>
+                          <option value="LIGHT GOODS VEHICLE">LIGHT GOODS VEHICLE</option>
+                          <option value="MEDIUM GOODS VEHICLE">MEDIUM GOODS VEHICLE</option>
+                          <option value="HEAVY GOODS VEHICLE">HEAVY GOODS VEHICLE</option>
+                        </select>
+                        <span className="ui-selectonemenu-arrow">▼</span>
+                      </div>
                     </div>
                   </div>
 
@@ -464,32 +606,46 @@ function TaxCollectionContent() {
                       </div>
                       <div className="ui-selectonemenu">
                         <select value={taxMode} onChange={(e) => setTaxMode(e.target.value)}>
-                          <option value="-1">---Select Tax Mode---</option>
-                          <option value="Daily">Daily</option>
-                          <option value="Weekly">Weekly</option>
-                          <option value="Monthly">Monthly</option>
+                          <option value="">-- Select Tax Mode --</option>
+                          <option value="DAYS">DAYS</option>
+                          <option value="WEEKLY">WEEKLY</option>
+                          <option value="FORTNIGHT">FORTNIGHT</option>
+                          <option value="MONTHLY">MONTHLY</option>
+                          <option value="QUARTERLY">QUARTERLY</option>
+                          <option value="HALF YEARLY">HALF YEARLY</option>
+                          <option value="YEARLY">YEARLY</option>
                         </select>
                         <span className="ui-selectonemenu-arrow">▼</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Row: Gross Vehicle Wt + Unladen Wt */}
+                  {/* Row: [Seating Cap / Gross Vehicle Wt] + [Sleeper Cap / Unladen Wt] */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel">Gross Vehicle Wt (In. Kg)</label>
+                        <label className="ui-outputlabel">
+                          {isGoodsVehicle ? "Gross Vehicle Wt (In. Kg)" : "Seating Capacity"}
+                        </label>
                       </div>
-                      <input type="text" className="ui-inputtext" value={grossVehicleWt}
-                        onChange={(e) => setGrossVehicleWt(e.target.value.replace(/\D/g, ""))}
+                      <input type="text" className="ui-inputtext"
+                        value={isGoodsVehicle ? grossVehicleWt : seatingCap}
+                        onChange={(e) => isGoodsVehicle
+                          ? setGrossVehicleWt(e.target.value.replace(/\D/g, ""))
+                          : setSeatingCap(e.target.value.replace(/\D/g, ""))}
                         maxLength={8} autoComplete="off" placeholder="0" />
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel">Unladen Wt (In Kg.)</label>
+                        <label className="ui-outputlabel">
+                          {isGoodsVehicle ? "Unladen Wt (In Kg.)" : "Sleeper Cap"}
+                        </label>
                       </div>
-                      <input type="text" className="ui-inputtext" value={unladenWt}
-                        onChange={(e) => setUnladenWt(e.target.value.replace(/\D/g, ""))}
+                      <input type="text" className="ui-inputtext"
+                        value={isGoodsVehicle ? unladenWt : sleeperCap}
+                        onChange={(e) => isGoodsVehicle
+                          ? setUnladenWt(e.target.value.replace(/\D/g, ""))
+                          : setSleeperCap(e.target.value.replace(/\D/g, ""))}
                         maxLength={8} autoComplete="off" placeholder="0" />
                     </div>
                   </div>
@@ -707,10 +863,27 @@ function TaxCollectionContent() {
                             <i className="fa fa-refresh"></i>
                             <span className="ui-button-text">Reset</span>
                           </button>
+                          <button
+                            className="ui-button ui-button-pdf"
+                            type="button"
+                            onClick={handleGetPdf}
+                            disabled={pdfLoading}
+                          >
+                            <i className={pdfLoading ? "fa fa-spinner fa-spin" : "fa fa-file-pdf-o"}></i>
+                            <span className="ui-button-text">{pdfLoading ? "Generating..." : "Get PDF"}</span>
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
+
+                  {pdfError && (
+                    <div className="ui-grid-row">
+                      <div className="ui-grid-col-12">
+                        <div className="cp-date-err-msg">{pdfError}</div>
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               </div>

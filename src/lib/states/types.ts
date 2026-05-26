@@ -83,6 +83,13 @@ export interface ReceiptData {
   amount:          number;
   amountInWords:   string;
   taxItems:        TaxItem[];
+  // ── Dynamic capacity field labels & values ───────────────────────────
+  // When vehicleType === "GOODS VEHICLE": cap1 = Gross Vehicle Weight,
+  //   cap2 = Unladen Weight. Otherwise: cap1 = Seating Capacity, cap2 = Sleeper Cap.
+  cap1Label?:      string;
+  cap2Label?:      string;
+  cap1Value?:      number;
+  cap2Value?:      number;
 
   // ── State-specific receipt extras (optional, populated per-state) ───────
   // These show up on a particular state's receipt design in addition to the
@@ -113,6 +120,12 @@ export interface ReceiptData {
   nameOfGoods?:         string;
   route?:               string;
   apTaxItemsJson?:      string;  // JSON array of {particular,fees,fine,total} rows
+  // Jharkhand-specific string fields
+  grossCombinationWeight?: string;
+  paymentConfirmDate?:     string;
+  // Maharashtra-specific string weight fields
+  ladenWeight?:            string;
+  unladenWeight?:          string;
 }
 
 // Loose Mongo doc shape — both lean()'d documents and POJOs work for the
@@ -165,6 +178,24 @@ export interface TxnLike {
   route?:             string;
   paymentInitDate?:   string;
   apTaxItemsJson?:    string;
+  // Jharkhand-specific string fields (separate from base-schema Number fields)
+  grossCombinationWeight?: string;
+  jhFitnessValidity?:      string;
+  jhInsuranceValidity?:    string;
+  jhPuccValidity?:         string;
+  jhGrossVehicleWt?:       string;
+  jhUnladenWt?:            string;
+  // Bihar-specific string fields (separate from base-schema Number/Date fields)
+  brGrossVehicleWt?:       string;
+  brUnladenWt?:            string;
+  brFitnessValidity?:      string;
+  brInsuranceValidity?:    string;
+  brPuccValidity?:         string;
+  // Maharashtra-specific string weight fields
+  mhLadenWeight?:          string;
+  mhUnladenWeight?:        string;
+  mhMvTax?:                number;
+  mhPermitFee?:            number;
 }
 
 // ── State module — the contract every state folder must satisfy. ────────────
@@ -233,13 +264,18 @@ export interface GenerateReceiptInput {
   permitValidityText?: string;
   permitValidity?:     string;
   fuelType?:           string;
-  grossVehicleWt?:     number;
-  unladenWt?:          number;
-  paymentDateText?:    string;
+  grossVehicleWt?:          number;
+  unladenWt?:               number;
+  paymentDateText?:         string;
   // Andhra Pradesh-specific
-  nameOfGoods?:        string;
-  route?:              string;
-  paymentConfirmDate?: string;
+  nameOfGoods?:             string;
+  route?:                   string;
+  paymentConfirmDate?:      string;
+  // Jharkhand-specific
+  grossCombinationWeight?: string;
+  // Maharashtra-specific
+  ladenWeight?:            string;
+  unladenWeight?:          string;
 }
 
 // ── TransactionDoc — Mongo document shape. State-specific models all live
@@ -313,6 +349,24 @@ export interface TransactionDoc {
   route?:              string;
   paymentInitDate?:    string;
   apTaxItemsJson?:     string;
+  // Jharkhand-specific
+  jhGrossVehicleWt?:    string;
+  jhUnladenWt?:         string;
+  jhFitnessValidity?:   string;
+  jhInsuranceValidity?: string;
+  jhPuccValidity?:      string;
+  grossCombinationWeight?: string;
+  // Bihar-specific
+  brGrossVehicleWt?:    string;
+  brUnladenWt?:         string;
+  brFitnessValidity?:   string;
+  brInsuranceValidity?: string;
+  brPuccValidity?:      string;
+  // Maharashtra-specific
+  mhLadenWeight?:       string;
+  mhUnladenWeight?:     string;
+  mhMvTax?:             number;
+  mhPermitFee?:         number;
 }
 
 // Re-export Schema for convenience in shared/baseSchema consumers.

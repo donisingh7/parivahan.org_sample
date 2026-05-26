@@ -1,303 +1,309 @@
-/**
- * Bihar PDF receipt generator. Each state has its own copy of this file
- * under src/lib/states/<state>/generateReceipt.js so the per-state design is
- * editable in isolation. The state-name strings ("GOVERNMENT OF BIHAR",
- * watermark image path) are inlined here on purpose — duplicating them per
- * state makes design-tweaks safe.
+﻿/**
+ * Bihar PDF receipt generator — adapted from the reference design.
+ * Returns a Buffer (instead of writing to a file) so it plugs into the
+ * existing S3-upload pipeline without any temp-file handling.
  */
 
 const PDFDocument = require('pdfkit');
-const QRCode = require('qrcode');
-const moment = require('moment');
-const path = require('path');
-const sharp = require('sharp');
+const QRCode      = require('qrcode');
+const moment      = require('moment');
+const fs          = require('fs');
+const path        = require('path');
+const sharp       = require('sharp');
 
-// State-specific constants — each state's generateReceipt.js inlines its own.
-const STATE_GOV_LABEL    = 'GOVERNMENT OF BIHAR';
-const STATE_DEPT_LABEL   = 'Department of Transport';
-const STATE_RECEIPT_TITLE = 'Checkpost Tax e-Receipt';
-const STATE_WATERMARK_FILE = 'Rajasthan-Transport-Department.png';
-
-// Converts webp/png → greyscale PNG buffer for the watermark.
-async function loadGreyscaleImage(imagePath) {
-  const buffer = await sharp(imagePath)
-    .grayscale()
-    .png()
-    .blur(2)
-    .toBuffer();
-  return buffer;
+// -- Image watermark (colour, no grayscale) ---------------------------------
+async function drawImageWatermark(doc, imagePath, pageWidth) {
+  if (!imagePath || !fs.existsSync(imagePath)) return;
+  try {
+    const wmBuffer = await sharp(imagePath).png().toBuffer();
+    const wmWidth  = 180;
+    const wmHeight = 180;
+    const wmX = ((pageWidth - wmWidth) / 2) + 25;
+    const wmY = 150;
+    doc.save();
+    doc.opacity(0.25);
+    doc.image(wmBuffer, wmX, wmY, { width: wmWidth, height: wmHeight });
+    doc.restore();
+  } catch {
+    // watermark is decorative
+  }
 }
 
+// -- Number -> words --------------------------------------------------------
 function numberToWords(num) {
-  const ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
-    'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN',
-    'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
-  const tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
-
-  if (num === 0) return 'ZERO';
-
+  const ones = [
+    '', 'One', 'Two', 'Three', 'Four', 'Five',
+    'Six', 'Seven', 'Eight', 'Nine',
+    'Ten', 'Eleven', 'Twelve', 'Thirteen',
+    'Fourteen', 'Fifteen', 'Sixteen',
+    'Seventeen', 'Eighteen', 'Nineteen',
+  ];
+  const tens = [
+    '', '', 'Twenty', 'Thirty', 'Forty',
+    'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety',
+  ];
+  if (num === 0) return 'Zero';
   function convert(n) {
-    if (n < 20) return ones[n];
-    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
-    if (n < 1000) return ones[Math.floor(n / 100)] + ' HUNDRED' + (n % 100 ? ' AND ' + convert(n % 100) : '');
-    if (n < 100000) return convert(Math.floor(n / 1000)) + ' THOUSAND' + (n % 1000 ? ' ' + convert(n % 1000) : '');
-    return convert(Math.floor(n / 100000)) + ' LAKH' + (n % 100000 ? ' ' + convert(n % 100000) : '');
+    if (n < 20)     return ones[n];
+    if (n < 100)    return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+    if (n < 1000)   return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + convert(n % 100) : '');
+    if (n < 100000) return convert(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + convert(n % 1000) : '');
+    return convert(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + convert(n % 100000) : '');
   }
-
   return convert(num);
 }
 
+// -- QR Generator -----------------------------------------------------------
 async function generateQRCode(text) {
   const dataUrl = await QRCode.toDataURL(text, {
-    width: 120,
-    margin: 1,
-    color: { dark: '#000000', light: '#ffffff' }
+    width: 120, margin: 1,
+    color: { dark: '#000000', light: '#ffffff' },
   });
   const base64 = dataUrl.replace(/^data:image\/png;base64,/, '');
   return Buffer.from(base64, 'base64');
 }
 
-/**
- * Generates a Bihar checkpost tax receipt PDF and returns it as a Buffer.
- * @param {Object} data - Booking/payment data
- * @returns {Promise<Buffer>} PDF buffer
- */
+// -- Main Generator ---------------------------------------------------------
 async function generateReceipt(data) {
-  const now = moment(data.paymentDate || new Date());
-  const formattedDate = now.format('DD-MMM-YYYY hh:mm A').toUpperCase();
-  const registrationNo = data.registrationNo || 'XX00X0000';
-  const watermarkText = `${registrationNo} / ${formattedDate}`;
+  const now       = moment(data.paymentDate || new Date());
+  const printedOn = now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
 
-  const grandTotal = (data.taxItems || []).reduce((sum, item) => sum + item.total, 0);
+  const grandTotal      = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
   const grandTotalWords = numberToWords(grandTotal);
 
-  const qrUrl = data.qrUrl || `https://kms.parivahan.gov.in/verify?receipt=${data.receiptNo}`;
+  const qrUrl = data.qrUrl ||
+    `https://biharparivahan.gov.in/verify?receipt=${data.receiptNo}`;
+
   const qrBuffer = await generateQRCode(qrUrl);
+  const logoPath = path.join(process.cwd(), 'public', 'Images', 'bihar_logo.png');
 
-  const doc = new PDFDocument({
-    size: 'A4',
-    margin: 0,
-    info: {
-      Title: STATE_RECEIPT_TITLE,
-      Author: STATE_DEPT_LABEL,
-      Subject: `Receipt - ${data.receiptNo}`
-    }
-  });
-  doc.registerFont('Roboto',      path.join(process.cwd(), 'receipt-generator', 'fonts', 'Roboto-Regular.ttf'));
-  doc.registerFont('Roboto-Bold', path.join(process.cwd(), 'receipt-generator', 'fonts', 'Roboto-Bold.ttf'));
+  // PDF setup
+  const doc = new PDFDocument({ size: 'A4', margin: 0, autoFirstPage: false });
 
-  const pageWidth = 595.28;
-  const pageHeight = 841.89;
-  const margin = 30;
+  const fontsDir = path.join(process.cwd(), 'receipt-generator', 'fonts');
+  if (fs.existsSync(path.join(fontsDir, 'Roboto-Regular.ttf'))) {
+    doc.registerFont('Roboto',      path.join(fontsDir, 'Roboto-Regular.ttf'));
+    doc.registerFont('Roboto-Bold', path.join(fontsDir, 'Roboto-Bold.ttf'));
+  }
+
+  const pageWidth    = 595.28;
+  const pageHeight   = 841.89;   // eslint-disable-line no-unused-vars
+  const margin       = 30;
   const contentWidth = pageWidth - margin * 2;
 
-  const chunks = [];
-  doc.on('data', chunk => chunks.push(chunk));
+  const chunks     = [];
   const pdfPromise = new Promise((resolve, reject) => {
-    doc.on('end',   () => resolve(Buffer.concat(chunks)));
+    doc.on('data',  chunk => chunks.push(chunk));
+    doc.on('end',   ()    => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
   });
 
-  // ===== 1. IMAGE WATERMARK ============================================
-  const imagePath = path.join(process.cwd(), 'public', 'Images', STATE_WATERMARK_FILE);
-  const wmBuffer = await loadGreyscaleImage(imagePath);
+  // Field helper
+  const labelWidth    = 90;
+  const colonWidth    = 8;
+  const fieldFontSize = 8.5;
+  const col1X         = margin;
+  const col2X         = pageWidth / 2 + 10;
+  const maxValueWidth = 155;
 
-  const wmWidth = 220;
-  const wmHeight = 280;
+  function drawField(label, value, x, yPos) {
+    doc.fontSize(fieldFontSize).font('Helvetica-Bold').fillColor('#000000');
+    doc.text(label, x, yPos, { lineBreak: true, width: labelWidth });
+    doc.text(':', x + labelWidth, yPos, { lineBreak: false, width: colonWidth });
+    doc.fontSize(fieldFontSize).font('Helvetica-Bold').fillColor('#000000');
+    doc.text(value || '', x + labelWidth + colonWidth, yPos, { lineBreak: true, width: maxValueWidth });
+  }
 
-  const wmX = (pageWidth - wmWidth) / 2;
-  const wmY = (pageHeight - wmHeight) / 2;
+  // Table config
+  const col = { particular: margin, fees: 360, fine: 440, total: 505 };
+  const headerHeight = 22;
+  const rowHeight    = 28;
+  const borderColor  = '#87CEEB';
 
-  doc.save();
-  doc.opacity(0.7);
-  doc.image(wmBuffer, wmX-10, wmY - 230, {
-    width: wmWidth,
-    height: wmHeight,
-  });
-  doc.restore();
+  function drawTableHeader(d, y) {
+    d.rect(margin - 2, y, contentWidth + 4, headerHeight).lineWidth(0.8).stroke(borderColor);
+    d.fontSize(7).font('Helvetica-Bold').fillColor('#000000');
+    d.text('Tax/Fee Particular', col.particular + 4, y + (headerHeight / 2) - 5,
+      { width: col.fees - col.particular - 10, align: 'center' });
+    d.text('Tax/Fees', col.fees,  y + (headerHeight / 2) - 5, { width: 60, align: 'center' });
+    d.text('Fine',     col.fine,  y + (headerHeight / 2) - 5, { width: 40, align: 'center' });
+    d.text('Total',    col.total, y + (headerHeight / 2) - 5, { width: 50, align: 'center' });
+    return y + headerHeight;
+  }
 
+  function drawTableRow(d, item, y) {
+    const textY = y + (rowHeight / 2) - 5;
+    d.fontSize(9).font('Helvetica-Bold').fillColor('#000000');
+    d.text(String(item.particular), col.particular + 4, textY, { width: col.fees - col.particular - 10 });
+    d.fontSize(7).font('Helvetica').fillColor('#000000');
+    d.text(String(item.fees  ?? 0), col.fees,  textY);
+    d.text(String(item.fine  ?? 0), col.fine,  textY);
+    d.text(String(item.total ?? 0), col.total, textY);
+    return y + rowHeight;
+  }
+
+  function drawTableBorders(d, tableStartY, tableEndY) {
+    d.rect(margin - 2, tableStartY, contentWidth + 4, tableEndY - tableStartY)
+      .lineWidth(0.8).stroke(borderColor);
+    d.moveTo(col.fees  - 5, tableStartY).lineTo(col.fees  - 5, tableEndY).lineWidth(0.5).stroke(borderColor);
+    d.moveTo(col.fine  - 5, tableStartY).lineTo(col.fine  - 5, tableEndY).lineWidth(0.5).stroke(borderColor);
+    d.moveTo(col.total - 5, tableStartY).lineTo(col.total - 5, tableEndY).lineWidth(0.5).stroke(borderColor);
+  }
+
+  // PAGE
+  doc.addPage();
+
+  await drawImageWatermark(doc, logoPath, pageWidth);
+
+  // Text watermark (tiled)
   doc.save();
   doc.opacity(0.5);
   doc.fontSize(15).fillColor('#cccccc').font('Helvetica');
-
-  const tileRows = 22;
-  const tileStep = 20;
-  for (let row = 0; row < tileRows; row++) {
-    const rowY = (row * tileStep)+20;
-    const lineText = `${watermarkText},  `.repeat(2);
-    doc.text(lineText, 30, rowY, { width: pageWidth, lineBreak: false });
+  const watermarkText = 'GOVERNMENT OF BIHAR';
+  for (let row = 0; row < 22; row++) {
+    const rowY = (row * 20) + 20;
+    doc.text(`${watermarkText},  `.repeat(2), 30, rowY, { width: pageWidth, lineBreak: false });
   }
   doc.restore();
 
-  // ===== 2. HEADER SECTION =============================================
-  let y = 15;
+  // Printed on (top-right)
+  let y = margin - 10;
+  doc.fontSize(7).font('Helvetica-Bold').fillColor('#000000');
+  doc.text(`Printed on : ${printedOn}`, margin, y, { width: contentWidth, align: 'right' });
+  y += 19;
 
-  doc.fontSize(10).fillColor('#000000').font('Helvetica');
-  doc.text('Receipt Printing Date :', margin, y);
-  doc.text(formattedDate, margin, y + 11);
-
-  const titleX = margin + 80;
-  const titleWidth = contentWidth - 170;
-
-  doc.fontSize(13).font('Helvetica-Bold').fillColor('#000000');
-  doc.text(STATE_GOV_LABEL, titleX, y, { width: titleWidth, align: 'center', underline: true });
-
-  doc.fontSize(14).font('Helvetica');
-  doc.text(STATE_DEPT_LABEL, titleX, y + 13, { width: titleWidth, align: 'center' });
-
-  doc.fontSize(12).font('Helvetica');
-  doc.text(STATE_RECEIPT_TITLE, titleX, y + 27, { width: titleWidth, align: 'center' });
-
-  doc.image(qrBuffer, pageWidth - margin - 85, y, { width: 80, height: 80 });
-
-  y += 48;
-
-  // ===== 4. FIELDS (two-column layout) =================================
-  const col1X = margin;
-  const col2X = pageWidth / 2 + 35;
-  const colWidth = contentWidth / 2 - 10;  // eslint-disable-line no-unused-vars
-  const fieldFontSize = 9.5;
-  const fieldLineHeight = 25;
-  const labelWidth = 80;
-  const colonWidth = 10;
-
-  function drawField(label, value, x, yPos) {
-    const maxValueWidth = 160;
-    doc.fontSize(fieldFontSize).font('Helvetica').fillColor('#000000');
-    doc.text(label, x, yPos, { lineBreak: false, width: labelWidth });
-
-    doc.fontSize(fieldFontSize).font('Helvetica').fillColor('#000000');
-    doc.text(':', x + labelWidth, yPos, { lineBreak: false, width: colonWidth });
-
-    doc.fontSize(fieldFontSize).font('Helvetica').fillColor('#000000');
-    doc.text(value || '-', x + labelWidth + colonWidth, yPos, {
-      lineBreak: true,
-      width: maxValueWidth,
-    });
+  // Logo (left side)
+  const emblemY = y;
+  if (fs.existsSync(logoPath)) {
+    const logoX = margin + 40;
+    const logoY = emblemY + 15;
+    doc.rect(logoX, logoY, 80, 80).fill('#ffffff');
+    doc.image(logoPath, logoX, logoY, { width: 80, height: 80 });
   }
 
-  doc.fontSize(fieldFontSize).font('Helvetica').fillColor('#000000');
-  doc.text('Registration No.', col1X, y, { lineBreak: false, width: labelWidth });
-  doc.text(':', col1X + labelWidth, y, { lineBreak: false, width: colonWidth });
-  doc.font('Helvetica-Bold');
-  doc.text(data.registrationNo || '-', col1X + labelWidth + colonWidth, y, { lineBreak: false });
-  y += fieldLineHeight;
+  // Title block (center)
+  const titleX     = margin + 70;
+  const titleWidth = contentWidth - 170;
+  doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
+  doc.text('GOVERNMENT OF BIHAR', titleX, y + 35, { width: titleWidth, align: 'center', underline: true });
+  doc.fontSize(9).font('Helvetica-Bold');
+  doc.text('Department of Transport', titleX, y + 49, { width: titleWidth, align: 'center' });
+  doc.text('Checkpost Tax e-Receipt', titleX, y + 60, { width: titleWidth, align: 'center' });
 
-  drawField('Receipt No.', data.receiptNo || '-', col1X, y);
-  y += fieldLineHeight;
+  // QR (top-right)
+  const qrW = 100;
+  const qrX = pageWidth - margin - qrW - 60;
+  const qrY = y;
+  doc.rect(qrX - 3, qrY - 3, qrW + 6, qrW + 6).fill('#ffffff');
+  doc.image(qrBuffer, qrX, qrY, { width: qrW, height: qrW });
 
-  drawField('Payment Date', formattedDate, col1X, y);
-  y += fieldLineHeight;
+  y += 136;
 
-  drawField('Owner Name', data.ownerName || '-', col1X, y);
-  y += fieldLineHeight;
+  // Fields (Bihar layout -- 11 rows)
+  const fh  = 20;
+  const fh2 = fh * 1.5;
 
-  const row5Y = y;
-  drawField('Chassis No.', data.chassisNo || '-', col1X, row5Y);
-  drawField('Tax Mode', data.taxMode || '-', col2X, row5Y);
-  y += fieldLineHeight;
+  // Row 1
+  drawField('Registration No.', data.registrationNo || '-', col1X, y);
+  drawField('Receipt No.',       data.receiptNo      || '-', col2X, y);
+  y += fh;
 
-  const row6Y = y;
-  drawField('Vehicle Type', data.vehicleType || '-', col1X, row6Y);
-  drawField('Vehicle Class', data.vehicleClass || '-', col2X, row6Y);
-  y += fieldLineHeight;
+  // Row 2
+  drawField('Payment\nInitialization Date', data.paymentInitDate || '-', col1X, y);
+  drawField('Owner Name.',                  data.ownerName        || '-', col2X, y);
+  y += fh2;
 
-  const row7Y = y;
-  drawField('Mobile No.', data.mobileNo || '-', col1X, row7Y);
-  drawField('Checkpost Name', data.checkpostName || '-', col2X, row7Y);
-  y += fieldLineHeight * 1.4;
+  // Row 3
+  drawField('Chassis No.', data.chassisNo || '-', col1X, y);
+  drawField('Tax Mode',    data.taxMode   || '-', col2X, y);
+  y += fh;
 
-  const row8Y = y;
-  drawField('Sleeper Cap.', String(data.sleeperCap ?? 0), col1X, row8Y);
-  drawField('Seating Capacity', String(data.seatingCapacity ?? 0), col2X, row8Y);
-  y += fieldLineHeight;
+  // Row 4
+  drawField('Vehicle Type',  data.vehicleType  || '-', col1X, y);
+  drawField('Vehicle Class', data.vehicleClass || '-', col2X, y);
+  y += fh;
 
-  const row9Y = y;
-  drawField('Bank Ref. No.', data.bankRefNo || '-', col1X, row9Y);
-  drawField('Payment Mode', data.paymentMode || 'ONLINE', col2X, row9Y);
-  y += fieldLineHeight;
+  // Row 5 -- Bihar-specific: Vehicle Category | Mobile No.
+  drawField('Vehicle Category', data.vehicleCategory || '-', col1X, y);
+  drawField('Mobile No.',        data.mobileNo        || '-', col2X, y);
+  y += fh;
 
+  // Row 6
+  drawField('CheckPost Name',          data.checkpostName             || '-', col1X, y);
+  drawField(data.cap1Label || 'Gross Vehicle\nWt(In. Kg)', String(data.cap1Value ?? data.grossVehicleWt ?? ''), col2X, y);
+  y += fh2;
+
+  // Row 7
+  drawField(data.cap2Label || 'Unladen\nWt(In Kg.)', String(data.cap2Value ?? data.unladenWt ?? ''), col1X, y);
+  drawField('Bank Ref. No.',       data.bankRefNo  || '-',      col2X, y);
+  y += fh;
+
+  // Row 8
+  drawField('Payment Mode',     data.paymentMode     || 'ONLINE', col1X, y);
+  drawField('Fitness Validity', data.fitnessValidity  || '-',     col2X, y);
+  y += fh;
+
+  // Row 9
+  drawField('Insurance Validity', data.insuranceValidity || '-', col1X, y);
+  drawField('PUCC Validity',       data.puccValidity      || '-', col2X, y);
+  y += fh;
+
+  // Row 10
   drawField('Service Type', data.serviceType || 'NOT APPLICABLE', col1X, y);
-  y += fieldLineHeight;
+  drawField('Permit Type',  data.permitType  || 'NOT APPLICABLE', col2X, y);
+  y += fh;
 
-  const row11Y = y;
-  drawField('Permit Type', data.permitType || 'NOT APPLICABLE', col1X, row11Y);
-  drawField('Permit Category', data.permitCategory || '-', col2X, row11Y);
-  y += fieldLineHeight;
+  // Row 11
+  drawField('Gross Combination\nWeight(in kg.)', String(data.grossCombinationWeight ?? ''), col1X, y);
+  drawField('Payment\nConfirmation Date',         data.paymentConfirmDate || '-',            col2X, y);
+  y += fh2;
 
-  drawField('Payment Confirmation Date', formattedDate, col1X, y);
-  y += fieldLineHeight * 1.5;
+  y += 10;
 
-  // ===== 5. TAX TABLE ==================================================
-  doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(1).stroke('#000000');
-  y += 4;
+  // Tax table
+  const taxItems    = data.taxItems || [];
+  const tableStartY = y;
 
-  const col = {
-    particular: margin,
-    fees: 350,
-    fine: 440,
-    total: 510,
-  };
+  y = drawTableHeader(doc, y);
+  doc.moveTo(margin - 2, y).lineTo(pageWidth - margin + 2, y).lineWidth(0.5).stroke(borderColor);
 
-  doc.fontSize(10.5).font('Helvetica-Bold').fillColor('#000000');
-  doc.text('Particular', col.particular, y);
-  doc.text('Fees/Tax', col.fees, y);
-  doc.text('Fine', col.fine, y);
-  doc.text('Total', col.total, y);
+  taxItems.forEach((item) => {
+    y = drawTableRow(doc, item, y);
+    doc.moveTo(margin - 2, y).lineTo(pageWidth - margin + 2, y).lineWidth(0.5).stroke(borderColor);
+  });
+
+  drawTableBorders(doc, tableStartY, y);
+  y += 10;
+
+  // Grand total
+  doc.fontSize(8).font('Helvetica-Bold').fillColor('#000000');
+  doc.text(`Grand Total : ${grandTotal}/- ${grandTotalWords} Rupees Only`, margin, y);
   y += 13;
 
-  doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(0.5).stroke('#000000');
-  y += 5;
+  // Notes
+  doc.fontSize(8).font('Helvetica-Bold').fillColor('#000000');
+  doc.text('Note :', margin, y);
+  y += 13;
+  doc.text('Terms and Conditions:', margin, y);
+  y += 13;
 
-  doc.font('Helvetica').fontSize(10.5);
-  const taxItems = data.taxItems || [];
-  for (const item of taxItems) {
-    doc.text(item.particular, col.particular, y, { width: col.fees - col.particular - 10 });
-    doc.text(String(item.fees ?? 0), col.fees, y);
-    doc.text(String(item.fine ?? 0), col.fine, y);
-    doc.text(String(item.total ?? 0), col.total, y);
-    y += 14;
-  }
-
-  doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(0.5).stroke('#000000');
-  y += 18;
-
-  doc.fontSize(9).font('Roboto-Bold');
-  doc.text(
-    `Grand Total : ₹ ${grandTotal}  ( ${grandTotalWords} ONLY/-)`,
-    margin, y
-  );
-  y += 18;
-
-  // ===== 6. NOTES ======================================================
-  doc.fontSize(10.5).font('Helvetica-Oblique').fillColor('#000000');
-  const notes = data.notes || [
+  const terms = data.terms || [
     'This is a computer generated printout and no signature is required.',
-    'Incorrect mentioning of vehicle class or seating capacity may lead to tax evasion and defaulter shall be liable for penal action'
+    'Should not carry unlawful/unaccompanied goods.',
+    'If any false information/discrepancies are found at later, necessary action will be taken against the vehicle owner/driver.',
   ];
-  doc.text('Note :', margin, y, { continued: true });
-  doc.text(` 1) ${notes[0]}`, { font: 'Helvetica-Oblique' });
-  if (notes[1]) {
-    doc.text(`2) ${notes[1]}`, margin, y + 11);
-  }
-  y += 50;
+  terms.forEach((term, i) => {
+    doc.fontSize(7.5).font('Helvetica').fillColor('#000000');
+    doc.text(`${i + 1}. ${term}`, margin + 10, y, { width: contentWidth - 10 });
+    y += 10;
+  });
 
-  doc.fontSize(10.5).font('Helvetica-Oblique');
-  doc.text('You will also receive the payment confirmation message.', margin, y);
-  y += 26;
+  y += 10;
 
-  doc.font('Helvetica').fontSize(10.5).fillColor('#000000');
-  doc.text(
-    'Scan the QR code for genuinity of the receipt, It should land at ',
-    margin, y, { continued: true }
-  );
-  doc.fillColor('#0000EE').text('https://kms.parivahan.gov.in', { continued: true });
-  doc.fillColor('#000000');
-  doc.text(
-    ' site. In case the URL is different, then receipt could be a fake one, please raise a complain'
-  );
+  // QR note
+  doc.fontSize(13).font('Helvetica-Bold').fillColor('#000000');
+  doc.text('Scan the QR code for genuinity of the receipt.', margin, y, { width: contentWidth });
 
-  // ===== 7. FINALIZE ===================================================
   doc.end();
   return pdfPromise;
 }

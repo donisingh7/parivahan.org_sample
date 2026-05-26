@@ -29,6 +29,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── Mock mode: just verify the session cookie exists, skip DB lookup ─────
+    if (process.env.MOCK_DB === "true") {
+      const cookieToken = req.cookies.get("user_token")?.value;
+      if (!cookieToken) {
+        return NextResponse.json(
+          { success: false, code: "NOT_LOGGED_IN", message: "Your portal session has expired. Please log in again." },
+          { status: 401 }
+        );
+      }
+      return NextResponse.json({ success: true });
+    }
+
     const cookieToken = req.cookies.get("user_token")?.value;
     if (!cookieToken) {
       return NextResponse.json(

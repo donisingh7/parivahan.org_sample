@@ -84,18 +84,22 @@ export function fmtTaxDate(d: Date | string | null | undefined): string {
   return `${dd}-${mon}-${yy} 12:00 AM`;
 }
 
-/** "17-APR-2026 02:08 PM" — used for "Payment Date" / "Receipt Printing Date". */
+/** "17-APR-2026 02:08 PM" — used for "Payment Date" / "Receipt Printing Date".
+ *  Always rendered in IST (UTC+5:30) regardless of server timezone. */
 export function fmtPaymentDate(d: Date | string | null | undefined): string {
   if (!d) return "—";
   const dt = typeof d === "string" ? new Date(d) : d;
   if (Number.isNaN(dt.getTime())) return "—";
-  const dd  = String(dt.getDate()).padStart(2, "0");
-  const mon = MONTHS_UPPER[dt.getMonth()];
-  const yy  = dt.getFullYear();
-  let hh = dt.getHours();
-  const mm = String(dt.getMinutes()).padStart(2, "0");
-  const ap = hh >= 12 ? "PM" : "AM";
-  hh = hh % 12 || 12;
+  // Shift to IST (UTC+5:30 = +19800000 ms) then read as UTC so the result
+  // is always India time, even when the server runs in UTC or another zone.
+  const ist = new Date(dt.getTime() + 5.5 * 60 * 60 * 1000);
+  const dd  = String(ist.getUTCDate()).padStart(2, "0");
+  const mon = MONTHS_UPPER[ist.getUTCMonth()];
+  const yy  = ist.getUTCFullYear();
+  let hh    = ist.getUTCHours();
+  const mm  = String(ist.getUTCMinutes()).padStart(2, "0");
+  const ap  = hh >= 12 ? "PM" : "AM";
+  hh        = hh % 12 || 12;
   return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm} ${ap}`;
 }
 

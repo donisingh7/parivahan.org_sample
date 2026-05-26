@@ -15,6 +15,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── Mock mode: bypass DB, return a real JWT so the full UI flow works ────
+    if (process.env.MOCK_DB === "true") {
+      const token = await signToken({ userId: "mock-user", email: userId.trim(), role: "user" });
+      const response = NextResponse.json({
+        success: true,
+        token,
+        user: { userId: userId.trim(), name: "Mock User", mobileNo: "9999999999" },
+      });
+      response.cookies.set("user_token", token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: "strict",
+        maxAge: 60 * 60 * 8,
+        path: "/",
+      });
+      return response;
+    }
+
     await connectDB();
 
     const user = await PortalUser.findOne({ userId: userId.trim() });

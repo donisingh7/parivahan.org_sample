@@ -23,7 +23,6 @@ export async function middleware(req: NextRequest) {
   // /payment/sbi is added so a user cannot deep-link past the form into the
   // gateway and then submit a transaction without ever logging in.
   const isCheckpost =
-    pathname === "/en/node/579" ||
     pathname === "/checkpost" ||
     pathname.startsWith("/checkpost/") ||
     pathname.startsWith("/payment/sbi");
@@ -52,7 +51,6 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     "/admin/dashboard/:path*",
-    "/en/node/579",
     "/checkpost",
     "/checkpost/:path*",
     "/payment/sbi",

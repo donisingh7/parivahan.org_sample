@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import type { ReceiptData } from "../types";
 import { biharConfig } from "./config";
 
-// ── Watermark (matches the tiled vehicle/date overlay in the PDF) ───────────
+// -- Watermark (tiled text overlay) -----------------------------------------
 
 function Watermark({ text }: { text: string }) {
   const items = Array.from({ length: 80 }, (_, i) => i);
@@ -31,7 +31,7 @@ function Watermark({ text }: { text: string }) {
   );
 }
 
-// ── Center emblem watermark (matches the greyscale image in the PDF) ────────
+// -- Centre emblem watermark ------------------------------------------------
 
 function EmblemWatermark() {
   return (
@@ -52,19 +52,14 @@ function EmblemWatermark() {
       <img
         src={biharConfig.watermarkImage}
         alt=""
-        style={{
-          width: "260px",
-          height: "auto",
-          filter: "grayscale(100%)",
-        }}
+        style={{ width: "260px", height: "auto" }}
         onError={(e) => { e.currentTarget.style.display = "none"; }}
       />
     </div>
   );
 }
 
-// ── QR placeholder (replaced by a real QR via the PDF; React side keeps a
-//    visual stand-in until the user downloads the PDF) ─────────────────────
+// -- QR placeholder ---------------------------------------------------------
 
 function QRPlaceholder({ value }: { value: string }) {
   return (
@@ -101,7 +96,7 @@ function QRPlaceholder({ value }: { value: string }) {
   );
 }
 
-// ── Single field row helper (label : value), used everywhere ────────────────
+// -- Single field row helper -------------------------------------------------
 
 function FieldCell({
   label,
@@ -149,7 +144,7 @@ const valueStyle: React.CSSProperties = {
   padding: "0 4px",
 };
 
-// ── Main Receipt ────────────────────────────────────────────────────────────
+// -- Main Receipt -----------------------------------------------------------
 
 export default function BiharReceiptTemplate({ data }: { data: ReceiptData }) {
   return (
@@ -171,7 +166,7 @@ export default function BiharReceiptTemplate({ data }: { data: ReceiptData }) {
       <EmblemWatermark />
       <Watermark text={`${data.registrationNo} / ${data.paymentDateText}`} />
 
-      {/* Header strip */}
+      {/* Header */}
       <div
         style={{
           position: "relative",
@@ -182,10 +177,14 @@ export default function BiharReceiptTemplate({ data }: { data: ReceiptData }) {
           marginBottom: "16px",
         }}
       >
-        <div style={{ fontSize: "10px", lineHeight: "1.6", minWidth: "150px" }}>
-          <strong>Receipt Printing Date :</strong>
-          <br />
-          {data.paymentDateText}
+        <div style={{ minWidth: "100px", display: "flex", alignItems: "flex-start" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/Images/bihar_logo.png"
+            alt="Bihar Emblem"
+            style={{ width: "70px", height: "70px", objectFit: "contain" }}
+            onError={(e) => { e.currentTarget.style.display = "none"; }}
+          />
         </div>
 
         <div style={{ textAlign: "center", flex: 1, padding: "0 16px" }}>
@@ -194,46 +193,73 @@ export default function BiharReceiptTemplate({ data }: { data: ReceiptData }) {
           </div>
           <div style={{ fontSize: "13px", marginTop: "2px" }}>{biharConfig.deptLabel}</div>
           <div style={{ fontSize: "12px", marginTop: "2px" }}>{biharConfig.receiptTitle}</div>
+          <div style={{ fontSize: "9px", marginTop: "6px", color: "#555" }}>
+            <strong>Printed on :</strong> {data.paymentDateText}
+          </div>
         </div>
 
-        <QRPlaceholder value={data.receiptNo} />
+        <QRPlaceholder value={data.qrUrl || data.receiptNo} />
       </div>
 
-      {/* Field grid */}
+      {/* Field grid -- mirrors Bihar PDF layout exactly */}
       <div style={{ position: "relative", zIndex: 1 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
-            <tr><FieldCell label="Registration No." value={data.registrationNo} bold span={2} /></tr>
-            <tr><FieldCell label="Receipt No."      value={data.receiptNo}      span={2} /></tr>
-            <tr><FieldCell label="Payment Date"     value={data.paymentDateText} span={2} /></tr>
-            <tr><FieldCell label="Owner Name"       value={data.ownerName}       span={2} /></tr>
+            {/* Row 1 */}
+            <tr>
+              <FieldCell label="Registration No." value={data.registrationNo} bold />
+              <FieldCell label="Receipt No."      value={data.receiptNo} />
+            </tr>
+            {/* Row 2 */}
+            <tr>
+              <FieldCell label="Payment Initialization Date" value={data.paymentInitDate} />
+              <FieldCell label="Owner Name"                  value={data.ownerName} />
+            </tr>
+            {/* Row 3 */}
             <tr>
               <FieldCell label="Chassis No." value={data.chassisNo} />
               <FieldCell label="Tax Mode"    value={data.taxMode} />
             </tr>
+            {/* Row 4 */}
             <tr>
               <FieldCell label="Vehicle Type"  value={data.vehicleType} />
               <FieldCell label="Vehicle Class" value={data.vehicleClass} />
             </tr>
+            {/* Row 5 -- Bihar-specific */}
             <tr>
-              <FieldCell label="Mobile No."     value={data.mobileNo} />
-              <FieldCell label="Checkpost Name" value={data.checkpostName} />
+              <FieldCell label="Vehicle Category" value={data.vehicleCategory} />
+              <FieldCell label="Mobile No."        value={data.mobileNo} />
             </tr>
-            <tr><td colSpan={4} style={{ height: "10px" }} /></tr>
+            {/* Row 6 */}
             <tr>
-              <FieldCell label="Sleeper Cap."     value={data.sleeperCap || 0} />
-              <FieldCell label="Seating Capacity" value={data.seatingCapacity || 0} />
+              <FieldCell label="CheckPost Name"         value={data.checkpostName} />
+              <FieldCell label="Gross Vehicle Wt (In. Kg)" value={String(data.grossVehicleWt ?? "")} />
             </tr>
+            {/* Row 7 */}
             <tr>
-              <FieldCell label="Bank Ref. No." value={data.bankRefNo} />
-              <FieldCell label="Payment Mode"  value={data.paymentMode} />
+              <FieldCell label="Unladen Wt (In Kg.)" value={String(data.unladenWt ?? "")} />
+              <FieldCell label="Bank Ref. No."        value={data.bankRefNo} />
             </tr>
-            <tr><FieldCell label="Service Type" value={data.serviceType} span={2} /></tr>
+            {/* Row 8 */}
             <tr>
-              <FieldCell label="Permit Type"     value={data.permitType} />
-              <FieldCell label="Permit Category" value={data.permitCategory} />
+              <FieldCell label="Payment Mode"     value={data.paymentMode} />
+              <FieldCell label="Fitness Validity" value={data.fitnessValidity} />
             </tr>
-            <tr><FieldCell label="Payment Confirmation Date" value={data.paymentDateText} span={2} /></tr>
+            {/* Row 9 */}
+            <tr>
+              <FieldCell label="Insurance Validity" value={data.insuranceValidity} />
+              <FieldCell label="PUCC Validity"      value={data.puccValidity} />
+            </tr>
+            {/* Row 10 */}
+            <tr>
+              <FieldCell label="Service Type" value={data.serviceType} />
+              <FieldCell label="Permit Type"  value={data.permitType} />
+            </tr>
+            {/* Row 11 */}
+            <tr>
+              <FieldCell label="Gross Combination Wt (kg)" value={String(data.grossCombinationWeight ?? "")} />
+              <FieldCell label="Payment Confirmation Date"  value={data.paymentConfirmDate} />
+            </tr>
           </tbody>
         </table>
       </div>
@@ -244,91 +270,50 @@ export default function BiharReceiptTemplate({ data }: { data: ReceiptData }) {
           position: "relative",
           zIndex: 1,
           marginTop: "18px",
-          borderTop: "1px solid #000",
-          paddingTop: "6px",
+          border: "1px solid #87CEEB",
         }}
       >
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ borderBottom: "1px solid #000" }}>
-              <th style={{ ...taxCellStyle, textAlign: "left",   width: "60%" }}>Particular</th>
-              <th style={{ ...taxCellStyle, textAlign: "right" }}>Fees/Tax</th>
-              <th style={{ ...taxCellStyle, textAlign: "right" }}>Fine</th>
-              <th style={{ ...taxCellStyle, textAlign: "right" }}>Total</th>
+            <tr style={{ borderBottom: "1px solid #87CEEB", background: "#f8f8f8" }}>
+              <th style={{ ...taxCellStyle, textAlign: "left",  width: "55%" }}>Tax/Fee Particular</th>
+              <th style={{ ...taxCellStyle, textAlign: "right", borderLeft: "1px solid #87CEEB" }}>Tax/Fees</th>
+              <th style={{ ...taxCellStyle, textAlign: "right", borderLeft: "1px solid #87CEEB" }}>Fine</th>
+              <th style={{ ...taxCellStyle, textAlign: "right", borderLeft: "1px solid #87CEEB" }}>Total</th>
             </tr>
           </thead>
           <tbody>
             {data.taxItems.map((item, i) => (
-              <tr key={i}>
-                <td style={{ ...taxCellStyle, textAlign: "left" }}>{item.particular}</td>
-                <td style={{ ...taxCellStyle, textAlign: "right" }}>{item.fees}</td>
-                <td style={{ ...taxCellStyle, textAlign: "right" }}>{item.fine}</td>
-                <td style={{ ...taxCellStyle, textAlign: "right" }}>{item.total}</td>
+              <tr key={i} style={{ borderTop: "1px solid #87CEEB" }}>
+                <td style={{ ...taxCellStyle, textAlign: "left",  fontWeight: 700 }}>{item.particular}</td>
+                <td style={{ ...taxCellStyle, textAlign: "right", borderLeft: "1px solid #87CEEB" }}>{item.fees}</td>
+                <td style={{ ...taxCellStyle, textAlign: "right", borderLeft: "1px solid #87CEEB" }}>{item.fine}</td>
+                <td style={{ ...taxCellStyle, textAlign: "right", borderLeft: "1px solid #87CEEB" }}>{item.total}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        <div style={{ borderTop: "1px solid #000", marginTop: "2px" }} />
       </div>
 
       {/* Grand Total */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          marginTop: "10px",
-          fontSize: "12px",
-          fontWeight: 700,
-        }}
-      >
-        Grand Total : &#8377; {data.amount} &nbsp; ( {data.amountInWords} ONLY/- )
+      <div style={{ position: "relative", zIndex: 1, marginTop: "10px", fontSize: "12px", fontWeight: 700 }}>
+        Grand Total : {data.amount}/- {data.amountInWords} Rupees Only
       </div>
 
       {/* Notes */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          marginTop: "16px",
-          fontSize: "11px",
-          fontStyle: "italic",
-          lineHeight: "1.6",
-        }}
-      >
-        <span style={{ fontWeight: 700, fontStyle: "normal" }}>Note :</span>{" "}
-        1) This is a computer generated printout and no signature is required.
+      <div style={{ position: "relative", zIndex: 1, marginTop: "14px", fontSize: "11px" }}>
+        <strong>Note :</strong>
         <br />
-        <span style={{ marginLeft: "30px" }}>
-          2) Incorrect mentioning of vehicle class or seating capacity may lead to tax evasion and
-          defaulter shall be liable for penal action
-        </span>
+        <strong>Terms and Conditions:</strong>
+        <ol style={{ marginTop: "4px", paddingLeft: "20px", lineHeight: "1.8", fontSize: "10px" }}>
+          <li>This is a computer generated printout and no signature is required.</li>
+          <li>Should not carry unlawful/unaccompanied goods.</li>
+          <li>If any false information/discrepancies are found at later, necessary action will be taken against the vehicle owner/driver.</li>
+        </ol>
       </div>
 
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          marginTop: "12px",
-          fontSize: "11px",
-          fontStyle: "italic",
-        }}
-      >
-        You will also receive the payment confirmation message.
-      </div>
-
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          marginTop: "10px",
-          fontSize: "11px",
-        }}
-      >
-        Scan the QR code for genuinity of the receipt, It should land at{" "}
-        <span style={{ color: "#0000EE", textDecoration: "underline" }}>
-          https://kms.parivahan.gov.in
-        </span>{" "}
-        site. In case the URL is different, then receipt could be a fake one, please raise a complain
+      <div style={{ position: "relative", zIndex: 1, marginTop: "10px", fontSize: "12px", fontWeight: 700 }}>
+        Scan the QR code for genuinity of the receipt.
       </div>
     </div>
   );

@@ -74,8 +74,8 @@ const FROM_STATE_OPTIONS = [
 ];
 
 const VEHICLE_TYPE_OPTIONS = [
-  { value: "",          label: "-- Select Vehicle Type --" },
-  { value: "TRANSPORT", label: "TRANSPORT" },
+  { value: "",               label: "-- Select Vehicle Type --" },
+  { value: "TRANSPORT",      label: "TRANSPORT" },
   { value: "NOT APPLICABLE", label: "NOT APPLICABLE" },
 ];
 
@@ -171,6 +171,9 @@ function TaxCollectionContent() {
   const [vehicleCategory,   setVehicleCategory]   = useState("");
   const [vehicleClass,      setVehicleClass]      = useState("");
   const [seatingCap,        setSeatingCap]        = useState("");
+  const [sleeperCap,        setSleeperCap]        = useState("0");
+  const [grossVehicleWt,    setGrossVehicleWt]    = useState("");
+  const [unladenWt,         setUnladenWt]         = useState("");
   const [serviceType,       setServiceType]       = useState("");
   const [distance,          setDistance]          = useState("");
   const [taxMode,           setTaxMode]           = useState("");
@@ -187,6 +190,8 @@ function TaxCollectionContent() {
   const [dateError,   setDateError]   = useState("");
   const [formError,   setFormError]   = useState("");
   const [showModal,   setShowModal]   = useState(false);
+  const [pdfLoading,  setPdfLoading]  = useState(false);
+  const [pdfError,    setPdfError]    = useState("");
   const [navOpen,     setNavOpen]     = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
 
@@ -194,12 +199,26 @@ function TaxCollectionContent() {
 
   // ── Handlers ───────────────────────────────────────────────────────────
 
-  const handleGetDetails = () => {
+  const [detailsWarning, setDetailsWarning] = useState("");
+
+  const handleGetDetails = async () => {
+    setDetailsWarning("");
     if (!vehicleNo.trim()) return;
-    // Pre-fill demo data; user can still edit. Mirrors the gov portal,
-    // which calls a VAHAN lookup at this point.
-    if (!chassisNo) setChassisNo("MBLHA10ANZZM12345");
-    if (!ownerName) setOwnerName("JOHN DOE");
+    try {
+      const res = await fetch(`/api/vehicle/cache/${encodeURIComponent(vehicleNo.trim().toUpperCase().replace(/\s/g, ""))}`);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) { setDetailsWarning("VEHICLE DATA DOES NOT EXIST"); return; }
+      const d = json.data;
+      if (d.chassisNo)       setChassisNo(d.chassisNo);
+      if (d.ownerName)       setOwnerName(d.ownerName);
+      if (d.vehicleType)     setVehicleType(d.vehicleType);
+      if (d.vehicleCategory) setVehicleCategory(d.vehicleCategory);
+      if (d.vehicleClass)    setVehicleClass(d.vehicleClass);
+      if (d.seatingCap)      setSeatingCap(d.seatingCap);
+      if (d.sleeperCap)      setSleeperCap(d.sleeperCap);
+      if (d.grossVehicleWt)  setGrossVehicleWt(d.grossVehicleWt);
+      if (d.unladenWt)       setUnladenWt(d.unladenWt);
+    } catch { setDetailsWarning("VEHICLE DATA DOES NOT EXIST"); }
   };
 
   const handleTaxFromChange = (val: string) => {
@@ -273,11 +292,38 @@ function TaxCollectionContent() {
   const handleReset = () => {
     setVehicleNo(""); setChassisNo(""); setOwnerName(""); setMobileNo("");
     setFromState(""); setVehicleType(""); setVehicleCategory(""); setVehicleClass("");
-    setSeatingCap(""); setServiceType(""); setDistance(""); setTaxMode("");
+    setSeatingCap(""); setSleeperCap("0"); setGrossVehicleWt(""); setUnladenWt(""); setServiceType(""); setDistance(""); setTaxMode("");
     setBorderDistrict(""); setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity("");
     setTaxFrom(""); setTaxFromTime("00:00"); setTaxTo(""); setTaxToTime("23:59"); setTotalAmount("0");
-    setDateError(""); setFormError(""); setShowModal(false);
+    setDateError(""); setFormError(""); setShowModal(false); setPdfError("");
+    setNavOpen(false); setReportsOpen(false);
   };
+
+  const handleGetPdf = async () => {
+    setPdfError("");
+    if (dateError) return;
+    const missing: string[] = [];
+    if (!vehicleNo.trim()) missing.push("Registration No.");
+    if (!taxFrom)          missing.push("Tax From Date");
+    if (!taxTo)            missing.push("Tax Upto Date");
+    if (missing.length > 0) { setPdfError(`Please fill the following before downloading: ${missing.join(", ")}`); return; }
+    const d = new Date(); const yy = String(d.getFullYear()).slice(2); const mm = String(d.getMonth()+1).padStart(2,"0"); const dd2 = String(d.getDate()).padStart(2,"0");
+    const receiptNo = `HRT${Date.now()}`;
+    const transactionId = `TXN${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+    void yy; void mm; void dd2;
+    setPdfLoading(true);
+    try {
+      const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, seatingCap, serviceType, distance, taxMode, borderDistrict, fitnessValidity, insuranceValidity, puccValidity, taxFrom, taxFromTime, taxTo, taxToTime: taxToTime, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`, noOfPeriods:1, sleeperCap, grossVehicleWt, unladenWt }) });
+      const json = await res.json().catch(()=>({}));
+      if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
+      const savedId = json.transactionId || transactionId;
+      const link = document.createElement("a"); link.href=`/api/receipt/${savedId}?state=HR&download=1`; link.download=`receipt_${savedId}.pdf`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    } catch(err) { setPdfError(err instanceof Error ? err.message : "PDF download failed."); }
+    finally { setPdfLoading(false); }
+  };
+
+  const isGoodsVehicle = vehicleCategory === "GOODS VEHICLE";
 
   return (
     <div id="masterlaoyoutbody">
@@ -443,6 +489,14 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
+                  {detailsWarning && (
+                    <div className="ui-grid-row">
+                      <div className="ui-grid-col-12">
+                        <div className="cp-date-err-msg">{detailsWarning}</div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Row 2: Chassis No. + Owner Name */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
@@ -451,7 +505,7 @@ function TaxCollectionContent() {
                       </div>
                       <input
                         type="text"
-                        className="ui-inputtext"
+                        className="ui-inputtext input-autofilled"
                         value={chassisNo}
                         onChange={(e) => setChassisNo(e.target.value.toUpperCase())}
                         maxLength={30}
@@ -464,7 +518,7 @@ function TaxCollectionContent() {
                       </div>
                       <input
                         type="text"
-                        className="ui-inputtext"
+                        className="ui-inputtext input-autofilled"
                         value={ownerName}
                         onChange={(e) => setOwnerName(e.target.value.toUpperCase())}
                         maxLength={50}
@@ -516,6 +570,7 @@ function TaxCollectionContent() {
                       </div>
                       <div className="ui-selectonemenu">
                         <select
+                          className="select-autofilled"
                           value={vehicleType}
                           onChange={(e) => setVehicleType(e.target.value)}
                         >
@@ -532,6 +587,7 @@ function TaxCollectionContent() {
                       </div>
                       <div className="ui-selectonemenu">
                         <select
+                          className="select-autofilled"
                           value={vehicleCategory}
                           onChange={(e) => setVehicleCategory(e.target.value)}
                         >
@@ -552,6 +608,7 @@ function TaxCollectionContent() {
                       </div>
                       <div className="ui-selectonemenu">
                         <select
+                          className="select-autofilled"
                           value={vehicleClass}
                           onChange={(e) => setVehicleClass(e.target.value)}
                         >
@@ -564,14 +621,39 @@ function TaxCollectionContent() {
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Seating Capacity</label>
+                        <label className="ui-outputlabel field-label-mandate">
+                          {isGoodsVehicle ? "Gross Vehicle Wt (In Kg)" : "Seating Capacity"}
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        className="ui-inputtext input-autofilled"
+                        value={isGoodsVehicle ? grossVehicleWt : seatingCap}
+                        onChange={(e) => isGoodsVehicle
+                          ? setGrossVehicleWt(e.target.value.replace(/\D/g, ""))
+                          : setSeatingCap(e.target.value.replace(/\D/g, ""))}
+                        maxLength={7}
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row: [Sleeper Cap / Unladen Wt] */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">
+                          {isGoodsVehicle ? "Unladen Wt (In Kg)" : "Sleeper Cap"}
+                        </label>
                       </div>
                       <input
                         type="text"
                         className="ui-inputtext"
-                        value={seatingCap}
-                        onChange={(e) => setSeatingCap(e.target.value.replace(/\D/g, ""))}
-                        maxLength={3}
+                        value={isGoodsVehicle ? unladenWt : sleeperCap}
+                        onChange={(e) => isGoodsVehicle
+                          ? setUnladenWt(e.target.value.replace(/\D/g, ""))
+                          : setSleeperCap(e.target.value.replace(/\D/g, ""))}
+                        maxLength={7}
                         autoComplete="off"
                       />
                     </div>
@@ -822,10 +904,15 @@ function TaxCollectionContent() {
                             <i className="fa fa-refresh"></i>
                             <span className="ui-button-text">Reset</span>
                           </button>
+                          <button className="ui-button ui-button-pdf" type="button" onClick={handleGetPdf} disabled={pdfLoading}>
+                            <i className={pdfLoading ? "fa fa-spinner fa-spin" : "fa fa-file-pdf-o"}></i>
+                            <span className="ui-button-text">{pdfLoading ? "Generating..." : "Get PDF"}</span>
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
+                  {pdfError && (<div className="ui-grid-row"><div className="ui-grid-col-12"><div className="cp-date-err-msg">{pdfError}</div></div></div>)}
 
                 </div>
               </div>
