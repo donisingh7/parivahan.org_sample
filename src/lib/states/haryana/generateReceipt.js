@@ -157,7 +157,7 @@ async function generateReceipt(data) {
   // ── Field drawing helper ──
   const labelWidth    = 95;
   const colonWidth    = 8;
-  const fieldFontSize = 13.5;
+  const fieldFontSize = 13;
   const col1X         = margin;
   const col2X         = pageWidth / 2 + 10;
   const maxValueWidth = 155;
@@ -169,7 +169,7 @@ async function generateReceipt(data) {
     doc.text(value || '-', x + labelWidth + colonWidth, yPos, { lineBreak: true, width: maxValueWidth });
   }
 
-  const fh  = 28;   // standard field line height
+  const fh  = 30;   // standard field line height
   const fh2 = fh * 1.5;
   const fh3 = fh * 2;
 
@@ -185,7 +185,7 @@ async function generateReceipt(data) {
   drawField('Tax Mode',                       data.taxMode                  || '-', col2X, y);
   y += fh;
 
-  drawField('Vehicle Type',                   data.vehicleType              || '-', col1X, y);
+  drawField('Vehilce Type',                   data.vehicleType              || '-', col1X, y);
   drawField('Vehicle Class',                  data.vehicleClass             || '-', col2X, y);
   y += fh;
 
@@ -193,11 +193,11 @@ async function generateReceipt(data) {
   drawField('Mobile No.',                     data.mobileNo                 || '-', col2X, y);
   y += fh2;
 
-  drawField('CheckPost\nName',                data.checkpostName            || '-', col1X, y);
-  drawField(data.cap1Label || 'Seating\nCapacity', String(data.cap1Value ?? data.seatingCapacity ?? ''), col2X, y);
+  drawField('CheckPost\nName',                data.checkpostName            || '', col1X, y);
+  drawField('Seating\nCapacity',              String(data.seatingCapacity ?? ''), col2X, y);
   y += fh2;
 
-  drawField(data.cap2Label || 'Sleeper Cap', String(data.cap2Value ?? data.sleeperCap ?? 0), col1X, y);
+  drawField('Sleeper Cap',                    String(data.sleeperCap ?? 0), col1X, y);
   drawField('Bank Ref. No.',                  data.bankRefNo                || '-', col2X, y);
   y += fh;
 
@@ -211,10 +211,10 @@ async function generateReceipt(data) {
 
   drawField('Service Type',                   data.serviceType              || '-', col1X, y);
   drawField('Permit Type',                    data.permitType || 'NOT APPLICABLE', col2X, y);
-  y += fh;
+  y += fh+5;
 
-  drawField('Payment\nConfirmation\nDate',    data.paymentDateText          || '-', col1X, y);
-  y += fh3 + 16;
+  drawField('Payment\nConfirmation\nDate',    data.paymentConfirmDate || data.paymentDateText || '', col1X, y);
+  y += fh3;
 
   // ── Tax table ──
   const col = {

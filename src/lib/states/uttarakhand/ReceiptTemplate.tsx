@@ -8,6 +8,23 @@ const TERMS = [
   'If any false information/discrepancies are found at later, necessary action will be taken against the vehicle owner/driver.',
 ];
 
+// ── Text watermark ─────────────────────────────────────────────────────────
+function Watermark({ text }: { text: string }) {
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
+      {Array.from({ length: 42 }, (_, i) => (
+        <span key={i} style={{
+          position: "absolute", top: `${25 + i * 20}px`, left: "25px",
+          fontSize: "15px", fontWeight: 700, whiteSpace: "nowrap",
+          color: "rgba(170,170,170,0.5)", fontFamily: "Helvetica, Arial, sans-serif",
+        }}>
+          {`${text}  `.repeat(2)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // ── Image watermark (UK logo, matches PDF: x=305 y=188, 230×245, opacity 0.40) ─
 function EmblemWatermark() {
   return (
@@ -118,6 +135,7 @@ export default function UttarakhandReceiptTemplate({ data }: { data: ReceiptData
       {/* ══════════════════ PAGE 1 ══════════════════ */}
       <div style={pageStyle}>
         <EmblemWatermark />
+        <Watermark text={`${data.registrationNo} ${printedOn}`} />
 
         {/* Printed on — top right */}
         <div style={{ position: "relative", zIndex: 1, textAlign: "right", fontSize: "11px", fontWeight: "bold", marginBottom: "4px" }}>

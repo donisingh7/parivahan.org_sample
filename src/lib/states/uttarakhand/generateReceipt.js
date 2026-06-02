@@ -47,6 +47,20 @@ async function generateQRCode(text) {
   return Buffer.from(base64, 'base64');
 }
 
+// ── Text watermark (tiled rows, matches other states) ────────────────────
+function drawTextWatermark(doc, watermarkText, pageWidth) {
+  doc.save();
+  doc.opacity(0.5);
+  doc.fontSize(15).fillColor('#aaaaaa').font('Helvetica');
+  const startX = 25, startY = 25, endY = 740, tileStep = 20;
+  for (let row = 0; ; row++) {
+    const rowY = startY + row * tileStep;
+    if (rowY > endY) break;
+    doc.text(`${watermarkText}  `.repeat(2), startX, rowY, { width: pageWidth + 100, lineBreak: false });
+  }
+  doc.restore();
+}
+
 // ── Image watermark (UK logo, matches PDF: x=305 y=188, 230×245, opacity 0.40) ─
 async function drawImageWatermark(doc, imagePath) {
   if (!imagePath || !fs.existsSync(imagePath)) return;
@@ -61,8 +75,9 @@ async function drawImageWatermark(doc, imagePath) {
 
 // ── Main receipt generator ────────────────────────────────────────────────
 async function generateReceipt(data) {
-  const now       = moment(data.paymentDate || new Date());
-  const printedOn = now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
+  const now           = moment(data.paymentDate || new Date());
+  const printedOn     = now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
+  const watermarkText = `${data.registrationNo || 'XX00X0000'} ${now.format('DD-MMM-YYYY hh:mm A')}`;
 
   const grandTotal      = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
   const grandTotalWords = numberToWords(grandTotal);
@@ -131,6 +146,7 @@ async function generateReceipt(data) {
   doc.addPage();
 
   await drawImageWatermark(doc, logoPath);
+  drawTextWatermark(doc, watermarkText, pageWidth);
 
   // Printed on — top right
   let y = margin;

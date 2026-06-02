@@ -69,7 +69,7 @@ export function buildUttarakhandReceiptData(txn: TxnLike): ReceiptData {
     receiptNo,
     paymentDate:     paymentDate.toISOString(),
     paymentDateText: fmtPaymentDate(paymentDate),
-    paymentInitDate: fmtPaymentDate(paymentDate),
+    paymentInitDate: txn.paymentInitDate || fmtPaymentDate(paymentDate),
     ownerName:       maskName(txn.ownerName  ?? ""),
     chassisNo:       maskChassis(txn.chassisNo ?? ""),
     mobileNo:        maskMobile(txn.mobileNo ?? ""),

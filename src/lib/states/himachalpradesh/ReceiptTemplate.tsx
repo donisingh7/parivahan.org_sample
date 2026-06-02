@@ -166,11 +166,8 @@ export default function HimachalPradeshReceiptTemplate({ data }: { data: Receipt
               </td>
               {/* Titles */}
               <td style={{ width: "55%", textAlign: "center", verticalAlign: "middle" }}>
-                <div style={{ fontSize: "13px", fontWeight: "bold", textDecoration: "underline" }}>
-                  GOVERNMENT OF HIMACHAL
-                </div>
-                <div style={{ fontSize: "13px", fontWeight: "bold", textDecoration: "underline" }}>
-                  PRADESH
+                <div style={{ fontSize: "11px", fontWeight: "bold", textDecoration: "underline" }}>
+                  GOVERNMENT OF HIMACHAL PRADESH
                 </div>
                 <div style={{ fontSize: "11px", marginTop: "5px" }}>Department of Transport</div>
                 <div style={{ fontSize: "10px", marginTop: "4px" }}>Checkpost Tax e-Receipt</div>

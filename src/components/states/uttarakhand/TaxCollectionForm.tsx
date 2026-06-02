@@ -186,6 +186,19 @@ const TAX_MODE_OPTIONS = [
   { value: "YEARLY",      label: "YEARLY" },
 ];
 
+function nowIST(): string {
+  const ist = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const dd  = String(ist.getUTCDate()).padStart(2, "0");
+  const mon = MONTHS[ist.getUTCMonth()];
+  const yy  = ist.getUTCFullYear();
+  let   hh  = ist.getUTCHours();
+  const mm  = String(ist.getUTCMinutes()).padStart(2, "0");
+  const ap  = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12 || 12;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm} ${ap}`;
+}
+
 function TaxCollectionContent() {
   const stateCode  = STATE_CODE;
   const stateLabel = STATE_LABEL;
@@ -324,9 +337,10 @@ function TaxCollectionContent() {
       noOfPeriods,
       taxFrom,
       taxTo,
-      amount:      calculatedTotal || "0",
-      userCharge:  userCharge     || "0",
-      infraCess:   infraCess      || "0",
+      amount:          calculatedTotal || "0",
+      userCharge:      userCharge     || "0",
+      infraCess:       infraCess      || "0",
+      paymentInitDate: nowIST(),
     });
     router.push(`/payment/sbi?${params.toString()}`);
   };
@@ -359,7 +373,7 @@ function TaxCollectionContent() {
     setPdfLoading(true);
     try {
       const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleCategory, vehicleClass, vehicleType, permitType, grossVehicleWt, unladenWt, serviceType, borderDistrict: district, checkpostName: barrierName, fitnessValidity, puccValidity, permitNumber, permitFrom, permitUpto, taxMode, noOfPeriods, taxFrom, taxTo, amount: parseFloat(calculatedTotal)||0, userCharge: userCharge||"0", infraCess: infraCess||"0", receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`, seatingCap, sleeperCap }) });
+        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleCategory, vehicleClass, vehicleType, permitType, grossVehicleWt, unladenWt, serviceType, borderDistrict: district, checkpostName: barrierName, fitnessValidity, puccValidity, permitNumber, permitFrom, permitUpto, taxMode, noOfPeriods, taxFrom, taxTo, amount: parseFloat(calculatedTotal)||0, userCharge: userCharge||"0", infraCess: infraCess||"0", receiptNo, orderRef: (() => { const c=[]; for(let i=0;i<6;i++)c.push(String.fromCharCode(65+Math.floor(Math.random()*26))); for(let i=0;i<3;i++)c.push(String(Math.floor(Math.random()*10))); for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];} return c.join("")+String(Math.floor(Math.random()*10)); })(), seatingCap, sleeperCap, paymentInitDate: nowIST() }) });
       const json = await res.json().catch(()=>({}));
       if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
       const savedId = json.transactionId || transactionId;

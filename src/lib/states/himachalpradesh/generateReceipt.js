@@ -162,13 +162,12 @@ async function generateReceipt(data) {
   // Title block (center)
   const titleX     = margin + 90;
   const titleWidth = contentWidth - 180;
-  doc.fontSize(13).font('Helvetica-Bold').fillColor('#000000');
-  doc.text('GOVERNMENT OF HIMACHAL', titleX, y + 43, { width: titleWidth, align: 'center', underline: true });
-  doc.text('PRADESH',                titleX, y + 58, { width: titleWidth, align: 'center', underline: true });
+  doc.fontSize(11).font('Helvetica-Bold').fillColor('#000000');
+  doc.text('GOVERNMENT OF HIMACHAL PRADESH', titleX, y + 50, { width: titleWidth, align: 'center', underline: true });
   doc.fontSize(11).font('Helvetica');
-  doc.text('Department of Transport', titleX, y + 75, { width: titleWidth, align: 'center' });
+  doc.text('Department of Transport', titleX, y + 65, { width: titleWidth, align: 'center' });
   doc.fontSize(10).font('Helvetica');
-  doc.text('Checkpost Tax e-Receipt', titleX, y + 89, { width: titleWidth, align: 'center' });
+  doc.text('Checkpost Tax e-Receipt', titleX, y + 79, { width: titleWidth, align: 'center' });
 
   // QR Code (top right)
   const qrW = 130;

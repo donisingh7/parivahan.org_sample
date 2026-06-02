@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useState, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { punjabConfig } from "@/lib/states/punjab/config";
 
@@ -158,6 +158,143 @@ const CHECKPOST_OPTIONS = [
   { value: "MOONAK",       label: "MOONAK" },
 ];
 
+// ── IST timestamp ─────────────────────────────────────────────────────────
+function nowIST(): string {
+  const ist = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const dd  = String(ist.getUTCDate()).padStart(2, "0");
+  const mon = MONTHS[ist.getUTCMonth()];
+  const yy  = ist.getUTCFullYear();
+  let   hh  = ist.getUTCHours();
+  const mm  = String(ist.getUTCMinutes()).padStart(2, "0");
+  const ap  = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12 || 12;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm} ${ap}`;
+}
+
+// ── Circular clock picker ─────────────────────────────────────────────────
+
+const CLOCK_SIZE   = 240;
+const CLOCK_CX     = 120;
+const CLOCK_CY     = 120;
+const CLOCK_R      = 88;
+const CLOCK_ACCENT = "#e65c00";
+
+function clockPos(slot: number, total: number) {
+  const angle = (slot / total) * 2 * Math.PI - Math.PI / 2;
+  return { x: CLOCK_CX + CLOCK_R * Math.cos(angle), y: CLOCK_CY + CLOCK_R * Math.sin(angle) };
+}
+
+function to24h(h: number, ampm: "AM" | "PM"): number {
+  if (ampm === "AM") return h === 12 ? 0 : h;
+  return h === 12 ? 12 : h + 12;
+}
+
+function from24h(h24: number): { h: number; ampm: "AM" | "PM" } {
+  if (h24 === 0)   return { h: 12, ampm: "AM" };
+  if (h24 < 12)   return { h: h24, ampm: "AM" };
+  if (h24 === 12)  return { h: 12, ampm: "PM" };
+  return { h: h24 - 12, ampm: "PM" };
+}
+
+const HOUR_SLOTS   = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+const MINUTE_SLOTS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+
+function ClockPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open,   setOpen]   = useState(false);
+  const [mode,   setMode]   = useState<"hour" | "minute">("hour");
+  const [hour,   setHour]   = useState(12);
+  const [minute, setMinute] = useState(0);
+  const [ampm,   setAmpm]   = useState<"AM" | "PM">("AM");
+
+  const handleOpen = () => {
+    const m    = value.match(/^(\d{1,2}):(\d{2})$/);
+    const h24  = m ? parseInt(m[1]) : 0;
+    const min  = m ? Math.round(parseInt(m[2]) / 5) * 5 % 60 : 0;
+    const { h, ampm: ap } = from24h(h24);
+    setHour(h); setMinute(min); setAmpm(ap); setMode("hour");
+    setOpen(true);
+  };
+
+  const handleClockClick = (e: MouseEvent<SVGSVGElement>) => {
+    const rect  = e.currentTarget.getBoundingClientRect();
+    const px    = e.clientX - rect.left  - CLOCK_CX;
+    const py    = e.clientY - rect.top   - CLOCK_CY;
+    let   angle = Math.atan2(py, px) * (180 / Math.PI) + 90;
+    if (angle < 0)    angle += 360;
+    if (angle >= 360) angle -= 360;
+    if (mode === "hour") {
+      const raw = Math.round(angle / 30) % 12;
+      setHour(raw === 0 ? 12 : raw);
+      setMode("minute");
+    } else {
+      const snapped = Math.round(Math.round(angle / 6) % 60 / 5) * 5 % 60;
+      setMinute(snapped);
+    }
+  };
+
+  const handleSet = () => {
+    const h24 = to24h(hour, ampm);
+    onChange(`${String(h24).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
+    setOpen(false);
+  };
+
+  const selPos = mode === "hour" ? clockPos(HOUR_SLOTS.indexOf(hour), 12) : clockPos(minute / 5, 12);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <input type="text" readOnly className="ui-inputtext cp-date-input" value={value || "--:--"}
+        onClick={handleOpen} style={{ cursor: "pointer", caretColor: "transparent" }} />
+      {open && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)" }}
+          onClick={() => setOpen(false)}>
+          <div style={{ background: "#fff", borderRadius: "16px", overflow: "hidden", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", width: "292px" }}
+            onClick={(e) => e.stopPropagation()}>
+            <div style={{ background: CLOCK_ACCENT, color: "#fff", padding: "18px 22px 14px" }}>
+              <div style={{ fontSize: "10px", letterSpacing: "1.5px", opacity: 0.82, marginBottom: "4px" }}>SELECT TIME</div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
+                <div style={{ fontSize: "46px", fontWeight: 300, lineHeight: 1, letterSpacing: "1px" }}>
+                  <span style={{ cursor: "pointer", opacity: mode === "hour"   ? 1 : 0.6, borderBottom: mode === "hour"   ? "2px solid #fff" : "none" }} onClick={() => setMode("hour")}>{String(hour).padStart(2, "0")}</span>
+                  <span style={{ opacity: 0.75 }}>:</span>
+                  <span style={{ cursor: "pointer", opacity: mode === "minute" ? 1 : 0.6, borderBottom: mode === "minute" ? "2px solid #fff" : "none" }} onClick={() => setMode("minute")}>{String(minute).padStart(2, "0")}</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginBottom: "7px", fontSize: "13px", fontWeight: 600 }}>
+                  {(["AM", "PM"] as const).map((ap) => (
+                    <span key={ap} style={{ cursor: "pointer", opacity: ampm === ap ? 1 : 0.55, padding: "1px 5px", borderRadius: "3px", background: ampm === ap ? "rgba(255,255,255,0.25)" : "transparent" }} onClick={() => setAmpm(ap)}>{ap}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", padding: "14px 8px 6px", background: "#f7f7f7" }}>
+              <svg width={CLOCK_SIZE} height={CLOCK_SIZE} onClick={handleClockClick} style={{ cursor: "crosshair", display: "block" }}>
+                <circle cx={CLOCK_CX} cy={CLOCK_CY} r={110} fill="#e0e0e0" />
+                <circle cx={CLOCK_CX} cy={CLOCK_CY} r={106} fill="#eeeeee" />
+                <line x1={CLOCK_CX} y1={CLOCK_CY} x2={selPos.x} y2={selPos.y} stroke={CLOCK_ACCENT} strokeWidth={2} />
+                <circle cx={CLOCK_CX} cy={CLOCK_CY} r={4} fill={CLOCK_ACCENT} />
+                <circle cx={selPos.x} cy={selPos.y} r={18} fill={CLOCK_ACCENT} />
+                {mode === "hour"
+                  ? HOUR_SLOTS.map((h, i) => { const p = clockPos(i, 12); return (<text key={h} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize="13" fontWeight={h === hour ? "bold" : "normal"} fill={h === hour ? "#fff" : "#333"} style={{ userSelect: "none", pointerEvents: "none" }}>{h}</text>); })
+                  : MINUTE_SLOTS.map((m, i) => { const p = clockPos(i, 12); return (<text key={m} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize="13" fontWeight={m === minute ? "bold" : "normal"} fill={m === minute ? "#fff" : "#333"} style={{ userSelect: "none", pointerEvents: "none" }}>{String(m).padStart(2, "0")}</text>); })
+                }
+              </svg>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 18px 14px", background: "#fff" }}>
+              <button type="button" style={{ background: "none", border: "none", color: CLOCK_ACCENT, fontWeight: 700, cursor: "pointer", fontSize: "14px" }}
+                onClick={() => { setHour(12); setMinute(0); setAmpm("AM"); setMode("hour"); }}>Clear</button>
+              <div style={{ display: "flex", gap: "18px" }}>
+                <button type="button" style={{ background: "none", border: "none", color: "#666", cursor: "pointer", fontSize: "14px" }} onClick={() => setOpen(false)}>Cancel</button>
+                <button type="button" style={{ background: "none", border: "none", color: CLOCK_ACCENT, fontWeight: 700, cursor: "pointer", fontSize: "14px" }} onClick={handleSet}>Set</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+
 function TaxCollectionContent() {
   const stateCode  = STATE_CODE;
   const stateLabel = STATE_LABEL;
@@ -275,6 +412,8 @@ function TaxCollectionContent() {
       vehicleClass,
       grossVehicleWt,
       unladenWt,
+      seatingCap,
+      sleeperCap,
       serviceType,
       taxMode,
       borderDistrict,
@@ -283,9 +422,10 @@ function TaxCollectionContent() {
       taxFromTime,
       taxTo,
       taxToTime,
-      amount:      calculatedTotal || "0",
-      userCharge:  userCharge     || "0",
-      infraCess:   infraCess      || "0",
+      amount:          calculatedTotal || "0",
+      userCharge:      userCharge     || "0",
+      infraCess:       infraCess      || "0",
+      paymentInitDate: nowIST(),
     });
     router.push(`/payment/sbi?${params.toString()}`);
   };
@@ -308,8 +448,10 @@ function TaxCollectionContent() {
     if (!vehicleNo.trim()) missing.push("Registration No.");
     if (!taxFrom)          missing.push("Tax From Date");
     if (!taxTo)            missing.push("Tax Upto Date");
-    if (!calculatedTotal || parseFloat(calculatedTotal) <= 0) missing.push("Total Amount (Calculate Tax first)");
     if (missing.length > 0) { setPdfError(`Please fill the following before downloading: ${missing.join(", ")}`); return; }
+    const effectiveTotal = calculatedTotal && parseFloat(calculatedTotal) > 0
+      ? calculatedTotal
+      : String((parseFloat(mvTax)||0) + (parseFloat(userCharge)||0) + (parseFloat(infraCess)||0));
     const d = new Date(); const yy = String(d.getFullYear()).slice(2); const mm = String(d.getMonth()+1).padStart(2,"0"); const dd2 = String(d.getDate()).padStart(2,"0");
     const rand = Math.floor(Math.random()*9000000+1000000);
     const receiptNo = `PBR${yy}${mm}${dd2}${rand}`;
@@ -317,7 +459,7 @@ function TaxCollectionContent() {
     setPdfLoading(true);
     try {
       const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, grossVehicleWt, unladenWt, serviceType, taxMode, borderDistrict, checkpostName, taxFrom, taxFromTime, taxTo, taxToTime, amount: parseFloat(calculatedTotal)||0, userCharge: userCharge||"0", infraCess: infraCess||"0", receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`, noOfPeriods:1, seatingCap, sleeperCap }) });
+        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, grossVehicleWt, unladenWt, serviceType, taxMode, borderDistrict, checkpostName, taxFrom, taxFromTime, taxTo, taxToTime, amount: parseFloat(effectiveTotal)||0, userCharge: userCharge||"0", infraCess: infraCess||"0", receiptNo, orderRef: (() => { const c=[]; for(let i=0;i<6;i++)c.push(String.fromCharCode(65+Math.floor(Math.random()*26))); for(let i=0;i<3;i++)c.push(String(Math.floor(Math.random()*10))); for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];} return c.join("")+String(Math.floor(Math.random()*10)); })(), noOfPeriods:1, seatingCap, sleeperCap, paymentInitDate: nowIST() }) });
       const json = await res.json().catch(()=>({}));
       if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
       const savedId = json.transactionId || transactionId;
@@ -754,13 +896,7 @@ function TaxCollectionContent() {
                         />
                       </div>
                       <div className="ui-calendar" style={{ marginTop: "4px" }}>
-                        <input
-                          type="time"
-                          className="ui-inputtext cp-date-input"
-                          value={taxFromTime}
-                          onChange={(e) => setTaxFromTime(e.target.value)}
-                          autoComplete="off"
-                        />
+                        <ClockPicker value={taxFromTime} onChange={setTaxFromTime} />
                       </div>
                     </div>
                     <div className="ui-grid-col-3">
@@ -779,13 +915,7 @@ function TaxCollectionContent() {
                         />
                       </div>
                       <div className="ui-calendar" style={{ marginTop: "4px" }}>
-                        <input
-                          type="time"
-                          className="ui-inputtext cp-date-input"
-                          value={taxToTime}
-                          onChange={(e) => setTaxToTime(e.target.value)}
-                          autoComplete="off"
-                        />
+                        <ClockPicker value={taxToTime} onChange={setTaxToTime} />
                       </div>
                     </div>
                   </div>

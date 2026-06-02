@@ -344,7 +344,9 @@ function generateReceiptNo(stateCode?: string): string {
 }
 
 function generateHRBankRef(): string {
-  return String(Math.floor(Math.random() * 900000000 + 100000000));
+  const first = [3, 5, 6, 7][Math.floor(Math.random() * 4)];
+  const rest  = String(Math.floor(Math.random() * 1000000000)).padStart(9, "0");
+  return `${first}${rest}`;
 }
 
 // AP bank ref: <8-digit random> + <mmddyy of booking date>
@@ -383,6 +385,12 @@ function generateBRBankRef(): string {
 
 // Generates bank ref for HP / PB / RJ / UK:
 // 9-char string (6 uppercase letters + 3 digits, randomly permuted) + 1 random digit = 10 chars.
+function generateHPBankRef(): string {
+  const first = [3, 5, 6, 7][Math.floor(Math.random() * 4)];
+  const rest  = String(Math.floor(Math.random() * 1000000000)).padStart(9, "0");
+  return `${first}${rest}`;
+}
+
 function generateCheckpostBankRef(): string {
   const chars: string[] = [];
   for (let i = 0; i < 6; i++) chars.push(String.fromCharCode(65 + Math.floor(Math.random() * 26)));
@@ -439,7 +447,9 @@ function SBIContent() {
     else if (stateCode === "MH") orderRef = generateMHBankRef();
     else if (stateCode === "JH") orderRef = String(Math.floor(Math.random() * 9000000000000 + 1000000000000));
     else if (stateCode === "UP") orderRef = generateUPBankRef();
-    else if (stateCode === "HP" || stateCode === "PB" || stateCode === "RJ" || stateCode === "UK")
+    else if (stateCode === "HP")
+      orderRef = generateHPBankRef();
+    else if (stateCode === "PB" || stateCode === "RJ" || stateCode === "UK")
       orderRef = generateCheckpostBankRef();
     else orderRef = makeOrderRef(vehicleNo || "VH");
     setClientOrderRef(orderRef);

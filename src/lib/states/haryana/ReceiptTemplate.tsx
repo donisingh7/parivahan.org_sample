@@ -91,8 +91,8 @@ function QRPlaceholder({ value }: { value: string }) {
 // ── Field row (label : value) — matches PDF drawField layout ──────────────
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", marginBottom: "8px" }}>
-      <div style={{ width: "120px", fontSize: "13.5px", fontWeight: 400, flexShrink: 0, lineHeight: 1.4, whiteSpace: "pre-line" }}>
+    <div style={{ display: "flex", alignItems: "flex-start", marginBottom: "10px" }}>
+      <div style={{ width: "120px", fontSize: "13px", fontWeight: 400, flexShrink: 0, lineHeight: 1.4, whiteSpace: "pre-line" }}>
         {label}
       </div>
       <div style={{ width: "14px", fontSize: "13.5px" }}>:</div>
@@ -187,14 +187,16 @@ export default function HaryanaReceiptTemplate({ data }: { data: ReceiptData }) 
             <Field label={"Registration\nNo."}              value={data.registrationNo} />
             <Field label={"Payment\nInitialization\nDate"}  value={data.paymentInitDate} />
             <Field label="Chassis No."                      value={data.chassisNo} />
-            <Field label="Vehicle Type"                     value={data.vehicleType} />
+            <Field label="Vehilce Type"                     value={data.vehicleType} />
             <Field label={"Vehicle\nCategory"}              value={data.vehicleCategory} />
             <Field label={"CheckPost\nName"}                value={data.checkpostName} />
             <Field label="Sleeper Cap"                      value={data.sleeperCap} />
             <Field label={"Payment\nMode"}                  value={data.paymentMode} />
             <Field label={"Insurance\nValidity"}            value={data.insuranceValidity} />
             <Field label="Service Type"                     value={data.serviceType} />
-            <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentDateText} />
+            <div style={{ marginTop: "16px" }}>
+              <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentDateText} />
+            </div>
           </div>
           {/* Right column */}
           <div style={{ flex: 1 }}>
