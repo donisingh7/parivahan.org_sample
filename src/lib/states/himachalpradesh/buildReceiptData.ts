@@ -32,6 +32,30 @@ function passThrough(v: string | undefined | null): string {
   return v && String(v).trim() ? String(v) : "-";
 }
 
+// YYYY-MM-DD format for tax period labels in HP receipt particulars.
+function fmtTaxDateYMD(d: Date | string | null | undefined): string {
+  if (!d) return "—";
+  const dt = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(dt.getTime())) return "—";
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
+function fmtDateWithSecs(d: Date): string {
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const dd  = String(d.getDate()).padStart(2, "0");
+  const mon = MONTHS[d.getMonth()];
+  const yy  = d.getFullYear();
+  let   hh  = d.getHours();
+  const mm  = String(d.getMinutes()).padStart(2, "0");
+  const ss  = String(d.getSeconds()).padStart(2, "0");
+  const ap  = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12 || 12;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
+}
+
 function fmt12Hour(hhmm: string | undefined | null): string {
   if (!hhmm) return "";
   const [h, m] = hhmm.split(":").map(Number);
@@ -60,8 +84,8 @@ export function buildHimachalPradeshReceiptData(txn: TxnLike): ReceiptData {
   const infra   = Number(txn.infraCess)  || 0;
   const mvTax   = Math.max(0, grand - userChg - infra);
 
-  const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null) + fmt12Hour(txn.taxFromTime);
-  const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null) + fmt12Hour(txn.taxToTime);
+  const taxFromLabel = fmtTaxDateYMD(txn.taxFrom ?? null) + fmt12Hour(txn.taxFromTime);
+  const taxToLabel   = fmtTaxDateYMD(txn.taxTo   ?? null) + fmt12Hour(txn.taxToTime);
   const paymentDate  = txn.paidAt ? new Date(txn.paidAt) : new Date();
 
   const receiptNo = txn.receiptNo || "-";
@@ -71,7 +95,9 @@ export function buildHimachalPradeshReceiptData(txn: TxnLike): ReceiptData {
     receiptNo,
     paymentDate:     paymentDate.toISOString(),
     paymentDateText: fmtPaymentDate(paymentDate),
-    paymentInitDate: txn.paymentInitDate || fmtPaymentDate(paymentDate),
+    paymentInitDate:    txn.paymentInitDate || fmtDateWithSecs(paymentDate),
+    paymentConfirmDate: txn.paymentConfDate || fmtDateWithSecs(paymentDate),
+    printedOnDate:      txn.printedOn      || fmtDateWithSecs(paymentDate),
     ownerName:       maskName(txn.ownerName  ?? ""),
     chassisNo:       maskChassis(txn.chassisNo ?? ""),
     mobileNo:        maskMobile(txn.mobileNo ?? ""),

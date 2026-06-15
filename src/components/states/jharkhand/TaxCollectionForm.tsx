@@ -405,6 +405,13 @@ function TaxCollectionContent() {
       <div className="container-fluid" id="skip-main-content">
         <div className="ui-grid ui-grid-responsive">
 
+          {/* Back to state selection */}
+          <div className="ui-grid-row" style={{ padding: "8px 0 0 8px" }}>
+            <a href="/checkpost" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#1565C0", fontWeight: 600, fontSize: "14px", textDecoration: "none" }}>
+              ← Back to State Selection
+            </a>
+          </div>
+
           {/* Page heading */}
           <div className="ui-grid-row top-space center-position contents-Space">
             <h1 className="header-main">

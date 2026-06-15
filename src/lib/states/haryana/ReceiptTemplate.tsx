@@ -134,8 +134,11 @@ const tdStyle: React.CSSProperties = {
 
 // ── Main component ─────────────────────────────────────────────────────────
 export default function HaryanaReceiptTemplate({ data }: { data: ReceiptData }) {
-  const grandTotal = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
-  const printedOn  = data.paymentDateText || "-";
+  const grandTotal   = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
+  const printedOn    = data.printedOnDate || data.paymentDateText || "-";
+  const initDateHHMM = data.paymentInitDate
+    ? data.paymentInitDate.replace(/(\d{2}:\d{2}):\d{2}/, "$1")
+    : printedOn;
 
   return (
     <div style={{ fontFamily: "Helvetica, Arial, sans-serif", color: "#000" }}>
@@ -143,7 +146,7 @@ export default function HaryanaReceiptTemplate({ data }: { data: ReceiptData }) 
       {/* ══════════════════ PAGE 1 ══════════════════ */}
       <div style={pageStyle}>
         <EmblemWatermark />
-        <Watermark text={`${data.registrationNo} ${printedOn}`} />
+        <Watermark text={`${data.registrationNo} ${initDateHHMM}`} />
 
         {/* Printed on — top right */}
         <div style={{ position: "relative", zIndex: 1, textAlign: "right", fontSize: "11px", marginBottom: "4px" }}>
@@ -195,7 +198,7 @@ export default function HaryanaReceiptTemplate({ data }: { data: ReceiptData }) 
             <Field label={"Insurance\nValidity"}            value={data.insuranceValidity} />
             <Field label="Service Type"                     value={data.serviceType} />
             <div style={{ marginTop: "16px" }}>
-              <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentDateText} />
+              <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentConfirmDate || data.paymentDateText} />
             </div>
           </div>
           {/* Right column */}

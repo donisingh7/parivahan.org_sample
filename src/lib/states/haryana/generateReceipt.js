@@ -80,8 +80,11 @@ async function generateReceipt(data) {
   const emblemPath = path.join(process.cwd(), 'public', 'Images', STATE_WATERMARK_FILE);
 
   const now           = moment(data.paymentDate || new Date());
-  const printedOn     = now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
-  const watermarkText = `${data.registrationNo || 'XX00X0000'} ${now.format('DD-MMM-YYYY hh:mm A')}`;
+  const printedOn     = data.printedOnDate || now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
+  const initDateHHMM  = data.paymentInitDate
+    ? data.paymentInitDate.replace(/(\d{2}:\d{2}):\d{2}/, '$1')
+    : now.format('DD-MMM-YYYY hh:mm A').toUpperCase();
+  const watermarkText = `${data.registrationNo || 'XX00X0000'} ${initDateHHMM}`;
 
   const grandTotal      = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
   const grandTotalWords = data.amountInWords || numberToWords(grandTotal);

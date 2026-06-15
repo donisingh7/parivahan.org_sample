@@ -344,9 +344,16 @@ function generateReceiptNo(stateCode?: string): string {
 }
 
 function generateHRBankRef(): string {
-  const first = [3, 5, 6, 7][Math.floor(Math.random() * 4)];
-  const rest  = String(Math.floor(Math.random() * 1000000000)).padStart(9, "0");
-  return `${first}${rest}`;
+  const numDigits  = Math.floor(Math.random() * 3) + 1;
+  const numLetters = 10 - numDigits;
+  const chars: string[] = [];
+  for (let i = 0; i < numLetters; i++) chars.push(String.fromCharCode(65 + Math.floor(Math.random() * 26)));
+  for (let i = 0; i < numDigits;  i++) chars.push(String(Math.floor(Math.random() * 10)));
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
 }
 
 // AP bank ref: <8-digit random> + <mmddyy of booking date>
@@ -383,12 +390,18 @@ function generateBRBankRef(): string {
   return chars.join("");
 }
 
-// Generates bank ref for HP / PB / RJ / UK:
-// 9-char string (6 uppercase letters + 3 digits, randomly permuted) + 1 random digit = 10 chars.
+// HP bank ref: 10 chars, 7-9 uppercase letters + 1-3 digits, shuffled.
 function generateHPBankRef(): string {
-  const first = [3, 5, 6, 7][Math.floor(Math.random() * 4)];
-  const rest  = String(Math.floor(Math.random() * 1000000000)).padStart(9, "0");
-  return `${first}${rest}`;
+  const numDigits  = Math.floor(Math.random() * 3) + 1; // 1..3
+  const numLetters = 10 - numDigits;                     // 7..9
+  const chars: string[] = [];
+  for (let i = 0; i < numLetters; i++) chars.push(String.fromCharCode(65 + Math.floor(Math.random() * 26)));
+  for (let i = 0; i < numDigits;  i++) chars.push(String(Math.floor(Math.random() * 10)));
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
 }
 
 function generateCheckpostBankRef(): string {

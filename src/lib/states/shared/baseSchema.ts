@@ -106,6 +106,9 @@ export function createTransactionSchema(): Schema<TransactionDoc> {
       route:            { type: String, default: "" },
       paymentInitDate:  { type: String, default: "" },
       apTaxItemsJson:   { type: String, default: "" },
+      // HP-specific user-override dates
+      paymentConfDate:  { type: String, default: "" },
+      printedOn:        { type: String, default: "" },
       // Jharkhand / Bihar / multi-state — string weight & validity fields.
       // Stored as strings because these states capture them as free-text in
       // the form rather than structured Date/Number inputs.

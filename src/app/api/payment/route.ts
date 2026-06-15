@@ -75,7 +75,10 @@ export async function POST(req: NextRequest) {
       // ── Punjab-specific — vehicle weight fields ───────────────────────
       grossVehicleWt, unladenWt,
       // ── Andhra Pradesh-specific ───────────────────────────────────────
-      nameOfGoods, route, paymentInitDate, apTaxItemsJson,      // ── Jharkhand-specific — string weight/validity fields ─────────────────────
+      nameOfGoods, route, paymentInitDate, apTaxItemsJson,
+      // ── HP-specific user-override dates ─────────────────────────────
+      paymentConfDate, printedOn,
+      // ── Jharkhand-specific — string weight/validity fields ─────────────────────
       grossCombinationWeight, jhFitnessValidity, jhInsuranceValidity,
       jhPuccValidity, jhGrossVehicleWt, jhUnladenWt,
       // ── Bihar-specific — string weight/validity fields ───────────────────────
@@ -178,6 +181,8 @@ export async function POST(req: NextRequest) {
       route:             route            ?? "",
       paymentInitDate:   paymentInitDate  ?? "",
       apTaxItemsJson:    apTaxItemsJson   ?? "",
+      paymentConfDate:   paymentConfDate  ?? "",
+      printedOn:         printedOn        ?? "",
       // ── Jharkhand-specific (silently ignored by other states' Mongoose schemas)
       grossCombinationWeight: grossCombinationWeight ?? "",
       jhFitnessValidity:      jhFitnessValidity      ?? "",
@@ -212,6 +217,7 @@ export async function POST(req: NextRequest) {
           $set: {
             chassisNo:       chassisNo        ?? "",
             ownerName:       ownerName        ?? "",
+            mobileNo:        mobileNo         ?? "",
             vehicleType:     vehicleType      ?? "",
             vehicleCategory: vehicleCategory  ?? "",
             vehicleClass:    vehicleClass     ?? "",

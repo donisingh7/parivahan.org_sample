@@ -15,6 +15,7 @@ export interface IVehicleCache extends Document {
   vehicleNo:       string;
   chassisNo:       string;
   ownerName:       string;
+  mobileNo:        string;
   vehicleType:     string;   // TRANSPORT / NOT APPLICABLE / GOODS VEHICLE / …
   vehicleCategory: string;   // GOODS VEHICLE / GOODS CARRIER / … (states that have a separate category dropdown)
   vehicleClass:    string;
@@ -33,6 +34,7 @@ const VehicleCacheSchema = new Schema<IVehicleCache>(
     vehicleNo:       { type: String, required: true, unique: true, uppercase: true, trim: true },
     chassisNo:       { type: String, default: "" },
     ownerName:       { type: String, default: "" },
+    mobileNo:        { type: String, default: "" },
     vehicleType:     { type: String, default: "" },
     vehicleCategory: { type: String, default: "" },
     vehicleClass:    { type: String, default: "" },

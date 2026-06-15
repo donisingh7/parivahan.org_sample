@@ -135,7 +135,11 @@ export default function HimachalPradeshReceiptTemplate({ data }: { data: Receipt
   const page1Items = (data.taxItems || []).slice(0, 1);
   const page2Items = (data.taxItems || []).slice(1);
   const grandTotal = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
-  const printedOn  = data.paymentDateText || "-";
+  const printedOn  = data.printedOnDate || data.paymentDateText || "-";
+  // Watermark: use paymentInitDate at HH:MM precision (strip seconds).
+  const initDateHHMM = data.paymentInitDate
+    ? data.paymentInitDate.replace(/(\d{2}:\d{2}):\d{2}/, "$1")
+    : printedOn;
 
   return (
     <div style={{ fontFamily: "Helvetica, Arial, sans-serif", color: "#000" }}>
@@ -143,7 +147,7 @@ export default function HimachalPradeshReceiptTemplate({ data }: { data: Receipt
       {/* ══════════════════ PAGE 1 ══════════════════ */}
       <div style={pageStyle}>
         <EmblemWatermark />
-        <Watermark text={`${data.registrationNo} ${printedOn}`} />
+        <Watermark text={`${data.registrationNo} ${initDateHHMM}`} />
 
         {/* Printed on — top right */}
         <div style={{ position: "relative", zIndex: 1, textAlign: "right", fontSize: "11px", marginBottom: "4px" }}>
@@ -208,7 +212,7 @@ export default function HimachalPradeshReceiptTemplate({ data }: { data: Receipt
             <Field label={"Fitness\nValidity"}              value={data.fitnessValidity} />
             <Field label="PUCC Validity"                    value={data.puccValidity} />
             <Field label="Permit Type"                      value={data.permitType || "NOT APPLICABLE"} />
-            <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentDateText} />
+            <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentConfirmDate || data.paymentDateText} />
           </div>
         </div>
 

@@ -17,13 +17,45 @@
 
 import {
   fmtPaymentDate,
-  fmtTaxDate,
   maskChassis,
   maskMobile,
   maskName,
 } from "../shared/masking";
 import { numberToWords } from "../shared/numberToWords";
 import type { ReceiptData, TxnLike } from "../types";
+
+function fmtTaxDateYMD(d: Date | string | null | undefined): string {
+  if (!d) return "—";
+  const dt = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(dt.getTime())) return "—";
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
+function fmt24hTo12h(hhmm: string): string {
+  const m = hhmm.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return hhmm;
+  let h    = parseInt(m[1]);
+  const mn = m[2];
+  const ap = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${mn} ${ap}`;
+}
+
+function fmtDateWithSecs(d: Date): string {
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const dd  = String(d.getDate()).padStart(2, "0");
+  const mon = MONTHS[d.getMonth()];
+  const yy  = d.getFullYear();
+  let   hh  = d.getHours();
+  const mm  = String(d.getMinutes()).padStart(2, "0");
+  const ss  = String(d.getSeconds()).padStart(2, "0");
+  const ap  = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12 || 12;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
+}
 
 // Haryana's form submits text values (e.g. "WEEKLY", "MOTOR CYCLE") instead
 // of numeric codes, so no resolveLabel-style lookup is needed. We just
@@ -48,8 +80,8 @@ function fmtValidity(v: TxnLike["fitnessValidity"]): string {
 export function buildHaryanaReceiptData(txn: TxnLike): ReceiptData {
   const amount = Number(txn.amount) || 0;
 
-  const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null) + (txn.taxFromTime ? ` ${txn.taxFromTime}` : "");
-  const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null) + (txn.taxToTime   ? ` ${txn.taxToTime}`   : "");
+  const taxFromLabel = fmtTaxDateYMD(txn.taxFrom ?? null) + (txn.taxFromTime ? ` ${fmt24hTo12h(txn.taxFromTime)}` : "");
+  const taxToLabel   = fmtTaxDateYMD(txn.taxTo   ?? null) + (txn.taxToTime   ? ` ${fmt24hTo12h(txn.taxToTime)}`   : "");
   const paymentDate  = txn.paidAt ? new Date(txn.paidAt) : new Date();
 
   const receiptNo = txn.receiptNo || "-";
@@ -59,7 +91,9 @@ export function buildHaryanaReceiptData(txn: TxnLike): ReceiptData {
     receiptNo,
     paymentDate:     paymentDate.toISOString(),
     paymentDateText: fmtPaymentDate(paymentDate),
-    paymentInitDate: txn.paymentInitDate || fmtPaymentDate(paymentDate),
+    paymentInitDate:    txn.paymentInitDate || fmtDateWithSecs(paymentDate),
+    paymentConfirmDate: txn.paymentConfDate || fmtDateWithSecs(paymentDate),
+    printedOnDate:      txn.printedOn      || fmtDateWithSecs(paymentDate),
     ownerName:       maskName(txn.ownerName  ?? ""),
     chassisNo:       maskChassis(txn.chassisNo ?? ""),
     mobileNo:        maskMobile(txn.mobileNo ?? ""),

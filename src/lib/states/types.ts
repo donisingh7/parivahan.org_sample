@@ -123,6 +123,8 @@ export interface ReceiptData {
   // Jharkhand-specific string fields
   grossCombinationWeight?: string;
   paymentConfirmDate?:     string;
+  // HP-specific override dates (user-entered from form)
+  printedOnDate?:          string;
   // Maharashtra-specific string weight fields
   ladenWeight?:            string;
   unladenWeight?:          string;
@@ -178,6 +180,9 @@ export interface TxnLike {
   route?:             string;
   paymentInitDate?:   string;
   apTaxItemsJson?:    string;
+  // HP-specific user-override dates
+  paymentConfDate?:   string;
+  printedOn?:         string;
   // Jharkhand-specific string fields (separate from base-schema Number fields)
   grossCombinationWeight?: string;
   jhFitnessValidity?:      string;
@@ -271,6 +276,7 @@ export interface GenerateReceiptInput {
   nameOfGoods?:             string;
   route?:                   string;
   paymentConfirmDate?:      string;
+  printedOnDate?:           string;
   // Jharkhand-specific
   grossCombinationWeight?: string;
   // Maharashtra-specific
@@ -349,6 +355,9 @@ export interface TransactionDoc {
   route?:              string;
   paymentInitDate?:    string;
   apTaxItemsJson?:     string;
+  // HP-specific user-override dates
+  paymentConfDate?:    string;
+  printedOn?:          string;
   // Jharkhand-specific
   jhGrossVehicleWt?:    string;
   jhUnladenWt?:         string;

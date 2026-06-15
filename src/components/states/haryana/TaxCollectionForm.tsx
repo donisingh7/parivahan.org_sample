@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState, type MouseEvent } from "react";
+import { Suspense, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { haryanaConfig } from "@/lib/states/haryana/config";
 
@@ -166,124 +166,287 @@ function nowIST(): string {
   const yy  = ist.getUTCFullYear();
   let   hh  = ist.getUTCHours();
   const mm  = String(ist.getUTCMinutes()).padStart(2, "0");
+  const ss  = String(ist.getUTCSeconds()).padStart(2, "0");
   const ap  = hh >= 12 ? "PM" : "AM";
   hh = hh % 12 || 12;
-  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm} ${ap}`;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
 }
 
-// ── Circular clock picker ─────────────────────────────────────────────────
+// ── Scrollable time picker (list style) ───────────────────────────────────
 
-const CLOCK_SIZE   = 240;
-const CLOCK_CX     = 120;
-const CLOCK_CY     = 120;
-const CLOCK_R      = 88;
-const CLOCK_ACCENT = "#e65c00";
-
-function clockPos(slot: number, total: number) {
-  const angle = (slot / total) * 2 * Math.PI - Math.PI / 2;
-  return { x: CLOCK_CX + CLOCK_R * Math.cos(angle), y: CLOCK_CY + CLOCK_R * Math.sin(angle) };
+const TIME_SLOTS: string[] = [];
+for (let h = 0; h < 24; h++) {
+  for (const m of [0, 30]) {
+    TIME_SLOTS.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+  }
 }
+const TP_ITEM_H  = 44;
+const TP_VISIBLE = 5;
+const TP_BLUE    = "#1565C0";
 
-function to24h(h: number, ampm: "AM" | "PM"): number {
-  if (ampm === "AM") return h === 12 ? 0 : h;
-  return h === 12 ? 12 : h + 12;
+function nearestTimeSlot(hhmm: string): string {
+  const match = hhmm.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return "00:00";
+  const h   = parseInt(match[1]);
+  const raw = parseInt(match[2]);
+  const m   = Math.round(raw / 30) * 30;
+  if (m >= 60) return `${String((h + 1) % 24).padStart(2, "0")}:00`;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
-
-function from24h(h24: number): { h: number; ampm: "AM" | "PM" } {
-  if (h24 === 0)   return { h: 12, ampm: "AM" };
-  if (h24 < 12)   return { h: h24, ampm: "AM" };
-  if (h24 === 12)  return { h: 12, ampm: "PM" };
-  return { h: h24 - 12, ampm: "PM" };
-}
-
-const HOUR_SLOTS   = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-const MINUTE_SLOTS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
 function ClockPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [open,   setOpen]   = useState(false);
-  const [mode,   setMode]   = useState<"hour" | "minute">("hour");
-  const [hour,   setHour]   = useState(12);
-  const [minute, setMinute] = useState(0);
-  const [ampm,   setAmpm]   = useState<"AM" | "PM">("AM");
+  const [open, setOpen] = useState(false);
+  const listRef         = useRef<HTMLDivElement>(null);
+
+  const selected = nearestTimeSlot(value || "00:00");
 
   const handleOpen = () => {
-    const m    = value.match(/^(\d{1,2}):(\d{2})$/);
-    const h24  = m ? parseInt(m[1]) : 0;
-    const min  = m ? Math.round(parseInt(m[2]) / 5) * 5 % 60 : 0;
-    const { h, ampm: ap } = from24h(h24);
-    setHour(h); setMinute(min); setAmpm(ap); setMode("hour");
-    setOpen(true);
-  };
-
-  const handleClockClick = (e: MouseEvent<SVGSVGElement>) => {
-    const rect  = e.currentTarget.getBoundingClientRect();
-    const px    = e.clientX - rect.left  - CLOCK_CX;
-    const py    = e.clientY - rect.top   - CLOCK_CY;
-    let   angle = Math.atan2(py, px) * (180 / Math.PI) + 90;
-    if (angle < 0)    angle += 360;
-    if (angle >= 360) angle -= 360;
-    if (mode === "hour") {
-      const raw = Math.round(angle / 30) % 12;
-      setHour(raw === 0 ? 12 : raw);
-      setMode("minute");
+    const isDefault = !value || value === "00:00" || value === "23:59";
+    let target: string;
+    if (!isDefault) {
+      target = nearestTimeSlot(value);
     } else {
-      const snapped = Math.round(Math.round(angle / 6) % 60 / 5) * 5 % 60;
-      setMinute(snapped);
+      const ist = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+      const h   = ist.getUTCHours();
+      const raw = Math.round(ist.getUTCMinutes() / 30) * 30;
+      target    = raw >= 60
+        ? `${String((h + 1) % 24).padStart(2, "0")}:00`
+        : `${String(h).padStart(2, "0")}:${String(raw).padStart(2, "0")}`;
     }
+    setOpen(true);
+    setTimeout(() => {
+      const idx = TIME_SLOTS.indexOf(target);
+      if (idx >= 0 && listRef.current) {
+        listRef.current.scrollTop = Math.max(0, idx - 2) * TP_ITEM_H;
+      }
+    }, 30);
   };
-
-  const handleSet = () => {
-    const h24 = to24h(hour, ampm);
-    onChange(`${String(h24).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
-    setOpen(false);
-  };
-
-  const selPos = mode === "hour" ? clockPos(HOUR_SLOTS.indexOf(hour), 12) : clockPos(minute / 5, 12);
 
   return (
     <div style={{ position: "relative" }}>
-      <input type="text" readOnly className="ui-inputtext cp-date-input" value={value || "--:--"}
-        onClick={handleOpen} style={{ cursor: "pointer", caretColor: "transparent" }} />
+      <input
+        type="text"
+        readOnly
+        className="ui-inputtext cp-date-input"
+        value={value || "--:--"}
+        onClick={handleOpen}
+        style={{ cursor: "pointer", caretColor: "transparent" }}
+      />
       {open && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)" }}
-          onClick={() => setOpen(false)}>
-          <div style={{ background: "#fff", borderRadius: "16px", overflow: "hidden", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", width: "292px" }}
-            onClick={(e) => e.stopPropagation()}>
-            <div style={{ background: CLOCK_ACCENT, color: "#fff", padding: "18px 22px 14px" }}>
-              <div style={{ fontSize: "10px", letterSpacing: "1.5px", opacity: 0.82, marginBottom: "4px" }}>SELECT TIME</div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
-                <div style={{ fontSize: "46px", fontWeight: 300, lineHeight: 1, letterSpacing: "1px" }}>
-                  <span style={{ cursor: "pointer", opacity: mode === "hour"   ? 1 : 0.6, borderBottom: mode === "hour"   ? "2px solid #fff" : "none" }} onClick={() => setMode("hour")}>{String(hour).padStart(2, "0")}</span>
-                  <span style={{ opacity: 0.75 }}>:</span>
-                  <span style={{ cursor: "pointer", opacity: mode === "minute" ? 1 : 0.6, borderBottom: mode === "minute" ? "2px solid #fff" : "none" }} onClick={() => setMode("minute")}>{String(minute).padStart(2, "0")}</span>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginBottom: "7px", fontSize: "13px", fontWeight: 600 }}>
-                  {(["AM", "PM"] as const).map((ap) => (
-                    <span key={ap} style={{ cursor: "pointer", opacity: ampm === ap ? 1 : 0.55, padding: "1px 5px", borderRadius: "3px", background: ampm === ap ? "rgba(255,255,255,0.25)" : "transparent" }} onClick={() => setAmpm(ap)}>{ap}</span>
-                  ))}
-                </div>
-              </div>
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)" }}
+          onClick={() => setOpen(false)}
+        >
+          <div
+            style={{ background: "#fff", borderRadius: "12px", overflow: "hidden", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", width: "200px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ background: TP_BLUE, color: "#fff", padding: "14px 18px", fontSize: "12px", fontWeight: 700, letterSpacing: "1.5px" }}>
+              SELECT TIME
             </div>
-            <div style={{ display: "flex", justifyContent: "center", padding: "14px 8px 6px", background: "#f7f7f7" }}>
-              <svg width={CLOCK_SIZE} height={CLOCK_SIZE} onClick={handleClockClick} style={{ cursor: "crosshair", display: "block" }}>
-                <circle cx={CLOCK_CX} cy={CLOCK_CY} r={110} fill="#e0e0e0" />
-                <circle cx={CLOCK_CX} cy={CLOCK_CY} r={106} fill="#eeeeee" />
-                <line x1={CLOCK_CX} y1={CLOCK_CY} x2={selPos.x} y2={selPos.y} stroke={CLOCK_ACCENT} strokeWidth={2} />
-                <circle cx={CLOCK_CX} cy={CLOCK_CY} r={4} fill={CLOCK_ACCENT} />
-                <circle cx={selPos.x} cy={selPos.y} r={18} fill={CLOCK_ACCENT} />
-                {mode === "hour"
-                  ? HOUR_SLOTS.map((h, i) => { const p = clockPos(i, 12); return (<text key={h} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize="13" fontWeight={h === hour ? "bold" : "normal"} fill={h === hour ? "#fff" : "#333"} style={{ userSelect: "none", pointerEvents: "none" }}>{h}</text>); })
-                  : MINUTE_SLOTS.map((m, i) => { const p = clockPos(i, 12); return (<text key={m} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize="13" fontWeight={m === minute ? "bold" : "normal"} fill={m === minute ? "#fff" : "#333"} style={{ userSelect: "none", pointerEvents: "none" }}>{String(m).padStart(2, "0")}</text>); })
-                }
-              </svg>
+            <div
+              ref={listRef}
+              style={{ height: `${TP_ITEM_H * TP_VISIBLE}px`, overflowY: "auto", overscrollBehavior: "contain" }}
+            >
+              {TIME_SLOTS.map((slot) => {
+                const isSelected = slot === selected;
+                return (
+                  <div
+                    key={slot}
+                    onClick={() => { onChange(slot); setOpen(false); }}
+                    style={{
+                      height:      `${TP_ITEM_H}px`,
+                      display:     "flex",
+                      alignItems:  "center",
+                      paddingLeft: "20px",
+                      fontSize:    "15px",
+                      fontWeight:  isSelected ? 700 : 400,
+                      background:  isSelected ? TP_BLUE : "#fff",
+                      color:       isSelected ? "#fff" : "#222",
+                      cursor:      "pointer",
+                    }}
+                  >
+                    {slot}
+                  </div>
+                );
+              })}
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 18px 14px", background: "#fff" }}>
-              <button type="button" style={{ background: "none", border: "none", color: CLOCK_ACCENT, fontWeight: 700, cursor: "pointer", fontSize: "14px" }}
-                onClick={() => { setHour(12); setMinute(0); setAmpm("AM"); setMode("hour"); }}>Clear</button>
-              <div style={{ display: "flex", gap: "18px" }}>
-                <button type="button" style={{ background: "none", border: "none", color: "#666", cursor: "pointer", fontSize: "14px" }} onClick={() => setOpen(false)}>Cancel</button>
-                <button type="button" style={{ background: "none", border: "none", color: CLOCK_ACCENT, fontWeight: 700, cursor: "pointer", fontSize: "14px" }} onClick={handleSet}>Set</button>
-              </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 14px", borderTop: "1px solid #eee" }}>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Combined date+time picker (calendar + scrollable time list) ───────────
+
+const DT_MONTHS_LONG  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DT_MONTHS_SHORT = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const DT_WEEK_DAYS    = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+function parseDTString(s: string): { year: number; month: number; day: number; h24: number; min: number } | null {
+  const m = s.match(/^(\d{2})-([A-Za-z]{3})-(\d{4})\s+(\d{2}):(\d{2})(?::\d{2})?\s+(AM|PM)$/i);
+  if (!m) return null;
+  const day   = parseInt(m[1]);
+  const month = DT_MONTHS_SHORT.indexOf(m[2].toUpperCase());
+  const year  = parseInt(m[3]);
+  let   h     = parseInt(m[4]);
+  const min   = parseInt(m[5]);
+  const ap    = m[6].toUpperCase();
+  if (month === -1) return null;
+  if (ap === "AM" && h === 12) h = 0;
+  else if (ap === "PM" && h !== 12) h += 12;
+  return { year, month, day, h24: h, min };
+}
+
+function formatDTString(year: number, month: number, day: number, h24: number, min: number): string {
+  const dd = String(day).padStart(2, "0");
+  const hh = h24 % 12 || 12;
+  const ap = h24 < 12 ? "AM" : "PM";
+  return `${dd}-${DT_MONTHS_SHORT[month]}-${year} ${String(hh).padStart(2,"0")}:${String(min).padStart(2,"0")}:00 ${ap}`;
+}
+
+function DateTimePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open,      setOpen]      = useState(false);
+  const [viewYear,  setViewYear]  = useState(2026);
+  const [viewMonth, setViewMonth] = useState(0);
+  const [selYear,   setSelYear]   = useState(2026);
+  const [selMonth,  setSelMonth]  = useState(0);
+  const [selDay,    setSelDay]    = useState(1);
+  const [selTime,   setSelTime]   = useState("00:00");
+  const dtListRef = useRef<HTMLDivElement>(null);
+
+  const handleOpen = () => {
+    let year: number, month: number, day: number, h24: number, min: number;
+    const parsed = parseDTString(value);
+    if (parsed) {
+      ({ year, month, day, h24, min } = parsed);
+    } else {
+      const ist = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+      year  = ist.getUTCFullYear();
+      month = ist.getUTCMonth();
+      day   = ist.getUTCDate();
+      h24   = ist.getUTCHours();
+      min   = Math.round(ist.getUTCMinutes() / 30) * 30;
+      if (min >= 60) { min = 0; h24 = (h24 + 1) % 24; }
+    }
+    const slot = `${String(h24).padStart(2,"0")}:${String(min).padStart(2,"0")}`;
+    setViewYear(year); setViewMonth(month);
+    setSelYear(year);  setSelMonth(month); setSelDay(day); setSelTime(slot);
+    setOpen(true);
+    setTimeout(() => {
+      const idx = TIME_SLOTS.indexOf(nearestTimeSlot(slot));
+      if (idx >= 0 && dtListRef.current) {
+        dtListRef.current.scrollTop = Math.max(0, idx - 2) * TP_ITEM_H;
+      }
+    }, 30);
+  };
+
+  const handleConfirm = () => {
+    const [h, m] = selTime.split(":").map(Number);
+    onChange(formatDTString(selYear, selMonth, selDay, h, m || 0));
+    setOpen(false);
+  };
+
+  const prevMonth = () => { const d = new Date(viewYear, viewMonth - 1); setViewMonth(d.getMonth()); setViewYear(d.getFullYear()); };
+  const nextMonth = () => { const d = new Date(viewYear, viewMonth + 1); setViewMonth(d.getMonth()); setViewYear(d.getFullYear()); };
+
+  const numDays  = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const cells: (number | null)[] = Array(firstDay).fill(null);
+  for (let d = 1; d <= numDays; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const selSlot = nearestTimeSlot(selTime);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <input
+        type="text"
+        readOnly
+        className="ui-inputtext cp-date-input"
+        value={value || ""}
+        placeholder="Auto (system time)"
+        onClick={handleOpen}
+        style={{ cursor: "pointer", caretColor: "transparent" }}
+      />
+      {open && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)" }}
+          onClick={() => setOpen(false)}
+        >
+          <div
+            style={{ background: "#fff", borderRadius: "12px", overflow: "hidden", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", width: "300px" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ background: TP_BLUE, color: "#fff", padding: "12px 18px", fontSize: "12px", fontWeight: 700, letterSpacing: "1.5px" }}>
+              SELECT DATE &amp; TIME
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: "#f4f4f4" }}>
+              <button type="button" onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "20px", color: TP_BLUE, lineHeight: 1, padding: "0 4px" }}>‹</button>
+              <span style={{ fontWeight: 700, fontSize: "14px" }}>{DT_MONTHS_LONG[viewMonth]} {viewYear}</span>
+              <button type="button" onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "20px", color: TP_BLUE, lineHeight: 1, padding: "0 4px" }}>›</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", padding: "0 10px", background: "#f4f4f4" }}>
+              {DT_WEEK_DAYS.map(d => (
+                <div key={d} style={{ textAlign: "center", fontSize: "10px", fontWeight: 600, color: "#888", padding: "3px 0" }}>{d}</div>
+              ))}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", padding: "4px 10px 8px", background: "#f4f4f4", gap: "2px" }}>
+              {cells.map((day, i) => {
+                const isSel = day !== null && day === selDay && viewMonth === selMonth && viewYear === selYear;
+                return (
+                  <div
+                    key={i}
+                    onClick={() => { if (day) { setSelDay(day); setSelMonth(viewMonth); setSelYear(viewYear); } }}
+                    style={{
+                      textAlign: "center", fontSize: "12px", cursor: day ? "pointer" : "default",
+                      borderRadius: "50%", background: isSel ? TP_BLUE : "transparent",
+                      color: isSel ? "#fff" : day ? "#222" : "transparent",
+                      fontWeight: isSel ? 700 : 400,
+                      width: "26px", height: "26px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto",
+                    }}
+                  >
+                    {day || ""}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ borderTop: "1px solid #ddd" }} />
+            <div ref={dtListRef} style={{ height: `${TP_ITEM_H * 3}px`, overflowY: "auto", overscrollBehavior: "contain" }}>
+              {TIME_SLOTS.map(slot => {
+                const isSel = slot === selSlot;
+                return (
+                  <div
+                    key={slot}
+                    onClick={() => setSelTime(slot)}
+                    style={{
+                      height: `${TP_ITEM_H}px`, display: "flex", alignItems: "center",
+                      paddingLeft: "20px", fontSize: "15px",
+                      fontWeight: isSel ? 700 : 400,
+                      background: isSel ? TP_BLUE : "#fff",
+                      color: isSel ? "#fff" : "#222",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {slot}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", padding: "10px 14px", borderTop: "1px solid #eee" }}>
+              <button type="button" onClick={() => { onChange(""); setOpen(false); }} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>Clear</button>
+              <button type="button" onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>Cancel</button>
+              <button type="button" onClick={handleConfirm} style={{ background: TP_BLUE, border: "none", color: "#fff", cursor: "pointer", fontSize: "13px", fontWeight: 700, padding: "6px 14px", borderRadius: "6px" }}>OK</button>
             </div>
           </div>
         </div>
@@ -324,6 +487,10 @@ function TaxCollectionContent() {
   const [taxToTime,         setTaxToTime]         = useState("23:59");
   const [totalAmount,       setTotalAmount]       = useState("0");
 
+  const [paymentInitDateInput, setPaymentInitDateInput] = useState("");
+  const [paymentConfDateInput, setPaymentConfDateInput] = useState("");
+  const [printedOnInput,       setPrintedOnInput]       = useState("");
+
   const [dateError,   setDateError]   = useState("");
   const [formError,   setFormError]   = useState("");
   const [showModal,   setShowModal]   = useState(false);
@@ -348,6 +515,7 @@ function TaxCollectionContent() {
       const d = json.data;
       if (d.chassisNo)       setChassisNo(d.chassisNo);
       if (d.ownerName)       setOwnerName(d.ownerName);
+      if (d.mobileNo)        setMobileNo(d.mobileNo);
       if (d.vehicleType)     setVehicleType(d.vehicleType);
       if (d.vehicleCategory) setVehicleCategory(d.vehicleCategory);
       if (d.vehicleClass)    setVehicleClass(d.vehicleClass);
@@ -422,7 +590,9 @@ function TaxCollectionContent() {
       taxTo,
       taxToTime,
       amount:          totalAmount || "0",
-      paymentInitDate: nowIST(),
+      paymentInitDate: paymentInitDateInput || nowIST(),
+      paymentConfDate: paymentConfDateInput,
+      printedOn:       printedOnInput,
     });
     router.push(`/payment/sbi?${params.toString()}`);
   };
@@ -433,6 +603,7 @@ function TaxCollectionContent() {
     setSeatingCap(""); setSleeperCap("0"); setGrossVehicleWt(""); setUnladenWt(""); setServiceType(""); setDistance(""); setTaxMode("");
     setBorderDistrict(""); setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity("");
     setTaxFrom(""); setTaxFromTime("00:00"); setTaxTo(""); setTaxToTime("23:59"); setTotalAmount("0");
+    setPaymentInitDateInput(""); setPaymentConfDateInput(""); setPrintedOnInput("");
     setDateError(""); setFormError(""); setShowModal(false); setPdfError("");
     setNavOpen(false); setReportsOpen(false);
   };
@@ -452,7 +623,7 @@ function TaxCollectionContent() {
     setPdfLoading(true);
     try {
       const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, seatingCap, serviceType, distance, taxMode, borderDistrict, fitnessValidity, insuranceValidity, puccValidity, taxFrom, taxFromTime, taxTo, taxToTime: taxToTime, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: (() => { const f = [3,5,6,7][Math.floor(Math.random()*4)]; return `${f}${String(Math.floor(Math.random()*1000000000)).padStart(9,"0")}`; })(), noOfPeriods:1, sleeperCap, grossVehicleWt, unladenWt, paymentInitDate: nowIST() }) });
+        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, seatingCap, serviceType, distance, taxMode, borderDistrict, fitnessValidity, insuranceValidity, puccValidity, taxFrom, taxFromTime, taxTo, taxToTime: taxToTime, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: (() => { const f = [3,5,6,7][Math.floor(Math.random()*4)]; return `${f}${String(Math.floor(Math.random()*1000000000)).padStart(9,"0")}`; })(), noOfPeriods:1, sleeperCap, grossVehicleWt, unladenWt, paymentInitDate: paymentInitDateInput || nowIST(), paymentConfDate: paymentConfDateInput, printedOn: printedOnInput }) });
       const json = await res.json().catch(()=>({}));
       if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
       const savedId = json.transactionId || transactionId;
@@ -576,6 +747,13 @@ function TaxCollectionContent() {
       {/* ── Main ── */}
       <div className="container-fluid" id="skip-main-content">
         <div className="ui-grid ui-grid-responsive">
+
+          {/* Back to state selection */}
+          <div className="ui-grid-row" style={{ padding: "8px 0 0 8px" }}>
+            <a href="/checkpost" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#1565C0", fontWeight: 600, fontSize: "14px", textDecoration: "none" }}>
+              ← Back to State Selection
+            </a>
+          </div>
 
           {/* Page heading */}
           <div className="ui-grid-row top-space center-position contents-Space">
@@ -982,6 +1160,28 @@ function TaxCollectionContent() {
                           </tbody>
                         </table>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Payment date fields */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Payment Init Date</label>
+                      </div>
+                      <DateTimePicker value={paymentInitDateInput} onChange={setPaymentInitDateInput} />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Payment Conf Date</label>
+                      </div>
+                      <DateTimePicker value={paymentConfDateInput} onChange={setPaymentConfDateInput} />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Printed On</label>
+                      </div>
+                      <DateTimePicker value={printedOnInput} onChange={setPrintedOnInput} />
                     </div>
                   </div>
 

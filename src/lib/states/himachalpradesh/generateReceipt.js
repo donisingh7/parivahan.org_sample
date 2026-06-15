@@ -70,9 +70,13 @@ async function drawImageWatermark(doc, imagePath) {
 // ── Main receipt generator ────────────────────────────────────────────────
 async function generateReceipt(data) {
   const now            = moment(data.paymentDate || new Date());
-  const printedOn      = now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
+  const printedOn      = data.printedOnDate || now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
   const registrationNo = data.registrationNo || 'XX00X0000';
-  const watermarkText  = `${registrationNo} ${now.format('DD-MMM-YYYY hh:mm A')}`;
+  // Watermark uses paymentInitDate at HH:MM precision (strip seconds if present).
+  const initDateHHMM   = data.paymentInitDate
+    ? data.paymentInitDate.replace(/(\d{2}:\d{2}):\d{2}/, '$1')
+    : now.format('DD-MMM-YYYY hh:mm A').toUpperCase();
+  const watermarkText  = `${registrationNo} ${initDateHHMM}`;
 
   const grandTotal      = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
   const grandTotalWords = numberToWords(grandTotal);
@@ -223,7 +227,7 @@ async function generateReceipt(data) {
   y += fh;
 
   drawField('Fuel Type',                     data.fuelType          || '-', col1X, y);
-  drawField('Payment\nConfirmation\nDate',   data.paymentDateText   || '-', col2X, y);
+  drawField('Payment\nConfirmation\nDate',   data.paymentConfirmDate || data.paymentDateText || '-', col2X, y);
   y += fh3;
 
   y += 8;
