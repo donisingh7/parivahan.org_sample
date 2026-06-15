@@ -27,6 +27,19 @@ import {
 import { numberToWords } from "../shared/numberToWords";
 import type { ReceiptData, TxnLike } from "../types";
 
+function fmtDateWithSecs(d: Date): string {
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const dd  = String(d.getDate()).padStart(2, "0");
+  const mon = MONTHS[d.getMonth()];
+  const yy  = d.getFullYear();
+  let   hh  = d.getHours();
+  const mm  = String(d.getMinutes()).padStart(2, "0");
+  const ss  = String(d.getSeconds()).padStart(2, "0");
+  const ap  = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12 || 12;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
+}
+
 function passThrough(v: string | undefined | null): string {
   return v && String(v).trim() ? String(v) : "-";
 }
@@ -69,7 +82,9 @@ export function buildPunjabReceiptData(txn: TxnLike): ReceiptData {
     receiptNo,
     paymentDate:     paymentDate.toISOString(),
     paymentDateText: fmtPaymentDate(paymentDate),
-    paymentInitDate: txn.paymentInitDate || fmtPaymentDate(paymentDate),
+    paymentInitDate:    txn.paymentInitDate || fmtDateWithSecs(paymentDate),
+    paymentConfirmDate: txn.paymentConfDate || fmtDateWithSecs(paymentDate),
+    printedOnDate:      txn.printedOn      || fmtDateWithSecs(paymentDate),
     ownerName:       maskName(txn.ownerName  ?? ""),
     chassisNo:       maskChassis(txn.chassisNo ?? ""),
     mobileNo:        maskMobile(txn.mobileNo ?? ""),

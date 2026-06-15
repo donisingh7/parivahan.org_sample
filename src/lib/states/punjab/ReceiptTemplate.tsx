@@ -132,10 +132,11 @@ const tdStyle: React.CSSProperties = {
 
 // ── Main component ────────────────────────────────────────────────────────
 export default function PunjabReceiptTemplate({ data }: { data: ReceiptData }) {
-  const page1Items = (data.taxItems || []).slice(0, 2);
-  const page2Items = (data.taxItems || []).slice(2);
-  const grandTotal = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
-  const printedOn  = data.paymentDateText || "-";
+  const grandTotal    = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
+  const printedOn     = data.printedOnDate || data.paymentDateText || "-";
+  const initDateHHMM  = data.paymentInitDate
+    ? data.paymentInitDate.replace(/(\d{2}:\d{2}):\d{2}/, "$1")
+    : printedOn;
 
   return (
     <div style={{ fontFamily: "Helvetica, Arial, sans-serif", color: "#000" }}>
@@ -143,7 +144,7 @@ export default function PunjabReceiptTemplate({ data }: { data: ReceiptData }) {
       {/* ══════════════════ PAGE 1 ══════════════════ */}
       <div style={pageStyle}>
         <EmblemWatermark />
-        <Watermark text={`${data.registrationNo} ${printedOn}`} />
+        <Watermark text={`${data.registrationNo} ${initDateHHMM}`} />
 
         {/* Printed on — top right */}
         <div style={{ position: "relative", zIndex: 1, textAlign: "right", fontSize: "11px", marginBottom: "4px" }}>
@@ -193,7 +194,7 @@ export default function PunjabReceiptTemplate({ data }: { data: ReceiptData }) {
             <Field label={"Unladen\nWt(In Kg.)"}           value={data.unladenWt ?? 0} />
             <Field label={"Payment\nMode"}                 value={data.paymentMode} />
             <Field label="Service Type"                    value={data.serviceType} />
-            <Field label={"Payment\nConfirmation\nDate"}   value={data.paymentDateText} />
+            <Field label={"Payment\nConfirmation\nDate"}   value={data.paymentConfirmDate || data.paymentDateText} />
           </div>
           {/* Right column */}
           <div style={{ flex: 1 }}>
@@ -209,7 +210,7 @@ export default function PunjabReceiptTemplate({ data }: { data: ReceiptData }) {
           </div>
         </div>
 
-        {/* Tax table — page 1: first 2 items */}
+        {/* Tax table — all items on page 1 */}
         <div style={{ position: "relative", zIndex: 1, marginTop: "20px" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -223,7 +224,7 @@ export default function PunjabReceiptTemplate({ data }: { data: ReceiptData }) {
               </tr>
             </thead>
             <tbody>
-              {page1Items.map((item, i) => (
+              {(data.taxItems || []).map((item, i) => (
                 <tr key={i}>
                   <td style={{ ...tdStyle, textAlign: "left", paddingLeft: "8px", padding: "20px 8px" }}>{item.particular}</td>
                   <td style={{ ...tdStyle, textAlign: "center", padding: "20px 6px" }}>{item.fees}</td>
@@ -234,43 +235,19 @@ export default function PunjabReceiptTemplate({ data }: { data: ReceiptData }) {
             </tbody>
           </table>
         </div>
+
+        {/* Grand Total + Note on page 1 */}
+        <div style={{ position: "relative", zIndex: 1, marginTop: "15px", fontSize: "12px", fontWeight: "bold" }}>
+          Grand Total : {grandTotal}/- {data.amountInWords} Rupees Only
+        </div>
+        <div style={{ position: "relative", zIndex: 1, marginTop: "12px", fontSize: "12px", fontWeight: "bold" }}>Note :</div>
       </div>
 
       {/* ══════════════════ PAGE 2 ══════════════════ */}
       <div style={{ ...pageStyle, minHeight: "auto", borderTop: "2px dashed #ccc", marginTop: "0" }}>
         <div style={{ position: "relative", zIndex: 1 }}>
 
-          {/* Continued tax table — remaining item(s) */}
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={{ ...thStyle, width: "60%", textAlign: "left", paddingLeft: "8px" }}>
-                  Tax/Fee Particular
-                </th>
-                <th style={thStyle}>Tax/Fees</th>
-                <th style={thStyle}>Fine</th>
-                <th style={thStyle}>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {page2Items.map((item, i) => (
-                <tr key={i}>
-                  <td style={{ ...tdStyle, textAlign: "left", paddingLeft: "8px" }}>{item.particular}</td>
-                  <td style={{ ...tdStyle, textAlign: "center" }}>{item.fees}</td>
-                  <td style={{ ...tdStyle, textAlign: "center" }}>{item.fine}</td>
-                  <td style={{ ...tdStyle, textAlign: "center" }}>{item.total}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Grand Total */}
-          <div style={{ marginTop: "15px", fontSize: "12px", fontWeight: "bold" }}>
-            Grand Total : {grandTotal}/- {data.amountInWords} Rupees Only
-          </div>
-
-          {/* Note & Terms */}
-          <div style={{ marginTop: "16px", fontSize: "12px", fontWeight: "bold", marginBottom: "8px" }}>Note :</div>
+          {/* Terms and conditions */}
           <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "8px" }}>Terms and Conditions:</div>
           {TERMS.map((term, i) => (
             <div key={i} style={{ fontSize: "12px", marginBottom: "8px" }}>

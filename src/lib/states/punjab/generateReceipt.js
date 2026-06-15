@@ -1,7 +1,8 @@
 /**
- * Punjab PDF receipt generator — finalized two-page design.
- *  Page 1: Punjab logo | title | QR header, 10 field rows, first 2 tax items.
- *  Page 2: remaining tax item(s), grand total, terms and conditions.
+ * Punjab PDF receipt generator.
+ *  Page 1: Punjab logo | title | QR header, 10 field rows, all tax items,
+ *           grand total, Note.
+ *  Page 2: Terms and conditions, QR scan note.
  */
 
 const PDFDocument = require('pdfkit');
@@ -56,7 +57,7 @@ function drawTextWatermark(doc, watermarkText, pageWidth) {
   doc.restore();
 }
 
-// ── Image watermark (Punjab logo, centre-right offset) ───────────────────
+// ── Image watermark (Punjab logo, fixed position) ─────────────────────────
 async function drawImageWatermark(doc, imagePath) {
   try {
     const wmBuffer = await sharp(imagePath).png().toBuffer();
@@ -70,9 +71,12 @@ async function drawImageWatermark(doc, imagePath) {
 // ── Main receipt generator ────────────────────────────────────────────────
 async function generateReceipt(data) {
   const now            = moment(data.paymentDate || new Date());
-  const printedOn      = now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
+  const printedOn      = data.printedOnDate || now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
   const registrationNo = data.registrationNo || 'XX00X0000';
-  const watermarkText  = `${registrationNo} ${now.format('DD-MMM-YYYY hh:mm A')}`;
+  const initDateHHMM   = data.paymentInitDate
+    ? data.paymentInitDate.replace(/(\d{2}:\d{2}):\d{2}/, '$1')
+    : now.format('DD-MMM-YYYY hh:mm A').toUpperCase();
+  const watermarkText  = `${registrationNo} ${initDateHHMM}`;
 
   const grandTotal      = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
   const grandTotalWords = numberToWords(grandTotal);
@@ -113,10 +117,9 @@ async function generateReceipt(data) {
 
   // ── Tax table helpers ─────────────────────────────────────────────────
   const col = { particular: margin, fees: 380, fine: 450, total: 520 };
-  const headerHeight   = 28;
-  const rowHeight      = 40;
-  const firstRowHeight = 50;
-  const borderColor    = '#87CEEB';
+  const headerHeight = 28;
+  const rowHeight    = 40;
+  const borderColor  = '#87CEEB';
 
   function drawTableHeader(y) {
     doc.rect(margin - 2, y, contentWidth + 4, headerHeight).lineWidth(0.8).stroke(borderColor);
@@ -178,119 +181,91 @@ async function generateReceipt(data) {
   y += 185;
 
   // ── FIELDS ─────────────────────────────────────────────────────────────
-  const fh  = 28;
+  const fh  = 26.5;
   const fh2 = fh * 1.5;
   const fh3 = fh * 2;
 
   // Row 1
-  drawField('Registration\nNo.',             data.registrationNo    || '-', col1X, y);
-  drawField('Receipt No.',                   data.receiptNo         || '-', col2X, y);
+  drawField('Registration\nNo.',             data.registrationNo  || '-', col1X, y);
+  drawField('Receipt No.',                   data.receiptNo       || '-', col2X, y);
   y += fh * 1.6;
 
   // Row 2
-  drawField('Payment\nInitialization\nDate', data.paymentInitDate   || '-', col1X, y);
-  drawField('Owner\nName.',                  data.ownerName         || '-', col2X, y);
+  drawField('Payment\nInitialization\nDate', data.paymentInitDate || '-', col1X, y);
+  drawField('Owner\nName.',                  data.ownerName       || '-', col2X, y);
   y += fh3;
 
   // Row 3
-  drawField('Chassis No.',                   data.chassisNo         || '-', col1X, y);
-  drawField('Tax Mode',                      data.taxMode           || '-', col2X, y);
+  drawField('Chassis No.',                   data.chassisNo       || '-', col1X, y);
+  drawField('Tax Mode',                      data.taxMode         || '-', col2X, y);
   y += fh;
 
   // Row 4
-  drawField('Vehilce Type',                  data.vehicleType       || '-', col1X, y);
-  drawField('Vehicle Class',                 data.vehicleClass      || '-', col2X, y);
+  drawField('Vehilce Type',                  data.vehicleType     || '-', col1X, y);
+  drawField('Vehicle Class',                 data.vehicleClass    || '-', col2X, y);
   y += fh;
 
   // Row 5
-  drawField('Vehicle\nCategory',             data.vehicleCategory   || '-', col1X, y);
-  drawField('Mobile No.',                    data.mobileNo          || '-', col2X, y);
+  drawField('Vehicle\nCategory',             data.vehicleCategory || '-', col1X, y);
+  drawField('Mobile No.',                    data.mobileNo        || '-', col2X, y);
   y += fh2;
 
   // Row 6
-  drawField('CheckPost\nName',               data.checkpostName     || '-', col1X, y);
+  drawField('CheckPost\nName',               data.checkpostName   || '-', col1X, y);
   drawField(data.cap1Label || 'Gross Vehicle\nWt(In. Kg)', String(data.cap1Value ?? data.grossVehicleWt ?? 0), col2X, y);
   y += fh2;
 
   // Row 7
   drawField(data.cap2Label || 'Unladen\nWt(In Kg.)', String(data.cap2Value ?? data.unladenWt ?? 0), col1X, y);
-  drawField('Bank Ref.\nNo.',                data.bankRefNo         || '-', col2X, y);
+  drawField('Bank Ref.\nNo.',                data.bankRefNo       || '-', col2X, y);
   y += fh2;
 
   // Row 8
-  drawField('Payment\nMode',                 data.paymentMode       || 'ONLINE', col1X, y);
-  drawField('Permit\nValidity',              data.permitValidity    || '-', col2X, y);
+  drawField('Payment\nMode',                 data.paymentMode     || 'ONLINE', col1X, y);
+  drawField('Permit\nValidity',              data.permitValidity  || '-', col2X, y);
   y += fh2;
 
   // Row 9
-  drawField('Service Type',                  data.serviceType       || '-', col1X, y);
-  drawField('Permit Type',                   data.permitType        || 'NOT APPLICABLE', col2X, y);
+  drawField('Service Type',                  data.serviceType     || '-', col1X, y);
+  drawField('Permit Type',                   data.permitType      || 'NOT APPLICABLE', col2X, y);
   y += fh;
 
   // Row 10 — Payment Confirmation Date (left only)
-  drawField('Payment\nConfirmation\nDate',   data.paymentDateText   || '-', col1X, y);
+  drawField('Payment\nConfirmation\nDate',   data.paymentConfirmDate || data.paymentDateText || '-', col1X, y);
   y += fh3;
 
-  y += 8;
-
-  // ── Tax table — page 1: first 2 items ────────────────────────────────
-  const taxItems   = data.taxItems || [];
-  const page1Items = taxItems.slice(0, 2);
-  const page2Items = taxItems.slice(2);
-
+  // ── Tax table — all items on page 1 ──────────────────────────────────
+  const taxItems     = data.taxItems || [];
   const tableStartY1 = y;
   y = drawTableHeader(y);
   doc.moveTo(margin - 2, y).lineTo(pageWidth - margin + 2, y).lineWidth(0.5).stroke(borderColor);
 
-  for (const item of page1Items) {
-    const textY = y + (firstRowHeight / 2) - 8;
+  for (const item of taxItems) {
+    const textY = y + (rowHeight / 2) - 6;
     doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000');
     doc.text(String(item.particular), col.particular + 4, textY, { width: col.fees - col.particular - 10 });
     doc.fontSize(9).font('Helvetica-Bold').fillColor('#000000');
     doc.text(String(item.fees  ?? 0), col.fees,  textY, { width: 60 });
     doc.text(String(item.fine  ?? 0), col.fine,  textY, { width: 40 });
     doc.text(String(item.total ?? 0), col.total, textY, { width: 50 });
-    y += firstRowHeight;
+    y += rowHeight;
     doc.moveTo(margin - 2, y).lineTo(pageWidth - margin + 2, y).lineWidth(0.5).stroke(borderColor);
   }
   drawTableBorders(tableStartY1, y);
 
+  // ── Grand Total + Note (page 1, right after table) ────────────────────
+  doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
+  doc.text(`Grand Total : ${grandTotal}/- ${grandTotalWords} Rupees Only`, margin, y + 15);
+  doc.text('Note :', margin, y + 35);
+
   // ==========================================================
-  // PAGE 2
+  // PAGE 2  (Terms and conditions, QR note)
   // ==========================================================
   doc.addPage();
 
   let y2 = margin + 10;
 
-  // ── Continued tax table — remaining item(s) ───────────────────────────
-  const tableStartY2 = y2;
-  y2 = drawTableHeader(y2);
-  doc.moveTo(margin - 2, y2).lineTo(pageWidth - margin + 2, y2).lineWidth(0.5).stroke(borderColor);
-
-  for (const item of page2Items) {
-    const textY2 = y2 + (rowHeight / 2) - 6;
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000');
-    doc.text(String(item.particular), col.particular + 4, textY2, { width: col.fees - col.particular - 10 });
-    doc.fontSize(9).font('Helvetica-Bold').fillColor('#000000');
-    doc.text(String(item.fees  ?? 0), col.fees,  textY2, { width: 60 });
-    doc.text(String(item.fine  ?? 0), col.fine,  textY2, { width: 40 });
-    doc.text(String(item.total ?? 0), col.total, textY2, { width: 50 });
-    y2 += rowHeight;
-    doc.moveTo(margin - 2, y2).lineTo(pageWidth - margin + 2, y2).lineWidth(0.5).stroke(borderColor);
-  }
-  drawTableBorders(tableStartY2, y2);
-
-  y2 += 15;
-
-  // ── Grand Total ───────────────────────────────────────────────────────
   doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
-  doc.text(`Grand Total : ${grandTotal}/- ${grandTotalWords} Rupees Only`, margin, y2);
-  y2 += 25;
-
-  // ── Note & Terms ──────────────────────────────────────────────────────
-  doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
-  doc.text('Note :', margin, y2);
-  y2 += 16;
   doc.text('Terms and Conditions:', margin, y2);
   y2 += 16;
 
@@ -308,7 +283,6 @@ async function generateReceipt(data) {
 
   y2 += 20;
 
-  // ── QR scan note ──────────────────────────────────────────────────────
   doc.fontSize(18).font('Helvetica-Bold').fillColor('#000000');
   doc.text('Scan the QR code for genuinity of the receipt.', margin, y2, { width: contentWidth });
 

@@ -462,7 +462,9 @@ function SBIContent() {
     else if (stateCode === "UP") orderRef = generateUPBankRef();
     else if (stateCode === "HP")
       orderRef = generateHPBankRef();
-    else if (stateCode === "PB" || stateCode === "RJ" || stateCode === "UK")
+    else if (stateCode === "PB")
+      orderRef = generateHPBankRef();
+    else if (stateCode === "RJ" || stateCode === "UK")
       orderRef = generateCheckpostBankRef();
     else orderRef = makeOrderRef(vehicleNo || "VH");
     setClientOrderRef(orderRef);
