@@ -44,14 +44,16 @@ function fmt24hTo12h(hhmm: string): string {
   return `${h}:${mn} ${ap}`;
 }
 
+// Always render in IST (UTC+5:30) regardless of server timezone.
 function fmtDateWithSecs(d: Date): string {
   const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
-  const dd  = String(d.getDate()).padStart(2, "0");
-  const mon = MONTHS[d.getMonth()];
-  const yy  = d.getFullYear();
-  let   hh  = d.getHours();
-  const mm  = String(d.getMinutes()).padStart(2, "0");
-  const ss  = String(d.getSeconds()).padStart(2, "0");
+  const ist = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+  const dd  = String(ist.getUTCDate()).padStart(2, "0");
+  const mon = MONTHS[ist.getUTCMonth()];
+  const yy  = ist.getUTCFullYear();
+  let   hh  = ist.getUTCHours();
+  const mm  = String(ist.getUTCMinutes()).padStart(2, "0");
+  const ss  = String(ist.getUTCSeconds()).padStart(2, "0");
   const ap  = hh >= 12 ? "PM" : "AM";
   hh = hh % 12 || 12;
   return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
