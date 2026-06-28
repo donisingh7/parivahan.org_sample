@@ -225,6 +225,7 @@ export async function POST(req: NextRequest) {
             sleeperCap:      String(sleeperCap  ?? ""),
             grossVehicleWt:  resolvedGvw,
             unladenWt:       resolvedUwt,
+            fuelType:        fuelType         ?? "",
             permitType:      permitType       ?? "",
             permitNumber:    permitNumber     ?? "",
             taxMode:         taxMode          ?? "",

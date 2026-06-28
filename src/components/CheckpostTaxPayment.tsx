@@ -150,6 +150,9 @@ function SelectStateContent() {
                 </li>
               </ul>
             </li>
+            <li>
+              <a href="/user/bookings"><span className="glyphicon glyphicon-list-alt"></span> My Bookings</a>
+            </li>
           </ul>
         </div>
       </nav>

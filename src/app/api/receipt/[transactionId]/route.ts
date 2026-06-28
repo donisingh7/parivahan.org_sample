@@ -32,6 +32,10 @@ export async function GET(
   try {
     const { transactionId } = await params;
     const forceDownload = req.nextUrl.searchParams.get("download") === "1";
+    // ?refresh=1 bypasses the cached S3 copy and rebuilds the PDF with the
+    // current code (e.g. to re-stamp Printed On / Payment Confirmation in IST
+    // on receipts that were baked before the timezone fix), then overwrites S3.
+    const forceRefresh  = req.nextUrl.searchParams.get("refresh") === "1";
     const stateHint     = req.nextUrl.searchParams.get("state");
     await connectDB();
 
@@ -77,10 +81,12 @@ export async function GET(
           transactionId,
         });
 
-    let pdfBuffer = await fetchReceipt(s3Key).catch((err) => {
-      console.error("[receipt] S3 fetch failed, will regenerate:", err);
-      return null;
-    });
+    let pdfBuffer = forceRefresh
+      ? null
+      : await fetchReceipt(s3Key).catch((err) => {
+          console.error("[receipt] S3 fetch failed, will regenerate:", err);
+          return null;
+        });
 
     if (!pdfBuffer) {
       // Regenerate with a fresh QR token so the printed link is guaranteed

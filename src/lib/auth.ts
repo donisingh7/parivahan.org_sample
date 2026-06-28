@@ -31,3 +31,16 @@ export async function requireAuth(req: NextRequest): Promise<JWTPayload> {
   if (!token) throw new Error("Unauthorized: no token");
   return verifyToken(token);
 }
+
+// Portal-user auth — reads the `user_token` cookie (set by /api/auth/user-login)
+// or a Bearer header. Throws unless a valid token with role "user" is present.
+export async function requireUserAuth(req: NextRequest): Promise<JWTPayload> {
+  const authHeader = req.headers.get("authorization");
+  const token = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : req.cookies.get("user_token")?.value ?? null;
+  if (!token) throw new Error("Unauthorized: no token");
+  const payload = await verifyToken(token);
+  if (payload.role !== "user") throw new Error("Unauthorized: not a portal user");
+  return payload;
+}

@@ -209,13 +209,21 @@ function DetailModal({ txn, onClose }: { txn: Transaction; onClose: () => void }
               </section>
             )}
 
-            {/* ── S3 / Receipt ── */}
-            {txn.s3Key && (
-              <section className="adm-detail-section">
-                <h3 className="adm-detail-section-title"><i className="fa fa-file-pdf-o"></i> Receipt</h3>
-                <Row label="S3 Key" value={txn.s3Key} />
-                <div className="adm-detail-row">
-                  <span className="adm-detail-label">PDF</span>
+            {/* ── Receipt ── (always available; regenerated on the fly when not in S3) */}
+            <section className="adm-detail-section">
+              <h3 className="adm-detail-section-title"><i className="fa fa-file-pdf-o"></i> Receipt</h3>
+              {txn.s3Key && <Row label="S3 Key" value={txn.s3Key} />}
+              <div className="adm-detail-row">
+                <span className="adm-detail-label">PDF</span>
+                <span>
+                  <a
+                    className="adm-detail-link"
+                    href={`/api/receipt/${txn.transactionId}?state=${txn.visitingState}`}
+                    target="_blank" rel="noreferrer"
+                    style={{ marginRight: "16px" }}
+                  >
+                    <i className="fa fa-eye"></i> View Receipt
+                  </a>
                   <a
                     className="adm-detail-link"
                     href={`/api/receipt/${txn.transactionId}?state=${txn.visitingState}&download=1`}
@@ -223,9 +231,9 @@ function DetailModal({ txn, onClose }: { txn: Transaction; onClose: () => void }
                   >
                     <i className="fa fa-download"></i> Download Receipt
                   </a>
-                </div>
-              </section>
-            )}
+                </span>
+              </div>
+            </section>
           </div>
         </div>
       </div>

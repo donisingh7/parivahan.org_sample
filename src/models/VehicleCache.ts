@@ -23,6 +23,7 @@ export interface IVehicleCache extends Document {
   sleeperCap:      string;
   grossVehicleWt:  string;   // goods vehicles (normalised from grossVehicleWt / jhGrossVehicleWt / brGrossVehicleWt / mhLadenWeight)
   unladenWt:       string;   // goods vehicles (normalised from unladenWt / jhUnladenWt / brUnladenWt / mhUnladenWeight)
+  fuelType:        string;   // Himachal Pradesh (PETROL / DIESEL / CNG / PETROL & CNG)
   permitType:      string;
   permitNumber:    string;   // Uttar Pradesh
   taxMode:         string;   // Rajasthan
@@ -42,6 +43,7 @@ const VehicleCacheSchema = new Schema<IVehicleCache>(
     sleeperCap:      { type: String, default: "" },
     grossVehicleWt:  { type: String, default: "" },
     unladenWt:       { type: String, default: "" },
+    fuelType:        { type: String, default: "" },
     permitType:      { type: String, default: "" },
     permitNumber:    { type: String, default: "" },
     taxMode:         { type: String, default: "" },

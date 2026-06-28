@@ -1,6 +1,7 @@
 "use client";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TaxDateField } from "../shared/TaxDateField";
 import { uttarakhandConfig } from "@/lib/states/uttarakhand/config";
 
 /**
@@ -258,6 +259,7 @@ function TaxCollectionContent() {
       const d = json.data;
       if (d.chassisNo)       setChassisNo(d.chassisNo);
       if (d.ownerName)       setOwnerName(d.ownerName);
+      if (d.mobileNo)        setMobileNo(d.mobileNo);
       if (d.vehicleType)     setVehicleType(d.vehicleType);
       if (d.vehicleCategory) setVehicleCategory(d.vehicleCategory);
       if (d.vehicleClass)    setVehicleClass(d.vehicleClass);
@@ -923,35 +925,21 @@ function TaxCollectionContent() {
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Tax From</label>
                       </div>
-                      <div className="ui-calendar">
-                        <input
-                          type="date"
-                          className={`ui-inputtext cp-date-input${dateError && taxFrom > taxTo && taxTo ? " cp-date-error" : ""}`}
-                          value={taxFrom}
-                          max={taxTo || undefined}
-                          onChange={(e) => handleTaxFromChange(e.target.value)}
-                          autoComplete="off"
-                          title="Tax From Date"
-                          placeholder="DD-MM-YYYY"
-                        />
-                      </div>
+                      <TaxDateField
+                        date={taxFrom}
+                        onDateChange={handleTaxFromChange}
+                        hasError={!!(dateError && taxFrom && taxTo && taxFrom > taxTo)}
+                      />
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Tax Upto</label>
                       </div>
-                      <div className="ui-calendar">
-                        <input
-                          type="date"
-                          className={`ui-inputtext cp-date-input${dateError && taxFrom > taxTo && taxFrom ? " cp-date-error" : ""}`}
-                          value={taxTo}
-                          min={taxFrom || undefined}
-                          onChange={(e) => handleTaxToChange(e.target.value)}
-                          autoComplete="off"
-                          title="Tax Upto Date"
-                          placeholder="DD-MM-YYYY"
-                        />
-                      </div>
+                      <TaxDateField
+                        date={taxTo}
+                        onDateChange={handleTaxToChange}
+                        hasError={!!(dateError && taxFrom && taxTo && taxFrom > taxTo)}
+                      />
                     </div>
                   </div>
 
