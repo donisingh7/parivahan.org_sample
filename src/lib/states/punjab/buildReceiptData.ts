@@ -19,7 +19,6 @@
 
 import {
   fmtPaymentDate,
-  fmtTaxDate,
   maskChassis,
   maskMobile,
   maskName,
@@ -44,6 +43,17 @@ function fmtDateWithSecs(d: Date): string {
 
 function passThrough(v: string | undefined | null): string {
   return v && String(v).trim() ? String(v) : "-";
+}
+
+// YYYY-MM-DD format for tax-period labels (matches Himachal & Haryana).
+function fmtTaxDateYMD(d: Date | string | null | undefined): string {
+  if (!d) return "—";
+  const dt = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(dt.getTime())) return "—";
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
 }
 
 function fmt12Hour(hhmm: string | undefined | null): string {
@@ -73,8 +83,8 @@ export function buildPunjabReceiptData(txn: TxnLike): ReceiptData {
   const infra   = Number(txn.infraCess)  || 0;
   const mvTax   = Math.max(0, grand - userChg - infra);
 
-  const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null) + fmt12Hour(txn.taxFromTime);
-  const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null) + fmt12Hour(txn.taxToTime);
+  const taxFromLabel = fmtTaxDateYMD(txn.taxFrom ?? null) + fmt12Hour(txn.taxFromTime);
+  const taxToLabel   = fmtTaxDateYMD(txn.taxTo   ?? null) + fmt12Hour(txn.taxToTime);
   const paymentDate  = txn.paidAt ? new Date(txn.paidAt) : new Date();
 
   const receiptNo = txn.receiptNo || "-";
