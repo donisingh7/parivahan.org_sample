@@ -21,6 +21,7 @@
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const BLUE = "#1565C0";
 const MONTHS_LONG  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -38,28 +39,35 @@ function istNow() {
   return { y: d.getUTCFullYear(), mo: d.getUTCMonth(), d: d.getUTCDate(), h: d.getUTCHours(), mi: d.getUTCMinutes(), s: d.getUTCSeconds() };
 }
 
-// Keep the anchored dropdown inside the viewport: shift left if it overflows
-// the right edge, open upward if it overflows the bottom.
+// The dropdown is rendered in a PORTAL to <body> with position:fixed, so no
+// ancestor's `overflow:hidden`/width can clip it. Position is computed from the
+// input's rect and clamped to the viewport (shift left, flip above) so the
+// whole panel — including the Clear/OK footer — is always fully visible.
 function useAnchoredPosition(open: boolean, rootRef: React.RefObject<HTMLDivElement | null>) {
   const dropRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<React.CSSProperties>({ left: 0, top: "100%" });
+  const [pos, setPos] = useState<React.CSSProperties>({ position: "fixed", top: -9999, left: -9999, visibility: "hidden" });
   useLayoutEffect(() => {
-    if (!open || !rootRef.current || !dropRef.current) return;
-    const r = rootRef.current.getBoundingClientRect();
-    const d = dropRef.current.getBoundingClientRect();
-    const vw = window.innerWidth, vh = window.innerHeight, M = 8;
-    const s: React.CSSProperties = {};
-    // Horizontal — anchor under the input's left edge, then pull left if the
-    // right side would spill past the viewport.
-    const overflowRight = r.left + d.width - (vw - M);
-    s.left = overflowRight > 0 ? -Math.min(overflowRight, r.left - M) : 0;
-    // Vertical — open below, unless there's no room and there is room above.
-    if (r.bottom + d.height > vh - M && r.top - d.height > M) {
-      s.top = "auto"; s.bottom = "100%"; s.marginBottom = "4px"; s.marginTop = 0;
-    } else {
-      s.top = "100%"; s.bottom = "auto"; s.marginTop = "4px";
-    }
-    setPos(s);
+    if (!open) return;
+    const place = () => {
+      const root = rootRef.current, drop = dropRef.current;
+      if (!root || !drop) return;
+      const r  = root.getBoundingClientRect();
+      const dw = drop.offsetWidth, dh = drop.offsetHeight;
+      const vw = window.innerWidth, vh = window.innerHeight, M = 8;
+      let left = r.left;
+      if (left + dw > vw - M) left = vw - M - dw;
+      if (left < M) left = M;
+      let top = r.bottom + 4;
+      if (top + dh > vh - M) {
+        const above = r.top - 4 - dh;
+        top = above >= M ? above : Math.max(M, vh - M - dh);
+      }
+      setPos({ position: "fixed", top, left, zIndex: 9999, visibility: "visible" });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => { window.removeEventListener("resize", place); window.removeEventListener("scroll", place, true); };
   }, [open, rootRef]);
   return { dropRef, pos };
 }
@@ -225,10 +233,10 @@ export function TaxDateField({
   useEffect(() => { if (!focused.current) setText(taxDisplay(date, time, withTime)); }, [date, time, withTime]);
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: MouseEvent) => { if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false); };
+    const onDown = (e: MouseEvent) => { const t = e.target as Node; if (!rootRef.current?.contains(t) && !dropRef.current?.contains(t)) setOpen(false); };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
-  }, [open]);
+  }, [open, dropRef]);
 
   const openDropdown = () => {
     let y: number, mo: number, h: string, mi: string;
@@ -268,7 +276,7 @@ export function TaxDateField({
         onChange={(e) => handleType(e.target.value)}
         autoComplete="off"
       />
-      {open && (
+      {open && createPortal(
         <div ref={dropRef} style={{ ...outerStyle, ...pos }} onMouseDown={(e) => e.preventDefault()}>
           <div style={{ display: "flex", height: `${BODY_H}px` }}>
             <CalendarPane
@@ -283,7 +291,8 @@ export function TaxDateField({
             )}
           </div>
           <Footer onClear={clear} onOk={() => setOpen(false)} />
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -350,10 +359,10 @@ export function PaymentDateTimeField({
   useEffect(() => { if (!focused.current) setText(payDisplay(value)); }, [value]);
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: MouseEvent) => { if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false); };
+    const onDown = (e: MouseEvent) => { const t = e.target as Node; if (!rootRef.current?.contains(t) && !dropRef.current?.contains(t)) setOpen(false); };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
-  }, [open]);
+  }, [open, dropRef]);
 
   const emit = (p: DTParts) => onChange(toCanonical(p));
 
@@ -394,7 +403,7 @@ export function PaymentDateTimeField({
         onChange={(e) => handleType(e.target.value)}
         autoComplete="off"
       />
-      {open && (
+      {open && createPortal(
         <div ref={dropRef} style={{ ...outerStyle, ...pos }} onMouseDown={(e) => e.preventDefault()}>
           <div style={{ display: "flex", height: `${BODY_H}px` }}>
             <CalendarPane
@@ -406,7 +415,8 @@ export function PaymentDateTimeField({
             <TimeColumn label="SS" items={SECONDS} selected={curS} listRef={ssRef} onPick={(s) => emit({ ...cur(), s: +s })} />
           </div>
           <Footer onClear={clear} onOk={() => setOpen(false)} />
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
