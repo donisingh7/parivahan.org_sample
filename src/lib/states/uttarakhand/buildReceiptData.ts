@@ -47,16 +47,6 @@ function fmtTaxDateYMD(d: Date | string | null | undefined): string {
   return `${yy}-${mm}-${dd}`;
 }
 
-// " HH:MM AP" (12-hour) appended to a tax-period date.
-function fmt12Hour(hhmm: string | undefined | null): string {
-  if (!hhmm) return "";
-  const [h, m] = hhmm.split(":").map(Number);
-  if (isNaN(h) || isNaN(m)) return "";
-  const period = h < 12 ? "AM" : "PM";
-  const hour12 = h % 12 || 12;
-  return ` ${String(hour12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${period}`;
-}
-
 // Canonical "DD-MMM-YYYY HH:MM:SS AP" rendered in IST (UTC+5:30) regardless of
 // server timezone. Used for auto Payment Init / Conf fallbacks.
 function fmtDateWithSecs(d: Date): string {
@@ -87,8 +77,8 @@ export function buildUttarakhandReceiptData(txn: TxnLike): ReceiptData {
   const infra   = Number(txn.infraCess)  || 0;
   const mvTax   = Math.max(0, grand - userChg - infra);
 
-  const taxFromLabel = fmtTaxDateYMD(txn.taxFrom ?? null) + fmt12Hour(txn.taxFromTime);
-  const taxToLabel   = fmtTaxDateYMD(txn.taxTo   ?? null) + fmt12Hour(txn.taxToTime);
+  const taxFromLabel = fmtTaxDateYMD(txn.taxFrom ?? null);
+  const taxToLabel   = fmtTaxDateYMD(txn.taxTo   ?? null);
   const paymentDate  = txn.paidAt ? new Date(txn.paidAt) : new Date();
 
   const receiptNo = txn.receiptNo || "-";

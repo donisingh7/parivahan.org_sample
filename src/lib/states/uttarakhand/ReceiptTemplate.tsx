@@ -135,6 +135,10 @@ export default function UttarakhandReceiptTemplate({ data }: { data: ReceiptData
         /^(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{1,2}):(\d{2}):\d{2}\s+(AM|PM)$/i,
         (_m, d, h, mm, ap) => `${d} ${parseInt(h, 10)}:${mm} ${ap}`)
     : printedOn;
+  // Payment Init/Conf fields show HH:MM only (no seconds).
+  const stripSecs = (s: string) => s.replace(/(\d{1,2}:\d{2}):\d{2}(\s*(?:AM|PM))/i, "$1$2");
+  const paymentInitHHMM = data.paymentInitDate ? stripSecs(data.paymentInitDate) : "-";
+  const paymentConfHHMM = stripSecs(data.paymentConfirmDate || data.paymentDateText || "-");
 
   return (
     <div style={{ fontFamily: "Helvetica, Arial, sans-serif", color: "#000" }}>
@@ -184,7 +188,7 @@ export default function UttarakhandReceiptTemplate({ data }: { data: ReceiptData
           {/* Left column */}
           <div style={{ flex: 1 }}>
             <Field label={"Registration\nNo."}             value={data.registrationNo} />
-            <Field label={"Payment\nInitialization\nDate"} value={data.paymentInitDate} />
+            <Field label={"Payment\nInitialization\nDate"} value={paymentInitHHMM} />
             <Field label="Chassis No."                     value={data.chassisNo} />
             <Field label="Vehilce Type"                    value={data.vehicleType} />
             <Field label={"Vehicle\nCategory"}             value={data.vehicleCategory} />
@@ -207,7 +211,7 @@ export default function UttarakhandReceiptTemplate({ data }: { data: ReceiptData
             <Field label={"Permit\nNumber"}                 value={data.permitNumber || "-"} />
             <Field label={"Fitness\nValidity"}              value={data.fitnessValidity || "-"} />
             <Field label="Service Type"                     value={data.serviceType} />
-            <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentConfirmDate || data.paymentDateText} />
+            <Field label={"Payment\nConfirmation\nDate"}    value={paymentConfHHMM} />
           </div>
         </div>
 

@@ -86,6 +86,10 @@ async function generateReceipt(data) {
         (_m, d, h, mm, ap) => `${d} ${parseInt(h, 10)}:${mm} ${ap}`)
     : now.format('DD-MMM-YYYY h:mm A').toUpperCase();
   const watermarkText = `${data.registrationNo || 'XX00X0000'} ${initWatermark}`;
+  // Payment Init/Conf fields show HH:MM only (no seconds).
+  const stripSecs = (s) => String(s).replace(/(\d{1,2}:\d{2}):\d{2}(\s*(?:AM|PM))/i, '$1$2');
+  const paymentInitHHMM = data.paymentInitDate ? stripSecs(data.paymentInitDate) : '-';
+  const paymentConfHHMM = stripSecs(data.paymentConfirmDate || data.paymentDateText || '-');
 
   const grandTotal      = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
   const grandTotalWords = numberToWords(grandTotal);
@@ -201,7 +205,7 @@ async function generateReceipt(data) {
   y += fh * 1.6;
 
   // Row 2
-  drawField('Payment\nInitialization\nDate', data.paymentInitDate  || '-', col1X, y);
+  drawField('Payment\nInitialization\nDate', paymentInitHHMM, col1X, y);
   drawField('Owner\nName.',                  data.ownerName        || '-', col2X, y);
   y += fh3;
 
@@ -247,7 +251,7 @@ async function generateReceipt(data) {
 
   // Row 11
   drawField('Permit Type',                   data.permitType       || 'NOT APPLICABLE', col1X, y);
-  drawField('Payment\nConfirmation\nDate',   data.paymentConfirmDate || data.paymentDateText || '-', col2X, y);
+  drawField('Payment\nConfirmation\nDate',   paymentConfHHMM, col2X, y);
   y += fh3;
 
   y += 10;
