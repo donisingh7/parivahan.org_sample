@@ -97,6 +97,10 @@ async function generateReceipt(data) {
         (_m, d, h, mm, ap) => `${d} ${parseInt(h, 10)}:${mm} ${ap}`)
     : now.format('DD-MMM-YYYY h:mm A').toUpperCase();
   const watermarkText  = `${registrationNo} ${initWatermark}`;
+  // Payment Init/Conf fields show HH:MM only (no seconds).
+  const stripSecs = (s) => String(s).replace(/(\d{1,2}:\d{2}):\d{2}(\s*(?:AM|PM))/i, '$1$2');
+  const paymentInitHHMM = data.paymentInitDate ? stripSecs(data.paymentInitDate) : '-';
+  const paymentConfHHMM = stripSecs(data.paymentConfirmDate || data.paymentDateText || '-');
 
   const grandTotal      = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
   const grandTotalWords = (data.amountInWords || numberToWords(grandTotal)).toUpperCase();
@@ -192,7 +196,7 @@ async function generateReceipt(data) {
   drawField('Receipt No.',                   data.receiptNo         || '-', col2X, y);
   y += fh * 1.6;
 
-  drawField('Payment\nInitialization\nDate', data.paymentInitDate   || '-', col1X, y);
+  drawField('Payment\nInitialization\nDate', paymentInitHHMM, col1X, y);
   drawField('Owner Name',                    data.ownerName         || '-', col2X, y);
   y += fh3;
 
@@ -232,7 +236,7 @@ async function generateReceipt(data) {
   drawField('Permit Type',                   data.permitType        || 'NOT APPLICABLE', col2X, y);
   y += fh;
 
-  drawField('Payment\nConfirmation\nDate',   data.paymentConfirmDate || data.paymentDateText || '-', col1X, y);
+  drawField('Payment\nConfirmation\nDate',   paymentConfHHMM, col1X, y);
   y += fh3 + 16;
 
   // ── Tax table ──
