@@ -152,6 +152,17 @@ const valueStyle: React.CSSProperties = {
 // ── Main Receipt ────────────────────────────────────────────────────────────
 
 export default function RajasthanReceiptTemplate({ data }: { data: ReceiptData }) {
+  // Watermark uses Payment Init at HH:MM (no seconds, non-padded hour).
+  const initWatermark = data.paymentInitDate
+    ? data.paymentInitDate.replace(
+        /^(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{1,2}):(\d{2}):\d{2}\s+(AM|PM)$/i,
+        (_m, d, h, mm, ap) => `${d} ${parseInt(h, 10)}:${mm} ${ap}`)
+    : data.paymentDateText;
+  // Payment Init/Conf fields show HH:MM only (no seconds).
+  const stripSecs = (s: string) => s.replace(/(\d{1,2}:\d{2}):\d{2}(\s*(?:AM|PM))/i, "$1$2");
+  const paymentInitHHMM = data.paymentInitDate ? stripSecs(data.paymentInitDate) : data.paymentDateText;
+  const paymentConfHHMM = stripSecs(data.paymentConfirmDate || data.paymentDateText || "-");
+
   return (
     <div
       id="rajasthan-receipt"
@@ -169,7 +180,7 @@ export default function RajasthanReceiptTemplate({ data }: { data: ReceiptData }
       }}
     >
       <EmblemWatermark />
-      <Watermark text={`${data.registrationNo} / ${data.paymentDateText}`} />
+      <Watermark text={`${data.registrationNo} / ${initWatermark}`} />
 
       {/* Header strip */}
       <div
@@ -185,7 +196,7 @@ export default function RajasthanReceiptTemplate({ data }: { data: ReceiptData }
         <div style={{ fontSize: "10px", lineHeight: "1.6", minWidth: "150px" }}>
           <strong>Receipt Printing Date :</strong>
           <br />
-          {data.paymentDateText}
+          {data.printedOnDate || data.paymentDateText}
         </div>
 
         <div style={{ textAlign: "center", flex: 1, padding: "0 16px" }}>
@@ -205,7 +216,7 @@ export default function RajasthanReceiptTemplate({ data }: { data: ReceiptData }
           <tbody>
             <tr><FieldCell label="Registration No." value={data.registrationNo} bold span={2} /></tr>
             <tr><FieldCell label="Receipt No."      value={data.receiptNo}      span={2} /></tr>
-            <tr><FieldCell label="Payment Date"     value={data.paymentDateText} span={2} /></tr>
+            <tr><FieldCell label="Payment Initialization Date" value={paymentInitHHMM} span={2} /></tr>
             <tr><FieldCell label="Owner Name"       value={data.ownerName}       span={2} /></tr>
             <tr>
               <FieldCell label="Chassis No." value={data.chassisNo} />
@@ -233,7 +244,7 @@ export default function RajasthanReceiptTemplate({ data }: { data: ReceiptData }
               <FieldCell label="Permit Type"     value={data.permitType} />
               <FieldCell label="Permit Category" value={data.permitCategory} />
             </tr>
-            <tr><FieldCell label="Payment Confirmation Date" value={data.paymentDateText} span={2} /></tr>
+            <tr><FieldCell label="Payment Confirmation Date" value={paymentConfHHMM} span={2} /></tr>
           </tbody>
         </table>
       </div>

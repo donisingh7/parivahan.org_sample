@@ -6,6 +6,7 @@
  * state makes design-tweaks safe.
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const moment = require('moment');
@@ -23,7 +24,7 @@ async function loadGreyscaleImage(imagePath) {
   const buffer = await sharp(imagePath)
     .grayscale()
     .png()
-    .blur(2)
+    .blur(1.7)
     .toBuffer();
   return buffer;
 }
@@ -66,7 +67,20 @@ async function generateReceipt(data) {
   const now = moment(data.paymentDate || new Date());
   const formattedDate = now.format('DD-MMM-YYYY hh:mm A').toUpperCase();
   const registrationNo = data.registrationNo || 'XX00X0000';
-  const watermarkText = `${registrationNo} / ${formattedDate}`;
+
+  // Receipt Printing Date — comma + non-padded hour (e.g. "23-JUN-2026, 9:47:54 PM").
+  const printedOn = data.printedOnDate || now.format('DD-MMM-YYYY, h:mm:ss A').toUpperCase();
+  // Payment Init/Conf fields show HH:MM (no seconds), matching RJ's date style.
+  const stripSecs = (s) => String(s).replace(/(\d{1,2}:\d{2}):\d{2}(\s*(?:AM|PM))/i, '$1$2');
+  const paymentInitHHMM = data.paymentInitDate ? stripSecs(data.paymentInitDate) : formattedDate;
+  const paymentConfHHMM = stripSecs(data.paymentConfirmDate || formattedDate);
+  // Watermark uses Payment Init at HH:MM (no seconds, non-padded hour).
+  const initWatermark = data.paymentInitDate
+    ? String(data.paymentInitDate).replace(
+        /^(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{1,2}):(\d{2}):\d{2}\s+(AM|PM)$/i,
+        (_m, d, h, mm, ap) => `${d} ${parseInt(h, 10)}:${mm} ${ap}`)
+    : formattedDate;
+  const watermarkText = `${registrationNo} / ${initWatermark}`;
 
   const grandTotal = (data.taxItems || []).reduce((sum, item) => sum + item.total, 0);
   const grandTotalWords = numberToWords(grandTotal);
@@ -109,7 +123,7 @@ async function generateReceipt(data) {
   const wmY = (pageHeight - wmHeight) / 2;
 
   doc.save();
-  doc.opacity(0.7);
+  doc.opacity(0.75);
   doc.image(wmBuffer, wmX-10, wmY - 230, {
     width: wmWidth,
     height: wmHeight,
@@ -117,8 +131,8 @@ async function generateReceipt(data) {
   doc.restore();
 
   doc.save();
-  doc.opacity(0.5);
-  doc.fontSize(15).fillColor('#cccccc').font('Helvetica');
+  doc.opacity(0.4);
+  doc.fontSize(15).fillColor('#9a9a9a').font('Helvetica');
 
   const tileRows = 22;
   const tileStep = 20;
@@ -134,7 +148,7 @@ async function generateReceipt(data) {
 
   doc.fontSize(10).fillColor('#000000').font('Helvetica');
   doc.text('Receipt Printing Date :', margin, y);
-  doc.text(formattedDate, margin, y + 11);
+  doc.text(printedOn, margin, y + 11);
 
   const titleX = margin + 80;
   const titleWidth = contentWidth - 170;
@@ -186,7 +200,7 @@ async function generateReceipt(data) {
   drawField('Receipt No.', data.receiptNo || '-', col1X, y);
   y += fieldLineHeight;
 
-  drawField('Payment Date', formattedDate, col1X, y);
+  drawField('Payment Initialization Date', paymentInitHHMM, col1X, y);
   y += fieldLineHeight;
 
   drawField('Owner Name', data.ownerName || '-', col1X, y);
@@ -225,7 +239,7 @@ async function generateReceipt(data) {
   drawField('Permit Category', data.permitCategory || '-', col2X, row11Y);
   y += fieldLineHeight;
 
-  drawField('Payment Confirmation Date', formattedDate, col1X, y);
+  drawField('Payment Confirmation Date', paymentConfHHMM, col1X, y);
   y += fieldLineHeight * 1.5;
 
   // ===== 5. TAX TABLE ==================================================
@@ -251,15 +265,39 @@ async function generateReceipt(data) {
 
   doc.font('Helvetica').fontSize(10.5);
   const taxItems = data.taxItems || [];
+  const rowSeparators = [];
   for (const item of taxItems) {
+    // Remove watermark only behind the MV Tax and Surcharge rows.
+    if (
+      String(item.particular).startsWith('MV Tax') ||
+      item.particular === 'Surcharge fee'
+    ) {
+      doc.save();
+      doc.rect(margin - 2, y - 4.55, pageWidth - (margin * 2) + 4, 15).fill('#FFFFFF');
+      doc.restore();
+    }
+
+    // Draw row text
+    doc.fillColor('#000000').font('Helvetica').fontSize(10.5);
     doc.text(item.particular, col.particular, y, { width: col.fees - col.particular - 10 });
     doc.text(String(item.fees ?? 0), col.fees, y);
     doc.text(String(item.fine ?? 0), col.fine, y);
     doc.text(String(item.total ?? 0), col.total, y);
-    y += 14;
+    y += 16;
+
+    // Row separator (drawn after loop so next row's white box can't cover it)
+    rowSeparators.push(y - 2);
   }
 
-  doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(0.5).stroke('#000000');
+  // Draw row separators on top of everything
+  for (const sy of rowSeparators) {
+    doc.moveTo(margin, sy)
+       .lineTo(pageWidth - margin, sy)
+       .lineWidth(0.5)
+       .stroke('#000000');
+  }
+  // (old single-line separator)
+  // doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(0.5).stroke('#000000');
   y += 18;
 
   doc.fontSize(9).font('Roboto-Bold');
@@ -291,7 +329,7 @@ async function generateReceipt(data) {
     'Scan the QR code for genuinity of the receipt, It should land at ',
     margin, y, { continued: true }
   );
-  doc.fillColor('#0000EE').text('https://kms.parivahan.gov.in', { continued: true });
+  doc.fillColor('#000000').text('https://kms.parivahan.gov.in', { continued: true });
   doc.fillColor('#000000');
   doc.text(
     ' site. In case the URL is different, then receipt could be a fake one, please raise a complain'

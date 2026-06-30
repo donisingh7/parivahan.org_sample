@@ -1,6 +1,7 @@
 "use client";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TaxDateField, PaymentDateTimeField } from "../shared/TaxDateField";
 import { rajasthanConfig } from "@/lib/states/rajasthan/config";
 
 // Per-state form. The state code + label are hard-coded here (rather than
@@ -126,6 +127,21 @@ const CHECKPOST_OPTIONS = [
   { value: "TAWADU MOD, BHIWADI(ON SOHNA - BHIWADI ROUTE)",                      label: "TAWADU MOD, BHIWADI(ON SOHNA - BHIWADI ROUTE)" },
 ];
 
+// IST timestamp (UTC+5:30), browser-timezone-independent, with seconds.
+function nowIST(): string {
+  const ist = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const dd  = String(ist.getUTCDate()).padStart(2, "0");
+  const mon = MONTHS[ist.getUTCMonth()];
+  const yy  = ist.getUTCFullYear();
+  let   hh  = ist.getUTCHours();
+  const mm  = String(ist.getUTCMinutes()).padStart(2, "0");
+  const ss  = String(ist.getUTCSeconds()).padStart(2, "0");
+  const ap  = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12 || 12;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
+}
+
 function TaxCollectionContent() {
   // The state itself comes from the per-state config so the form always knows
   // which state it belongs to regardless of the URL — /checkpost/page.tsx
@@ -155,6 +171,9 @@ function TaxCollectionContent() {
   const [noPeriods, setNoPeriods] = useState("");
   const [taxFrom, setTaxFrom] = useState("");
   const [taxTo, setTaxTo] = useState("");
+  const [paymentInitDateInput, setPaymentInitDateInput] = useState("");
+  const [paymentConfDateInput, setPaymentConfDateInput] = useState("");
+  const [printedOnInput,       setPrintedOnInput]       = useState("");
   const [totalAmount,   setTotalAmount]   = useState("");
   const [mvTaxField,    setMvTaxField]    = useState("");
   const [surchargeField,setSurchargeField]= useState("");
@@ -259,6 +278,9 @@ function TaxCollectionContent() {
       taxTo,
       amount:     String((parseFloat(mvTaxField) || 0) + (parseFloat(surchargeField) || 0)),
       userCharge: surchargeField || "0",
+      paymentInitDate: paymentInitDateInput || nowIST(),
+      paymentConfDate: paymentConfDateInput,
+      printedOn:       printedOnInput,
     });
     router.push(`/payment/sbi?${params.toString()}`);
   };
@@ -269,7 +291,7 @@ function TaxCollectionContent() {
     setSeatingCap(""); setSleeperCap(""); setGrossVehicleWt(""); setUnladenWt(""); setPermitType("-1");
     setCheckpostName(""); setDistrictEntering(""); setPurposeVisit(""); setAitpValidity("");
     setAitpAuthValidity(""); setTaxMode("-1"); setNoPeriods("");
-    setTaxFrom(""); setTaxTo(""); setTotalAmount(""); setMvTaxField(""); setSurchargeField(""); setShowBreakup(false); setDateError(""); setFormError(""); setShowModal(false); setPdfError(""); setNavOpen(false); setReportsOpen(false);
+    setTaxFrom(""); setTaxTo(""); setPaymentInitDateInput(""); setPaymentConfDateInput(""); setPrintedOnInput(""); setTotalAmount(""); setMvTaxField(""); setSurchargeField(""); setShowBreakup(false); setDateError(""); setFormError(""); setShowModal(false); setPdfError(""); setNavOpen(false); setReportsOpen(false);
   };
 
   const handleGetPdf = async () => {
@@ -289,7 +311,7 @@ function TaxCollectionContent() {
     setPdfLoading(true);
     try {
       const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleClass, seatingCap, sleeperCap, grossVehicleWt, unladenWt, permitType, districtEntering, checkpostName, purposeOfVisit: purposeVisit, aitpValidity, aitpAuthValidity, taxMode, noOfPeriods: noPeriods, taxFrom, taxTo, amount: calcAmt, userCharge: surchargeField||"0", receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}` }) });
+        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleClass, seatingCap, sleeperCap, grossVehicleWt, unladenWt, permitType, districtEntering, checkpostName, purposeOfVisit: purposeVisit, aitpValidity, aitpAuthValidity, taxMode, noOfPeriods: noPeriods, taxFrom, taxTo, amount: calcAmt, userCharge: surchargeField||"0", receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`, paymentInitDate: paymentInitDateInput || nowIST(), paymentConfDate: paymentConfDateInput, printedOn: printedOnInput }) });
       const json = await res.json().catch(()=>({}));
       if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
       const savedId = json.transactionId || transactionId;
@@ -756,31 +778,21 @@ function TaxCollectionContent() {
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Tax From Date</label>
                       </div>
-                      <div className="ui-calendar">
-                        <input
-                          type="date"
-                          className={`ui-inputtext cp-date-input${dateError && taxFrom > taxTo && taxTo ? " cp-date-error" : ""}`}
-                          value={taxFrom}
-                          max={taxTo || undefined}
-                          onChange={(e) => handleTaxFromChange(e.target.value)}
-                          autoComplete="off"
-                        />
-                      </div>
+                      <TaxDateField
+                        date={taxFrom}
+                        onDateChange={handleTaxFromChange}
+                        hasError={!!(dateError && taxFrom && taxTo && taxFrom > taxTo)}
+                      />
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Tax Upto Date</label>
                       </div>
-                      <div className="ui-calendar">
-                        <input
-                          type="date"
-                          className={`ui-inputtext cp-date-input${dateError && taxFrom > taxTo && taxFrom ? " cp-date-error" : ""}`}
-                          value={taxTo}
-                          min={taxFrom || undefined}
-                          onChange={(e) => handleTaxToChange(e.target.value)}
-                          autoComplete="off"
-                        />
-                      </div>
+                      <TaxDateField
+                        date={taxTo}
+                        onDateChange={handleTaxToChange}
+                        hasError={!!(dateError && taxFrom && taxTo && taxFrom > taxTo)}
+                      />
                     </div>
                   </div>
 
@@ -827,7 +839,29 @@ function TaxCollectionContent() {
                     </div>
                   )}
 
-                  {/* Total amount + action buttons */}
+                  {/* Payment Init Date + Payment Conf Date + Receipt Printed */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Payment Init Date</label>
+                      </div>
+                      <PaymentDateTimeField value={paymentInitDateInput} onChange={setPaymentInitDateInput} />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Payment Conf Date</label>
+                      </div>
+                      <PaymentDateTimeField value={paymentConfDateInput} onChange={setPaymentConfDateInput} />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Receipt Printed</label>
+                      </div>
+                      <PaymentDateTimeField value={printedOnInput} onChange={setPrintedOnInput} />
+                    </div>
+                  </div>
+
+                  {/* Total amount */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
@@ -847,46 +881,49 @@ function TaxCollectionContent() {
                         placeholder="0.00"
                       />
                     </div>
-                    <div className="ui-grid-col-6">
-                      <div className="ui-grid-row">
-                        <div className="ui-grid-col-12 top_mar1 mar-left5">
-                          <button
-                            className="ui-button"
-                            type="button"
-                            onClick={() => {
-                              const amt = parseFloat(totalAmount) || 0;
-                              const mv  = Math.round(amt * 15 / 16);
-                              setMvTaxField(String(mv));
-                              setSurchargeField(String(amt - mv));
-                              setShowBreakup(true);
-                              setFormError("");
-                            }}
-                          >
-                            <i className="fa fa-calculator"></i>
-                            <span className="ui-button-text">Calculate Tax</span>
-                          </button>
-                          <button
-                            className="ui-button"
-                            type="button"
-                            onClick={handlePayTax}
-                          >
-                            <i className="fa fa-forward"></i>
-                            <span className="ui-button-text">Pay Tax</span>
-                          </button>
-                          <button
-                            className="ui-button"
-                            type="button"
-                            onClick={handleReset}
-                          >
-                            <i className="fa fa-refresh"></i>
-                            <span className="ui-button-text">Reset</span>
-                          </button>
-                          <button className="ui-button ui-button-pdf" type="button" onClick={handleGetPdf} disabled={pdfLoading}>
-                            <i className={pdfLoading ? "fa fa-spinner fa-spin" : "fa fa-file-pdf-o"}></i>
-                            <span className="ui-button-text">{pdfLoading ? "Generating..." : "Get PDF"}</span>
-                          </button>
-                        </div>
-                      </div>
+                  </div>
+
+                  {/* Action buttons — single spaced row */}
+                  <div className="ui-grid-row">
+                    <div
+                      className="ui-grid-col-12 top_mar1"
+                      style={{ display: "flex", flexWrap: "wrap", gap: "14px", justifyContent: "center", marginTop: "16px" }}
+                    >
+                      <button
+                        className="ui-button"
+                        type="button"
+                        onClick={() => {
+                          const amt = parseFloat(totalAmount) || 0;
+                          const mv  = Math.round(amt * 15 / 16);
+                          setMvTaxField(String(mv));
+                          setSurchargeField(String(amt - mv));
+                          setShowBreakup(true);
+                          setFormError("");
+                        }}
+                      >
+                        <i className="fa fa-calculator"></i>
+                        <span className="ui-button-text">Calculate Tax</span>
+                      </button>
+                      <button
+                        className="ui-button"
+                        type="button"
+                        onClick={handlePayTax}
+                      >
+                        <i className="fa fa-forward"></i>
+                        <span className="ui-button-text">Pay Tax</span>
+                      </button>
+                      <button
+                        className="ui-button"
+                        type="button"
+                        onClick={handleReset}
+                      >
+                        <i className="fa fa-refresh"></i>
+                        <span className="ui-button-text">Reset</span>
+                      </button>
+                      <button className="ui-button ui-button-pdf" type="button" onClick={handleGetPdf} disabled={pdfLoading}>
+                        <i className={pdfLoading ? "fa fa-spinner fa-spin" : "fa fa-file-pdf-o"}></i>
+                        <span className="ui-button-text">{pdfLoading ? "Generating..." : "Get PDF"}</span>
+                      </button>
                     </div>
                   </div>
                   {pdfError && (<div className="ui-grid-row"><div className="ui-grid-col-12"><div className="cp-date-err-msg">{pdfError}</div></div></div>)}
