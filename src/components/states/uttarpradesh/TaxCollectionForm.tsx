@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TaxDateField } from "../shared/TaxDateField";
+import { TaxDateField, PaymentDateTimeField } from "../shared/TaxDateField";
 import { uttarPradeshConfig } from "@/lib/states/uttarpradesh/config";
 
 /**
@@ -187,6 +187,21 @@ const BORDER_DISTRICT_OPTIONS = [
   { value: "SONBHADRA",           label: "SONBHADRA" },
 ];
 
+// IST timestamp (UTC+5:30), browser-timezone-independent, with seconds.
+function nowIST(): string {
+  const ist = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const dd  = String(ist.getUTCDate()).padStart(2, "0");
+  const mon = MONTHS[ist.getUTCMonth()];
+  const yy  = ist.getUTCFullYear();
+  let   hh  = ist.getUTCHours();
+  const mm  = String(ist.getUTCMinutes()).padStart(2, "0");
+  const ss  = String(ist.getUTCSeconds()).padStart(2, "0");
+  const ap  = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12 || 12;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
+}
+
 function TaxCollectionContent() {
   const stateCode  = STATE_CODE;
   const stateLabel = STATE_LABEL;
@@ -216,6 +231,9 @@ function TaxCollectionContent() {
   const [insuranceValidity, setInsuranceValidity] = useState("");
   const [puccValidity,      setPuccValidity]      = useState("");
   const [totalAmount,       setTotalAmount]       = useState("0");
+  const [paymentInitDateInput, setPaymentInitDateInput] = useState("");
+  const [paymentConfDateInput, setPaymentConfDateInput] = useState("");
+  const [printedOnInput,       setPrintedOnInput]       = useState("");
 
   const [dateError,   setDateError]   = useState("");
   const [formError,   setFormError]   = useState("");
@@ -317,6 +335,9 @@ function TaxCollectionContent() {
       insuranceValidity,
       puccValidity,
       amount: totalAmount || "0",
+      paymentInitDate: paymentInitDateInput || nowIST(),
+      paymentConfDate: paymentConfDateInput,
+      printedOn:       printedOnInput,
     });
     router.push(`/payment/sbi?${params.toString()}`);
   };
@@ -329,6 +350,7 @@ function TaxCollectionContent() {
     setPermitType(""); setPermitUpto(""); setPermitNumber("");
     setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity("");
     setTotalAmount("0");
+    setPaymentInitDateInput(""); setPaymentConfDateInput(""); setPrintedOnInput("");
     setDateError(""); setFormError(""); setShowModal(false); setPdfError("");
     setNavOpen(false); setReportsOpen(false);
   };
@@ -349,7 +371,7 @@ function TaxCollectionContent() {
     setPdfLoading(true);
     try {
       const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, seatingCap, sleeperCap, serviceType, taxMode, borderDistrict, taxFrom, taxTo, permitType, permitUpto, permitNumber, fitnessValidity, insuranceValidity, puccValidity, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`, noOfPeriods:1, grossVehicleWt, unladenWt }) });
+        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, seatingCap, sleeperCap, serviceType, taxMode, borderDistrict, taxFrom, taxTo, permitType, permitUpto, permitNumber, fitnessValidity, insuranceValidity, puccValidity, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`, noOfPeriods:1, grossVehicleWt, unladenWt, paymentInitDate: paymentInitDateInput || nowIST(), paymentConfDate: paymentConfDateInput, printedOn: printedOnInput }) });
       const json = await res.json().catch(()=>({}));
       if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
       const savedId = json.transactionId || transactionId;
@@ -885,7 +907,29 @@ function TaxCollectionContent() {
                     </div>
                   )}
 
-                  {/* Total Amount + buttons (inspect 5666-5683 — col-6 / col-6 split). */}
+                  {/* Payment Init Date + Payment Conf Date + Printed On */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Payment Init Date</label>
+                      </div>
+                      <PaymentDateTimeField value={paymentInitDateInput} onChange={setPaymentInitDateInput} />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Payment Conf Date</label>
+                      </div>
+                      <PaymentDateTimeField value={paymentConfDateInput} onChange={setPaymentConfDateInput} />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Printed On</label>
+                      </div>
+                      <PaymentDateTimeField value={printedOnInput} onChange={setPrintedOnInput} />
+                    </div>
+                  </div>
+
+                  {/* Total Amount */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
@@ -899,35 +943,38 @@ function TaxCollectionContent() {
                         placeholder="0.00"
                       />
                     </div>
-                    <div className="ui-grid-col-6">
-                      <div className="ui-grid-row">
-                        <div className="ui-grid-col-12 top_mar1 mar-left5">
-                          <button className="ui-button" type="button">
-                            <i className="fa fa-calculator"></i>
-                            <span className="ui-button-text">Calculate Tax</span>
-                          </button>
-                          <button
-                            className="ui-button"
-                            type="button"
-                            onClick={handlePayTax}
-                          >
-                            <i className="fa fa-forward"></i>
-                            <span className="ui-button-text">Pay Tax</span>
-                          </button>
-                          <button
-                            className="ui-button"
-                            type="button"
-                            onClick={handleReset}
-                          >
-                            <i className="fa fa-refresh"></i>
-                            <span className="ui-button-text">Reset</span>
-                          </button>
-                          <button className="ui-button ui-button-pdf" type="button" onClick={handleGetPdf} disabled={pdfLoading}>
-                            <i className={pdfLoading ? "fa fa-spinner fa-spin" : "fa fa-file-pdf-o"}></i>
-                            <span className="ui-button-text">{pdfLoading ? "Generating..." : "Get PDF"}</span>
-                          </button>
-                        </div>
-                      </div>
+                  </div>
+
+                  {/* Action buttons — single spaced row */}
+                  <div className="ui-grid-row">
+                    <div
+                      className="ui-grid-col-12 top_mar1"
+                      style={{ display: "flex", flexWrap: "wrap", gap: "14px", justifyContent: "center", marginTop: "16px" }}
+                    >
+                      <button className="ui-button" type="button">
+                        <i className="fa fa-calculator"></i>
+                        <span className="ui-button-text">Calculate Tax</span>
+                      </button>
+                      <button
+                        className="ui-button"
+                        type="button"
+                        onClick={handlePayTax}
+                      >
+                        <i className="fa fa-forward"></i>
+                        <span className="ui-button-text">Pay Tax</span>
+                      </button>
+                      <button
+                        className="ui-button"
+                        type="button"
+                        onClick={handleReset}
+                      >
+                        <i className="fa fa-refresh"></i>
+                        <span className="ui-button-text">Reset</span>
+                      </button>
+                      <button className="ui-button ui-button-pdf" type="button" onClick={handleGetPdf} disabled={pdfLoading}>
+                        <i className={pdfLoading ? "fa fa-spinner fa-spin" : "fa fa-file-pdf-o"}></i>
+                        <span className="ui-button-text">{pdfLoading ? "Generating..." : "Get PDF"}</span>
+                      </button>
                     </div>
                   </div>
                   {pdfError && (<div className="ui-grid-row"><div className="ui-grid-col-12"><div className="cp-date-err-msg">{pdfError}</div></div></div>)}

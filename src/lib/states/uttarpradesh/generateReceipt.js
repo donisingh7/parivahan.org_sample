@@ -86,9 +86,17 @@ async function generateReceipt(data) {
   const logoPath = path.join(process.cwd(), 'public', 'Images', STATE_LOGO_FILE);
 
   const now            = moment(data.paymentDate || new Date());
-  const printedOn      = now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
+  // "Printed On" — prefer upstream value (comma + non-padded hour,
+  // e.g. "23-JUN-2026, 9:47:54 PM"); fall back to current time in that format.
+  const printedOn      = data.printedOnDate || now.format('DD-MMM-YYYY, h:mm:ss A').toUpperCase();
   const registrationNo = data.registrationNo || 'XX00X0000';
-  const watermarkText  = `${registrationNo} ${now.format('DD-MMM-YYYY hh:mm A')}`;
+  // Watermark uses the Payment Init date at HH:MM (no seconds, non-padded hour).
+  const initWatermark  = data.paymentInitDate
+    ? String(data.paymentInitDate).replace(
+        /^(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{1,2}):(\d{2}):\d{2}\s+(AM|PM)$/i,
+        (_m, d, h, mm, ap) => `${d} ${parseInt(h, 10)}:${mm} ${ap}`)
+    : now.format('DD-MMM-YYYY h:mm A').toUpperCase();
+  const watermarkText  = `${registrationNo} ${initWatermark}`;
 
   const grandTotal      = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
   const grandTotalWords = (data.amountInWords || numberToWords(grandTotal)).toUpperCase();
@@ -121,11 +129,11 @@ async function generateReceipt(data) {
   drawTextWatermark(doc, watermarkText, pageWidth);
 
   // ── Printed on (top right) ──
-  let y = margin - 10;
+  let y = margin;
   doc.fontSize(11).font('Helvetica').fillColor('#000000');
   doc.text(`Printed on : ${printedOn}`, margin, y, { width: contentWidth, align: 'right' });
 
-  y += 20;
+  y += 10;
 
   // ── Logo (left) ──
   const emblemX = margin + 5;
@@ -224,7 +232,7 @@ async function generateReceipt(data) {
   drawField('Permit Type',                   data.permitType        || 'NOT APPLICABLE', col2X, y);
   y += fh;
 
-  drawField('Payment\nConfirmation\nDate',   data.paymentDateText   || '-', col1X, y);
+  drawField('Payment\nConfirmation\nDate',   data.paymentConfirmDate || data.paymentDateText || '-', col1X, y);
   y += fh3 + 16;
 
   // ── Tax table ──

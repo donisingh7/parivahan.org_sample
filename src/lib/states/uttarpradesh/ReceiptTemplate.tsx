@@ -136,8 +136,15 @@ const tdStyle: React.CSSProperties = {
 // ── Main component ─────────────────────────────────────────────────────────
 export default function UttarPradeshReceiptTemplate({ data }: { data: ReceiptData }) {
   const grandTotal    = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
-  const printedOn     = data.paymentDateText || "-";
+  const printedOn     = data.printedOnDate || data.paymentDateText || "-";
   const amountInWords = (data.amountInWords || "").toUpperCase();
+  // Watermark uses the Payment Init date at HH:MM (no seconds, non-padded
+  // hour) — e.g. "23-JUN-2026 9:45 PM".
+  const initWatermark = data.paymentInitDate
+    ? data.paymentInitDate.replace(
+        /^(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{1,2}):(\d{2}):\d{2}\s+(AM|PM)$/i,
+        (_m, d, h, mm, ap) => `${d} ${parseInt(h, 10)}:${mm} ${ap}`)
+    : printedOn;
 
   return (
     <div style={{ fontFamily: "Helvetica, Arial, sans-serif", color: "#000" }}>
@@ -145,7 +152,7 @@ export default function UttarPradeshReceiptTemplate({ data }: { data: ReceiptDat
       {/* ══════════════════ PAGE 1 ══════════════════ */}
       <div style={pageStyle}>
         <EmblemWatermark />
-        <Watermark text={`${data.registrationNo} ${printedOn}`} />
+        <Watermark text={`${data.registrationNo} ${initWatermark}`} />
 
         {/* Printed on — top right */}
         <div style={{ position: "relative", zIndex: 1, textAlign: "right", fontSize: "11px", marginBottom: "4px" }}>
@@ -197,7 +204,7 @@ export default function UttarPradeshReceiptTemplate({ data }: { data: ReceiptDat
             <Field label={"Permit\nValidity"}               value={data.permitValidity} />
             <Field label={"Insurance\nValidity"}            value={data.insuranceValidity} />
             <Field label="Service Type"                     value={data.serviceType} />
-            <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentDateText} />
+            <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentConfirmDate || data.paymentDateText} />
           </div>
           {/* Right column */}
           <div style={{ flex: 1 }}>
