@@ -198,6 +198,7 @@ function TaxCollectionContent() {
       const d = json.data;
       if (d.chassisNo)       setChassisNo(d.chassisNo);
       if (d.ownerName)       setOwnerName(d.ownerName);
+      if (d.mobileNo)        setMobileNo(d.mobileNo);
       if (d.vehicleType)     setVehicleType(d.vehicleType);
       if (d.vehicleClass)    setVehicleClass(d.vehicleClass);
       if (d.seatingCap)      setSeatingCap(d.seatingCap);
