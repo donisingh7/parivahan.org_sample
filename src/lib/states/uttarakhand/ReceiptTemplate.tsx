@@ -127,7 +127,14 @@ export default function UttarakhandReceiptTemplate({ data }: { data: ReceiptData
   const page1Items = (data.taxItems || []).slice(0, 1);
   const page2Items = (data.taxItems || []).slice(1);
   const grandTotal = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
-  const printedOn  = data.paymentDateText || "-";
+  const printedOn  = data.printedOnDate || data.paymentDateText || "-";
+  // Watermark uses the Payment Init date at HH:MM precision (no seconds,
+  // non-padded hour) — e.g. "23-JUN-2026 9:45 PM".
+  const initWatermark = data.paymentInitDate
+    ? data.paymentInitDate.replace(
+        /^(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{1,2}):(\d{2}):\d{2}\s+(AM|PM)$/i,
+        (_m, d, h, mm, ap) => `${d} ${parseInt(h, 10)}:${mm} ${ap}`)
+    : printedOn;
 
   return (
     <div style={{ fontFamily: "Helvetica, Arial, sans-serif", color: "#000" }}>
@@ -135,7 +142,7 @@ export default function UttarakhandReceiptTemplate({ data }: { data: ReceiptData
       {/* ══════════════════ PAGE 1 ══════════════════ */}
       <div style={pageStyle}>
         <EmblemWatermark />
-        <Watermark text={`${data.registrationNo} ${printedOn}`} />
+        <Watermark text={`${data.registrationNo} ${initWatermark}`} />
 
         {/* Printed on — top right */}
         <div style={{ position: "relative", zIndex: 1, textAlign: "right", fontSize: "11px", fontWeight: "bold", marginBottom: "4px" }}>
@@ -200,7 +207,7 @@ export default function UttarakhandReceiptTemplate({ data }: { data: ReceiptData
             <Field label={"Permit\nNumber"}                 value={data.permitNumber || "-"} />
             <Field label={"Fitness\nValidity"}              value={data.fitnessValidity || "-"} />
             <Field label="Service Type"                     value={data.serviceType} />
-            <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentDateText} />
+            <Field label={"Payment\nConfirmation\nDate"}    value={data.paymentConfirmDate || data.paymentDateText} />
           </div>
         </div>
 

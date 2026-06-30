@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TaxDateField } from "../shared/TaxDateField";
+import { TaxDateField, PaymentDateTimeField } from "../shared/TaxDateField";
 import { uttarakhandConfig } from "@/lib/states/uttarakhand/config";
 
 /**
@@ -195,9 +195,10 @@ function nowIST(): string {
   const yy  = ist.getUTCFullYear();
   let   hh  = ist.getUTCHours();
   const mm  = String(ist.getUTCMinutes()).padStart(2, "0");
+  const ss  = String(ist.getUTCSeconds()).padStart(2, "0");
   const ap  = hh >= 12 ? "PM" : "AM";
   hh = hh % 12 || 12;
-  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm} ${ap}`;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
 }
 
 function TaxCollectionContent() {
@@ -230,6 +231,11 @@ function TaxCollectionContent() {
   const [noOfPeriods,     setNoOfPeriods]     = useState("");
   const [taxFrom,         setTaxFrom]         = useState("");
   const [taxTo,           setTaxTo]           = useState("");
+  const [taxFromTime,     setTaxFromTime]     = useState("00:00");
+  const [taxToTime,       setTaxToTime]       = useState("23:59");
+  const [paymentInitDateInput, setPaymentInitDateInput] = useState("");
+  const [paymentConfDateInput, setPaymentConfDateInput] = useState("");
+  const [printedOnInput,       setPrintedOnInput]       = useState("");
   const [mvTax,           setMvTax]           = useState("0");
   const [userCharge,      setUserCharge]      = useState("0");
   const [infraCess,       setInfraCess]       = useState("0");
@@ -338,11 +344,15 @@ function TaxCollectionContent() {
       taxMode,
       noOfPeriods,
       taxFrom,
+      taxFromTime,
       taxTo,
+      taxToTime,
       amount:          calculatedTotal || "0",
       userCharge:      userCharge     || "0",
       infraCess:       infraCess      || "0",
-      paymentInitDate: nowIST(),
+      paymentInitDate: paymentInitDateInput || nowIST(),
+      paymentConfDate: paymentConfDateInput,
+      printedOn:       printedOnInput,
     });
     router.push(`/payment/sbi?${params.toString()}`);
   };
@@ -354,6 +364,8 @@ function TaxCollectionContent() {
     setDistrict(""); setFitnessValidity(""); setPuccValidity("");
     setPermitNumber(""); setBarrierName(""); setPermitFrom(""); setPermitUpto("");
     setTaxMode(""); setNoOfPeriods(""); setTaxFrom(""); setTaxTo("");
+    setTaxFromTime("00:00"); setTaxToTime("23:59");
+    setPaymentInitDateInput(""); setPaymentConfDateInput(""); setPrintedOnInput("");
     setMvTax("0"); setUserCharge("0"); setInfraCess("0"); setCalculatedTotal("");
     setDateError(""); setFormError(""); setShowModal(false); setPdfError("");
     setNavOpen(false); setReportsOpen(false);
@@ -375,7 +387,7 @@ function TaxCollectionContent() {
     setPdfLoading(true);
     try {
       const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleCategory, vehicleClass, vehicleType, permitType, grossVehicleWt, unladenWt, serviceType, borderDistrict: district, checkpostName: barrierName, fitnessValidity, puccValidity, permitNumber, permitFrom, permitUpto, taxMode, noOfPeriods, taxFrom, taxTo, amount: parseFloat(calculatedTotal)||0, userCharge: userCharge||"0", infraCess: infraCess||"0", receiptNo, orderRef: (() => { const c=[]; for(let i=0;i<6;i++)c.push(String.fromCharCode(65+Math.floor(Math.random()*26))); for(let i=0;i<3;i++)c.push(String(Math.floor(Math.random()*10))); for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];} return c.join("")+String(Math.floor(Math.random()*10)); })(), seatingCap, sleeperCap, paymentInitDate: nowIST() }) });
+        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleCategory, vehicleClass, vehicleType, permitType, grossVehicleWt, unladenWt, serviceType, borderDistrict: district, checkpostName: barrierName, fitnessValidity, puccValidity, permitNumber, permitFrom, permitUpto, taxMode, noOfPeriods, taxFrom, taxFromTime, taxTo, taxToTime, amount: parseFloat(calculatedTotal)||0, userCharge: userCharge||"0", infraCess: infraCess||"0", receiptNo, orderRef: (() => { const c=[]; for(let i=0;i<6;i++)c.push(String.fromCharCode(65+Math.floor(Math.random()*26))); for(let i=0;i<3;i++)c.push(String(Math.floor(Math.random()*10))); for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];} return c.join("")+String(Math.floor(Math.random()*10)); })(), seatingCap, sleeperCap, paymentInitDate: paymentInitDateInput || nowIST(), paymentConfDate: paymentConfDateInput, printedOn: printedOnInput }) });
       const json = await res.json().catch(()=>({}));
       if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
       const savedId = json.transactionId || transactionId;
@@ -927,7 +939,10 @@ function TaxCollectionContent() {
                       </div>
                       <TaxDateField
                         date={taxFrom}
+                        time={taxFromTime}
                         onDateChange={handleTaxFromChange}
+                        onTimeChange={setTaxFromTime}
+                        withTime
                         hasError={!!(dateError && taxFrom && taxTo && taxFrom > taxTo)}
                       />
                     </div>
@@ -937,7 +952,10 @@ function TaxCollectionContent() {
                       </div>
                       <TaxDateField
                         date={taxTo}
+                        time={taxToTime}
                         onDateChange={handleTaxToChange}
+                        onTimeChange={setTaxToTime}
+                        withTime
                         hasError={!!(dateError && taxFrom && taxTo && taxFrom > taxTo)}
                       />
                     </div>
@@ -984,7 +1002,29 @@ function TaxCollectionContent() {
                     </div>
                   )}
 
-                  {/* MV Tax + Service/User Charge + Cess + buttons */}
+                  {/* Payment Init Date + Payment Conf Date + Printed On */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Payment Init Date</label>
+                      </div>
+                      <PaymentDateTimeField value={paymentInitDateInput} onChange={setPaymentInitDateInput} />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Payment Conf Date</label>
+                      </div>
+                      <PaymentDateTimeField value={paymentConfDateInput} onChange={setPaymentConfDateInput} />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Printed On</label>
+                      </div>
+                      <PaymentDateTimeField value={printedOnInput} onChange={setPrintedOnInput} />
+                    </div>
+                  </div>
+
+                  {/* MV Tax + Service/User Charge + Cess */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
@@ -1025,45 +1065,48 @@ function TaxCollectionContent() {
                         title="Cess"
                       />
                     </div>
-                    <div className="ui-grid-col-3">
-                      <div className="ui-grid-row">
-                        <div className="ui-grid-col-12 top_mar1 mar-left5">
-                          <button
-                            className="ui-button"
-                            type="button"
-                            title="Click to Calculate Tax"
-                            onClick={() => {
-                              const total = (parseFloat(mvTax) || 0) + (parseFloat(userCharge) || 0) + (parseFloat(infraCess) || 0);
-                              setCalculatedTotal(total.toString());
-                            }}
-                          >
-                            <i className="fa fa-calculator"></i>
-                            <span className="ui-button-text">Calculate Tax</span>
-                          </button>
-                          <button
-                            className="ui-button"
-                            type="button"
-                            onClick={handlePayTax}
-                            title="Click to Pay Tax"
-                          >
-                            <i className="fa fa-forward"></i>
-                            <span className="ui-button-text">Pay Tax</span>
-                          </button>
-                          <button
-                            className="ui-button"
-                            type="button"
-                            onClick={handleReset}
-                            title="Click to Reset"
-                          >
-                            <i className="fa fa-refresh"></i>
-                            <span className="ui-button-text">Reset</span>
-                          </button>
-                          <button className="ui-button ui-button-pdf" type="button" onClick={handleGetPdf} disabled={pdfLoading}>
-                            <i className={pdfLoading ? "fa fa-spinner fa-spin" : "fa fa-file-pdf-o"}></i>
-                            <span className="ui-button-text">{pdfLoading ? "Generating..." : "Get PDF"}</span>
-                          </button>
-                        </div>
-                      </div>
+                  </div>
+
+                  {/* Action buttons — single spaced row */}
+                  <div className="ui-grid-row">
+                    <div
+                      className="ui-grid-col-12 top_mar1"
+                      style={{ display: "flex", flexWrap: "wrap", gap: "14px", justifyContent: "center", marginTop: "16px" }}
+                    >
+                      <button
+                        className="ui-button"
+                        type="button"
+                        title="Click to Calculate Tax"
+                        onClick={() => {
+                          const total = (parseFloat(mvTax) || 0) + (parseFloat(userCharge) || 0) + (parseFloat(infraCess) || 0);
+                          setCalculatedTotal(total.toString());
+                        }}
+                      >
+                        <i className="fa fa-calculator"></i>
+                        <span className="ui-button-text">Calculate Tax</span>
+                      </button>
+                      <button
+                        className="ui-button"
+                        type="button"
+                        onClick={handlePayTax}
+                        title="Click to Pay Tax"
+                      >
+                        <i className="fa fa-forward"></i>
+                        <span className="ui-button-text">Pay Tax</span>
+                      </button>
+                      <button
+                        className="ui-button"
+                        type="button"
+                        onClick={handleReset}
+                        title="Click to Reset"
+                      >
+                        <i className="fa fa-refresh"></i>
+                        <span className="ui-button-text">Reset</span>
+                      </button>
+                      <button className="ui-button ui-button-pdf" type="button" onClick={handleGetPdf} disabled={pdfLoading}>
+                        <i className={pdfLoading ? "fa fa-spinner fa-spin" : "fa fa-file-pdf-o"}></i>
+                        <span className="ui-button-text">{pdfLoading ? "Generating..." : "Get PDF"}</span>
+                      </button>
                     </div>
                   </div>
                   {pdfError && (<div className="ui-grid-row"><div className="ui-grid-col-12"><div className="cp-date-err-msg">{pdfError}</div></div></div>)}

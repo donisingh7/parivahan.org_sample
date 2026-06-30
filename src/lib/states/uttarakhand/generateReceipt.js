@@ -76,8 +76,16 @@ async function drawImageWatermark(doc, imagePath) {
 // ── Main receipt generator ────────────────────────────────────────────────
 async function generateReceipt(data) {
   const now           = moment(data.paymentDate || new Date());
-  const printedOn     = now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
-  const watermarkText = `${data.registrationNo || 'XX00X0000'} ${now.format('DD-MMM-YYYY hh:mm A')}`;
+  // "Printed On" — prefer the value built upstream (comma + non-padded hour,
+  // e.g. "23-JUN-2026, 9:47:54 PM"); fall back to current time in that format.
+  const printedOn     = data.printedOnDate || now.format('DD-MMM-YYYY, h:mm:ss A').toUpperCase();
+  // Watermark uses the Payment Init date at HH:MM (no seconds, non-padded hour).
+  const initWatermark = data.paymentInitDate
+    ? String(data.paymentInitDate).replace(
+        /^(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{1,2}):(\d{2}):\d{2}\s+(AM|PM)$/i,
+        (_m, d, h, mm, ap) => `${d} ${parseInt(h, 10)}:${mm} ${ap}`)
+    : now.format('DD-MMM-YYYY h:mm A').toUpperCase();
+  const watermarkText = `${data.registrationNo || 'XX00X0000'} ${initWatermark}`;
 
   const grandTotal      = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
   const grandTotalWords = numberToWords(grandTotal);
@@ -239,7 +247,7 @@ async function generateReceipt(data) {
 
   // Row 11
   drawField('Permit Type',                   data.permitType       || 'NOT APPLICABLE', col1X, y);
-  drawField('Payment\nConfirmation\nDate',   data.paymentDateText  || '-', col2X, y);
+  drawField('Payment\nConfirmation\nDate',   data.paymentConfirmDate || data.paymentDateText || '-', col2X, y);
   y += fh3;
 
   y += 10;

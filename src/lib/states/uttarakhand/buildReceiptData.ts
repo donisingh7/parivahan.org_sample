@@ -36,14 +36,59 @@ function passThrough(v: string | undefined | null): string {
   return v && String(v).trim() ? String(v) : "-";
 }
 
+// YYYY-MM-DD for the tax-period labels (e.g. "2026-06-23").
+function fmtTaxDateYMD(d: Date | string | null | undefined): string {
+  if (!d) return "—";
+  const dt = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(dt.getTime())) return "—";
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
+// " HH:MM AP" (12-hour) appended to a tax-period date.
+function fmt12Hour(hhmm: string | undefined | null): string {
+  if (!hhmm) return "";
+  const [h, m] = hhmm.split(":").map(Number);
+  if (isNaN(h) || isNaN(m)) return "";
+  const period = h < 12 ? "AM" : "PM";
+  const hour12 = h % 12 || 12;
+  return ` ${String(hour12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+// Canonical "DD-MMM-YYYY HH:MM:SS AP" rendered in IST (UTC+5:30) regardless of
+// server timezone. Used for auto Payment Init / Conf fallbacks.
+function fmtDateWithSecs(d: Date): string {
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const ist = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+  const dd  = String(ist.getUTCDate()).padStart(2, "0");
+  const mon = MONTHS[ist.getUTCMonth()];
+  const yy  = ist.getUTCFullYear();
+  let   hh  = ist.getUTCHours();
+  const mm  = String(ist.getUTCMinutes()).padStart(2, "0");
+  const ss  = String(ist.getUTCSeconds()).padStart(2, "0");
+  const ap  = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12 || 12;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
+}
+
+// "Printed On" uses a comma + non-padded hour, e.g. "23-JUN-2026, 9:47:54 PM".
+// Accepts the canonical "DD-MMM-YYYY HH:MM:SS AP" (user-entered or auto).
+function fmtPrintedOnComma(s: string): string {
+  const m = String(s).match(/^(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(AM|PM)$/i);
+  if (!m) return s;
+  return `${m[1].toUpperCase()}, ${parseInt(m[2], 10)}:${m[3]}:${m[4]} ${m[5].toUpperCase()}`;
+}
+
 export function buildUttarakhandReceiptData(txn: TxnLike): ReceiptData {
   const grand   = Number(txn.amount)     || 0;
   const userChg = Number(txn.userCharge) || 0;
   const infra   = Number(txn.infraCess)  || 0;
   const mvTax   = Math.max(0, grand - userChg - infra);
 
-  const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null);
-  const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null);
+  const taxFromLabel = fmtTaxDateYMD(txn.taxFrom ?? null) + fmt12Hour(txn.taxFromTime);
+  const taxToLabel   = fmtTaxDateYMD(txn.taxTo   ?? null) + fmt12Hour(txn.taxToTime);
   const paymentDate  = txn.paidAt ? new Date(txn.paidAt) : new Date();
 
   const receiptNo = txn.receiptNo || "-";
@@ -69,7 +114,9 @@ export function buildUttarakhandReceiptData(txn: TxnLike): ReceiptData {
     receiptNo,
     paymentDate:     paymentDate.toISOString(),
     paymentDateText: fmtPaymentDate(paymentDate),
-    paymentInitDate: txn.paymentInitDate || fmtPaymentDate(paymentDate),
+    paymentInitDate:    txn.paymentInitDate || fmtDateWithSecs(paymentDate),
+    paymentConfirmDate: txn.paymentConfDate || fmtDateWithSecs(paymentDate),
+    printedOnDate:      fmtPrintedOnComma(txn.printedOn || fmtDateWithSecs(paymentDate)),
     ownerName:       maskName(txn.ownerName  ?? ""),
     chassisNo:       maskChassis(txn.chassisNo ?? ""),
     mobileNo:        maskMobile(txn.mobileNo ?? ""),
