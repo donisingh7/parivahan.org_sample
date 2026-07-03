@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const user = await PortalUser.findOne({ userId: userId.trim() });
+    const user = await PortalUser.findOne({ id: userId.trim() });
     if (!user || !user.isActive) {
       return NextResponse.json({ success: false, message: "Invalid User ID or password" }, { status: 401 });
     }
@@ -45,12 +45,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: "Invalid User ID or password" }, { status: 401 });
     }
 
-    const token = await signToken({ userId: user._id.toString(), email: user.userId, role: "user" });
+    const token = await signToken({ userId: user._id.toString(), email: user.id, role: "user" });
 
     const response = NextResponse.json({
       success: true,
       token,
-      user: { userId: user.userId, name: user.name, mobileNo: user.mobileNo },
+      user: { userId: user.id, type: user.type },
     });
 
     response.cookies.set("user_token", token, {

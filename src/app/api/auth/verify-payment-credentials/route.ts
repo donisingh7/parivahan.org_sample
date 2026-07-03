@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const user = await PortalUser.findOne({ userId: submittedUserId });
+    const user = await PortalUser.findOne({ id: submittedUserId });
     if (!user || !user.isActive) {
       return NextResponse.json(
         { success: false, code: "INVALID_PASSWORD", message: "Invalid credentials." },

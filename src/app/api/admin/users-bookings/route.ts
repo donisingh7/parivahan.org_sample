@@ -7,10 +7,8 @@ import { getAllStateServers } from "@/lib/states/registry.server";
 export const runtime = "nodejs";
 
 interface UserBookingRow {
-  portalUserId:   string;   // human login ID, e.g. "UP12345"
-  name:           string;
-  mobileNo:       string;
-  email:          string;
+  portalUserId:   string;   // login ID
+  type:           string;
   isActive:       boolean;
   bookingCount:   number;
   successCount:   number;
@@ -89,9 +87,9 @@ export async function GET(req: NextRequest) {
     // ── 1. Pull all portal users so zero-booking users are included ─────
     const users = await PortalUser.find(
       {},
-      { userId: 1, name: 1, mobileNo: 1, email: 1, isActive: 1 }
+      { id: 1, type: 1, isActive: 1 }
     )
-      .sort({ name: 1 })
+      .sort({ id: 1 })
       .lean();
 
     // ── 2. Aggregate bookings per user across every state collection ────
@@ -143,12 +141,10 @@ export async function GET(req: NextRequest) {
 
     // ── 4. Stitch portal users + their booking stats together ───────────
     const rows: UserBookingRow[] = users.map((u) => {
-      const a = aggByUser.get(u.userId);
+      const a = aggByUser.get(u.id);
       return {
-        portalUserId:   u.userId,
-        name:           u.name,
-        mobileNo:       u.mobileNo ?? "",
-        email:          u.email ?? "",
+        portalUserId:   u.id,
+        type:           u.type,
         isActive:       u.isActive,
         bookingCount:   a?.bookingCount  ?? 0,
         successCount:   a?.successCount  ?? 0,
@@ -162,7 +158,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Sort: most active users first, then by name as tie-breaker.
-    rows.sort((a, b) => b.bookingCount - a.bookingCount || a.name.localeCompare(b.name));
+    rows.sort((a, b) => b.bookingCount - a.bookingCount || a.portalUserId.localeCompare(b.portalUserId));
 
     // ── 5. Top-level summary across every portal-user booking ───────────
     const summary = {

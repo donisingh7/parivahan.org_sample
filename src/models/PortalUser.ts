@@ -2,29 +2,21 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 import bcrypt from "bcryptjs";
 
 export interface IPortalUser extends Document {
-  userId:     string;   // unique login ID (e.g. DL12345 / mobile no.)
-  name:       string;
-  password:   string;   // bcrypt hashed
-  mobileNo:   string;
-  email:      string;
-  vehicleNos: string[]; // linked vehicle registration numbers
-  isActive:   boolean;
-  createdAt:  Date;
-  updatedAt:  Date;
+  id:       string;   // login ID
+  password: string;   // bcrypt hashed
+  type:     string;   // e.g. "family" | "test" | "reselling"
+  isActive: boolean;
   comparePassword(plain: string): Promise<boolean>;
 }
 
 const PortalUserSchema = new Schema<IPortalUser>(
   {
-    userId:     { type: String, required: true, unique: true, trim: true },
-    name:       { type: String, required: true, trim: true },
-    password:   { type: String, required: true },
-    mobileNo:   { type: String, required: true, trim: true },
-    email:      { type: String, default: "", lowercase: true, trim: true },
-    vehicleNos: { type: [String], default: [] },
-    isActive:   { type: Boolean, default: true },
+    id:       { type: String, required: true, unique: true, trim: true },
+    password: { type: String, required: true },
+    type:     { type: String, required: true, trim: true },
+    isActive: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  { id: false }
 );
 
 PortalUserSchema.pre("save", async function () {

@@ -68,9 +68,7 @@ interface Pagination {
 
 interface UserBookingRow {
   portalUserId:   string;
-  name:           string;
-  mobileNo:       string;
-  email:          string;
+  type:           string;
   isActive:       boolean;
   bookingCount:   number;
   successCount:   number;
@@ -361,7 +359,7 @@ export default function AdminDashboard() {
               <div className="admin-stat-icon"><i className="fa fa-inr"></i></div>
               <div>
                 <div className="admin-stat-value">{fmtAmtShort(stats.totalAmount)}</div>
-                <div className="admin-stat-label">{userFilter ? `Collected by ${selectedUser?.name ?? userFilter}` : "Total Collected"}</div>
+                <div className="admin-stat-label">{userFilter ? `Collected by ${selectedUser?.portalUserId ?? userFilter}` : "Total Collected"}</div>
               </div>
             </div>
             <div className="admin-stat-card stat-success">
@@ -420,10 +418,8 @@ export default function AdminDashboard() {
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>Name</th>
                     <th>Login ID</th>
-                    <th>Mobile</th>
-                    <th>Email</th>
+                    <th>Type</th>
                     <th className="num">Total Bookings</th>
                     <th className="num">Success</th>
                     <th className="num">Pending</th>
@@ -446,10 +442,8 @@ export default function AdminDashboard() {
                         onClick={() => handleSelectUser(u.portalUserId)}
                       >
                         <td className="num">{idx + 1}</td>
-                        <td><strong>{u.name}</strong></td>
                         <td className="admin-txn-id">{u.portalUserId}</td>
-                        <td>{u.mobileNo || "—"}</td>
-                        <td>{u.email || "—"}</td>
+                        <td>{u.type || "—"}</td>
                         <td className="num"><strong>{u.bookingCount}</strong></td>
                         <td className="num" style={{ color: "var(--admin-success)" }}>{u.successCount}</td>
                         <td className="num" style={{ color: "var(--admin-pending)" }}>{u.pendingCount}</td>
@@ -502,7 +496,7 @@ export default function AdminDashboard() {
           </select>
           {userFilter && (
             <span className="admin-active-user-pill">
-              <i className="fa fa-user"></i>&nbsp;{selectedUser?.name ?? userFilter}
+              <i className="fa fa-user"></i>&nbsp;{selectedUser?.portalUserId ?? userFilter}
               <button onClick={() => { setUserFilter(""); setPage(1); }} aria-label="Clear user filter">×</button>
             </span>
           )}
