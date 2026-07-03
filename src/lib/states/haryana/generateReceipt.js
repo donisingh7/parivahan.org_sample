@@ -197,10 +197,10 @@ async function generateReceipt(data) {
   y += fh2;
 
   drawField('CheckPost\nName',                data.checkpostName            || '', col1X, y);
-  drawField('Seating\nCapacity',              String(data.seatingCapacity ?? ''), col2X, y);
+  drawField(data.cap1Label || 'Seating\nCapacity', String(data.cap1Value ?? data.seatingCapacity ?? ''), col2X, y);
   y += fh2;
 
-  drawField('Sleeper Cap',                    String(data.sleeperCap ?? 0), col1X, y);
+  drawField(data.cap2Label || 'Sleeper Cap',  String(data.cap2Value ?? data.sleeperCap ?? 0), col1X, y);
   drawField('Bank Ref. No.',                  data.bankRefNo                || '-', col2X, y);
   y += fh;
 

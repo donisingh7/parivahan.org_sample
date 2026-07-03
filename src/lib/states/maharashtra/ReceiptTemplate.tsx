@@ -235,8 +235,8 @@ export default function MaharashtraReceiptTemplate({ data }: { data: ReceiptData
             </tr>
             {/* Row 8 -- MH-specific */}
             <tr>
-              <FieldCell label="Unladen Weight" value={data.unladenWeight} />
-              <FieldCell label="Laden Weight"   value={data.ladenWeight} />
+              <FieldCell label={data.cap2Label || "Unladen Weight"} value={data.cap2Value ?? data.unladenWeight} />
+              <FieldCell label={data.cap1Label || "Laden Weight"}   value={data.cap1Value ?? data.ladenWeight} />
             </tr>
             {/* Row 9 */}
             <tr>

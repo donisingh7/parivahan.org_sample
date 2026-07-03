@@ -1,10 +1,26 @@
 ﻿"use client";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TaxDateField, PaymentDateTimeField } from "../shared/TaxDateField";
 import { biharConfig } from "@/lib/states/bihar/config";
 
 const STATE_CODE  = biharConfig.code;
 const STATE_LABEL = biharConfig.label;
+
+// IST timestamp (UTC+5:30), browser-timezone-independent, with seconds.
+function nowIST(): string {
+  const ist = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const dd  = String(ist.getUTCDate()).padStart(2, "0");
+  const mon = MONTHS[ist.getUTCMonth()];
+  const yy  = ist.getUTCFullYear();
+  let   hh  = ist.getUTCHours();
+  const mm  = String(ist.getUTCMinutes()).padStart(2, "0");
+  const ss  = String(ist.getUTCSeconds()).padStart(2, "0");
+  const ap  = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12 || 12;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
+}
 
 const BASE   = "https://checkpost.parivahan.gov.in";
 const LOGO   = `${BASE}/checkpost/faces/javax.faces.resource/checkpost-logo.png?ln=images`;
@@ -84,6 +100,11 @@ function TaxCollectionContent() {
   const [taxFrom,    setTaxFrom]    = useState("");
   const [taxTo,      setTaxTo]      = useState("");
   const [dateError,  setDateError]  = useState("");
+
+  // Payment Init / Conf / Printed On (auto = current IST if left blank)
+  const [paymentInitDateInput, setPaymentInitDateInput] = useState("");
+  const [paymentConfDateInput, setPaymentConfDateInput] = useState("");
+  const [printedOnInput,       setPrintedOnInput]       = useState("");
 
   // MV Tax / total
   const [mvTax,       setMvTax]       = useState("");
@@ -182,6 +203,9 @@ function TaxCollectionContent() {
       taxFrom,
       taxTo,
       amount: totalAmount || "0",
+      paymentInitDate: paymentInitDateInput || nowIST(),
+      paymentConfDate: paymentConfDateInput,
+      printedOn:       printedOnInput,
     });
     router.push(`/payment/sbi?${params.toString()}`);
   };
@@ -194,6 +218,7 @@ function TaxCollectionContent() {
     setTaxMode(""); setPermitType(""); setPaymentMethod("ONLINE");
     setBrFitnessValidity(""); setBrInsuranceValidity(""); setBrPuccValidity("");
     setTaxFrom(""); setTaxTo(""); setMvTax(""); setTotalAmount("");
+    setPaymentInitDateInput(""); setPaymentConfDateInput(""); setPrintedOnInput("");
     setDateError(""); setFormError(""); setShowModal(false); setPdfError("");
     setNavOpen(false); setReportsOpen(false);
   };
@@ -209,12 +234,12 @@ function TaxCollectionContent() {
     if (missing.length > 0) { setPdfError(`Please fill the following before downloading: ${missing.join(", ")}`); return; }
     const d = new Date(); const yy = String(d.getFullYear()).slice(2); const mm = String(d.getMonth()+1).padStart(2,"0"); const dd2 = String(d.getDate()).padStart(2,"0");
     const rand = Math.floor(Math.random()*9000000+1000000);
-    const receiptNo = `BRR${yy}${mm}${dd2}${rand}`;
+    const receiptNo = `BRT${yy}${mm}${dd2}${rand}`;
     const transactionId = `TXN${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2,6).toUpperCase()}`;
     setPdfLoading(true);
     try {
       const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, state: STATE_CODE, visitingState: STATE_CODE, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleClass, vehicleCategory, checkpostName, taxMode, serviceType, grossCombinationWeight, brGrossVehicleWt, brUnladenWt, paymentMethod, brFitnessValidity, brInsuranceValidity, brPuccValidity, permitType, taxFrom, taxTo, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`, noOfPeriods:1, seatingCap, sleeperCap }) });
+        body: JSON.stringify({ transactionId, state: STATE_CODE, visitingState: STATE_CODE, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleClass, vehicleCategory, checkpostName, taxMode, serviceType, grossCombinationWeight, brGrossVehicleWt, brUnladenWt, paymentMethod, brFitnessValidity, brInsuranceValidity, brPuccValidity, permitType, taxFrom, taxTo, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: (() => { const nd=Math.floor(Math.random()*3)+1; const nl=10-nd; const c=[]; for(let i=0;i<nl;i++)c.push(String.fromCharCode(65+Math.floor(Math.random()*26))); for(let i=0;i<nd;i++)c.push(String(Math.floor(Math.random()*10))); for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];} return c.join(""); })(), noOfPeriods:1, seatingCap, sleeperCap, paymentInitDate: paymentInitDateInput || nowIST(), paymentConfDate: paymentConfDateInput, printedOn: printedOnInput }) });
       const json = await res.json().catch(()=>({}));
       if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
       const savedId = json.transactionId || transactionId;
@@ -592,17 +617,13 @@ function TaxCollectionContent() {
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel">Fitness Validity</label>
                       </div>
-                      <input type="text" className="ui-inputtext"
-                        value={brFitnessValidity} onChange={(e) => setBrFitnessValidity(e.target.value.toUpperCase())}
-                        maxLength={30} autoComplete="off" placeholder="e.g. 31-DEC-2026" />
+                      <TaxDateField date={brFitnessValidity} onDateChange={setBrFitnessValidity} />
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel">Insurance Validity</label>
                       </div>
-                      <input type="text" className="ui-inputtext"
-                        value={brInsuranceValidity} onChange={(e) => setBrInsuranceValidity(e.target.value.toUpperCase())}
-                        maxLength={30} autoComplete="off" placeholder="e.g. 31-DEC-2026" />
+                      <TaxDateField date={brInsuranceValidity} onDateChange={setBrInsuranceValidity} />
                     </div>
                   </div>
 
@@ -612,9 +633,7 @@ function TaxCollectionContent() {
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel">PUCC Validity</label>
                       </div>
-                      <input type="text" className="ui-inputtext"
-                        value={brPuccValidity} onChange={(e) => setBrPuccValidity(e.target.value.toUpperCase())}
-                        maxLength={30} autoComplete="off" placeholder="e.g. 30-JUN-2026" />
+                      <TaxDateField date={brPuccValidity} onDateChange={setBrPuccValidity} />
                     </div>
                     <div className="ui-grid-col-3">
                       {/* spacer */}
@@ -711,6 +730,28 @@ function TaxCollectionContent() {
                       </div>
                     </div>
                   )}
+
+                  {/* Payment Init Date + Payment Conf Date + Printed On */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Payment Init Date</label>
+                      </div>
+                      <PaymentDateTimeField value={paymentInitDateInput} onChange={setPaymentInitDateInput} />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Payment Conf Date</label>
+                      </div>
+                      <PaymentDateTimeField value={paymentConfDateInput} onChange={setPaymentConfDateInput} />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Printed On</label>
+                      </div>
+                      <PaymentDateTimeField value={printedOnInput} onChange={setPrintedOnInput} />
+                    </div>
+                  </div>
 
                   {/* MV Tax input + buttons */}
                   <div className="ui-grid-row">

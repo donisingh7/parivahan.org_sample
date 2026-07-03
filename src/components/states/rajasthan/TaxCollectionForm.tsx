@@ -660,6 +660,7 @@ function TaxCollectionContent() {
                           <option value="2">NATIONAL PERMIT</option>
                           <option value="3">SPECIAL PERMIT</option>
                           <option value="4">CONTRACT CARRIAGE PERMIT</option>
+                          <option value="5">TEMPORARY PERMIT</option>
                         </select>
                         <span className="ui-selectonemenu-arrow">▼</span>
                       </div>
@@ -758,6 +759,13 @@ function TaxCollectionContent() {
                           <option value="-1">---Select Payment Mode---</option>
                           <option value="1">ONLINE</option>
                           <option value="2">CASH</option>
+                          <option value="DAYS">DAYS</option>
+                          <option value="WEEKLY">WEEKLY</option>
+                          <option value="FORTNIGHT">FORTNIGHT</option>
+                          <option value="MONTHLY">MONTHLY</option>
+                          <option value="QUARTERLY">QUARTERLY</option>
+                          <option value="HALF YEARLY">HALF YEARLY</option>
+                          <option value="YEARLY">YEARLY</option>
                         </select>
                         <span className="ui-selectonemenu-arrow">▼</span>
                       </div>

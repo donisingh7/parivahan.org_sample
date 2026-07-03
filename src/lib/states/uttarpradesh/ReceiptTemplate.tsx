@@ -203,7 +203,7 @@ export default function UttarPradeshReceiptTemplate({ data }: { data: ReceiptDat
             <Field label="Vehilce Type"                     value={data.vehicleType} />
             <Field label={"Vehicle\nCategory"}              value={data.vehicleCategory} mb="21px" />
             <Field label={"Checkpost\nName"}                value={data.checkpostName} />
-            <Field label="Sleeper Cap."                     value={data.sleeperCap} />
+            <Field label={data.cap2Label || "Sleeper Cap."} value={data.cap2Value ?? data.sleeperCap} />
             <Field label={"Payment\nMode"}                  value={data.paymentMode} />
             <Field label={"Permit\nValidity"}               value={data.permitValidity} />
             <Field label={"Insurance\nValidity"}            value={data.insuranceValidity} />
@@ -217,7 +217,7 @@ export default function UttarPradeshReceiptTemplate({ data }: { data: ReceiptDat
             <Field label="Tax Mode"            value={data.taxMode} />
             <Field label="Vehicle Class"       value={data.vehicleClass} />
             <Field label="Mobile No."          value={data.mobileNo} mb="21px" />
-            <Field label={"Seating\nCapacity"} value={data.seatingCapacity} />
+            <Field label={data.cap1Label || "Seating\nCapacity"} value={data.cap1Value ?? data.seatingCapacity} />
             <Field label="Bank Ref. No."       value={data.bankRefNo} />
             <Field label={"Permit\nNumber"}    value={data.permitNumber || "0000"} />
             <Field label={"Fitness\nValidity"} value={data.fitnessValidity} />

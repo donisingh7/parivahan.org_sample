@@ -232,8 +232,8 @@ export default function JharkhandReceiptTemplate({ data }: { data: ReceiptData }
               <FieldCell label="CheckPost Name" value={data.checkpostName} />
             </tr>
             <tr>
-              <FieldCell label="Gross Vehicle Wt (In. Kg)" value={String(data.grossVehicleWt ?? "")} />
-              <FieldCell label="Unladen Wt (In Kg.)"       value={String(data.unladenWt ?? 0)} />
+              <FieldCell label={data.cap1Label || "Gross Vehicle Wt (In. Kg)"} value={String(data.cap1Value ?? data.grossVehicleWt ?? "")} />
+              <FieldCell label={data.cap2Label || "Unladen Wt (In Kg.)"}       value={String(data.cap2Value ?? data.unladenWt ?? 0)} />
             </tr>
             <tr>
               <FieldCell label="Bank Ref. No." value={data.bankRefNo} />

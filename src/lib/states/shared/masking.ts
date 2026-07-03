@@ -88,6 +88,7 @@ export const PERMIT_TYPE_LABELS: Record<string, string> = {
   "2": "NATIONAL PERMIT",
   "3": "SPECIAL PERMIT",
   "4": "CONTRACT CARRIAGE PERMIT",
+  "5": "TEMPORARY PERMIT",
   "-1": "NOT APPLICABLE",
   "":   "NOT APPLICABLE",
 };

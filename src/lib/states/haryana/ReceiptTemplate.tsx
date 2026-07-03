@@ -193,7 +193,7 @@ export default function HaryanaReceiptTemplate({ data }: { data: ReceiptData }) 
             <Field label="Vehilce Type"                     value={data.vehicleType} />
             <Field label={"Vehicle\nCategory"}              value={data.vehicleCategory} />
             <Field label={"CheckPost\nName"}                value={data.checkpostName} />
-            <Field label="Sleeper Cap"                      value={data.sleeperCap} />
+            <Field label={data.cap2Label || "Sleeper Cap"}  value={data.cap2Value ?? data.sleeperCap} />
             <Field label={"Payment\nMode"}                  value={data.paymentMode} />
             <Field label={"Insurance\nValidity"}            value={data.insuranceValidity} />
             <Field label="Service Type"                     value={data.serviceType} />
@@ -208,7 +208,7 @@ export default function HaryanaReceiptTemplate({ data }: { data: ReceiptData }) 
             <Field label="Tax Mode"         value={data.taxMode} />
             <Field label="Vehicle Class"    value={data.vehicleClass} />
             <Field label="Mobile No."       value={data.mobileNo} />
-            <Field label={"Seating\nCapacity"} value={data.seatingCapacity} />
+            <Field label={data.cap1Label || "Seating\nCapacity"} value={data.cap1Value ?? data.seatingCapacity} />
             <Field label="Bank Ref. No."    value={data.bankRefNo} />
             <Field label={"Fitness\nValidity"} value={data.fitnessValidity} />
             <Field label="PUCC Validity"    value={data.puccValidity} />

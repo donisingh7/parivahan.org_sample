@@ -193,7 +193,7 @@ export default function UttarakhandReceiptTemplate({ data }: { data: ReceiptData
             <Field label="Vehilce Type"                    value={data.vehicleType} />
             <Field label={"Vehicle\nCategory"}             value={data.vehicleCategory} />
             <Field label={"CheckPost\nName"}               value={data.checkpostName} />
-            <Field label={"Unladen\nWt(In Kg.)"}           value={data.unladenWt ?? 0} />
+            <Field label={data.cap2Label || "Unladen\nWt(In Kg.)"} value={data.cap2Value ?? data.unladenWt ?? 0} />
             <Field label={"Payment\nMode"}                 value={data.paymentMode} />
             <Field label={"Permit\nValidity"}              value={data.permitValidity || "-"} />
             <Field label={"PUCC\nValidity"}                value={data.puccValidity || "-"} />
@@ -206,7 +206,7 @@ export default function UttarakhandReceiptTemplate({ data }: { data: ReceiptData
             <Field label="Tax Mode"                         value={data.taxMode} />
             <Field label="Vehicle Class"                    value={data.vehicleClass} />
             <Field label="Mobile No."                       value={data.mobileNo} />
-            <Field label={"Gross Vehicle\nWt(In. Kg)"}      value={data.grossVehicleWt ?? 0} />
+            <Field label={data.cap1Label || "Gross Vehicle\nWt(In. Kg)"} value={data.cap1Value ?? data.grossVehicleWt ?? 0} />
             <Field label={"Bank Ref.\nNo."}                 value={data.bankRefNo} />
             <Field label={"Permit\nNumber"}                 value={data.permitNumber || "-"} />
             <Field label={"Fitness\nValidity"}              value={data.fitnessValidity || "-"} />

@@ -332,7 +332,7 @@ function generateReceiptNo(stateCode?: string): string {
   const dd   = String(d.getDate()).padStart(2, "0");
   const rand = Math.floor(Math.random() * 9000000 + 1000000);
   if (stateCode === "AP") return `APR${yy}${mm}${dd}${rand}`;
-  if (stateCode === "BR") return `BRR${yy}${mm}${dd}${rand}`;
+  if (stateCode === "BR") return `BRT${yy}${mm}${dd}${rand}`;
   if (stateCode === "MH") return `MHT${yy}${mm}${dd}${rand}`;
   if (stateCode === "HP") return `HPR${yy}${mm}${dd}${rand}`;
   if (stateCode === "JH") return `JHR${yy}${mm}${dd}${rand}`;
@@ -378,11 +378,14 @@ function generateMHBankRef(): string {
   return String(Math.floor(Math.random() * 900000000000 + 100000000000));
 }
 
-// Generates bank ref for BR: 7 uppercase letters + 3 digits, randomly permuted = 10 chars.
+// Generates bank ref for BR: 10 chars, 7-9 uppercase letters + 1-3 digits,
+// shuffled — same random scheme as Haryana.
 function generateBRBankRef(): string {
+  const numDigits  = Math.floor(Math.random() * 3) + 1;
+  const numLetters = 10 - numDigits;
   const chars: string[] = [];
-  for (let i = 0; i < 7; i++) chars.push(String.fromCharCode(65 + Math.floor(Math.random() * 26)));
-  for (let i = 0; i < 3; i++) chars.push(String(Math.floor(Math.random() * 10)));
+  for (let i = 0; i < numLetters; i++) chars.push(String.fromCharCode(65 + Math.floor(Math.random() * 26)));
+  for (let i = 0; i < numDigits;  i++) chars.push(String(Math.floor(Math.random() * 10)));
   for (let i = chars.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [chars[i], chars[j]] = [chars[j], chars[i]];

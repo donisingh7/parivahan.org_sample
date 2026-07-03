@@ -232,8 +232,8 @@ export default function RajasthanReceiptTemplate({ data }: { data: ReceiptData }
             </tr>
             <tr><td colSpan={4} style={{ height: "10px" }} /></tr>
             <tr>
-              <FieldCell label="Sleeper Cap."     value={data.sleeperCap || 0} />
-              <FieldCell label="Seating Capacity" value={data.seatingCapacity || 0} />
+              <FieldCell label={data.cap2Label || "Sleeper Cap."}     value={data.cap2Value ?? data.sleeperCap ?? 0} />
+              <FieldCell label={data.cap1Label || "Seating Capacity"} value={data.cap1Value ?? data.seatingCapacity ?? 0} />
             </tr>
             <tr>
               <FieldCell label="Bank Ref. No." value={data.bankRefNo} />

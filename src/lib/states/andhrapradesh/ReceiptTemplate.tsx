@@ -176,7 +176,7 @@ export default function AndhraPradeshReceiptTemplate({ data }: { data: ReceiptDa
           <Field label="Vehicle Type"              value={data.vehicleType} />
           <Field label="Vehicle Category"          value={data.vehicleCategory} />
           <Field label="CheckPost Name"            value={data.checkpostName} />
-          <Field label={"Unladen Wt\n(In Kg.)"}   value={data.unladenWt} />
+          <Field label={data.cap2Label || "Unladen Wt\n(In Kg.)"}   value={data.cap2Value ?? data.unladenWt} />
           <Field label="Payment Mode"              value={data.paymentMode} />
           <Field label="Fitness Validity"          value={data.fitnessValidity} />
           <Field label="PUCC Validity"             value={data.puccValidity} />
@@ -190,7 +190,7 @@ export default function AndhraPradeshReceiptTemplate({ data }: { data: ReceiptDa
           <Field label="Tax Mode"                  value={data.taxMode} />
           <Field label="Vehicle Class"             value={data.vehicleClass} />
           <Field label="Mobile No."                value={data.mobileNo} />
-          <Field label={"Gross Vehicle\nWt (In. Kg)"} value={data.grossVehicleWt} />
+          <Field label={data.cap1Label || "Gross Vehicle\nWt (In. Kg)"} value={data.cap1Value ?? data.grossVehicleWt} />
           <Field label="Bank Ref. No."             value={data.bankRefNo} />
           <Field label="Permit Validity"           value={data.permitValidity} />
           <Field label="Insurance Validity"        value={data.insuranceValidity} />

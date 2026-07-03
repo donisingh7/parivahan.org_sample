@@ -147,6 +147,12 @@ const valueStyle: React.CSSProperties = {
 // -- Main Receipt -----------------------------------------------------------
 
 export default function BiharReceiptTemplate({ data }: { data: ReceiptData }) {
+  const printedOn = data.printedOnDate || data.paymentDateText || "-";
+  // Watermark uses Payment Init date at HH:MM precision (strip seconds).
+  const initDateHHMM = data.paymentInitDate
+    ? data.paymentInitDate.replace(/(\d{2}:\d{2}):\d{2}/, "$1")
+    : printedOn;
+
   return (
     <div
       id="bihar-receipt"
@@ -164,7 +170,7 @@ export default function BiharReceiptTemplate({ data }: { data: ReceiptData }) {
       }}
     >
       <EmblemWatermark />
-      <Watermark text={`${data.registrationNo} / ${data.paymentDateText}`} />
+      <Watermark text={`${data.registrationNo} / ${initDateHHMM}`} />
 
       {/* Header */}
       <div
@@ -194,7 +200,7 @@ export default function BiharReceiptTemplate({ data }: { data: ReceiptData }) {
           <div style={{ fontSize: "13px", marginTop: "2px" }}>{biharConfig.deptLabel}</div>
           <div style={{ fontSize: "12px", marginTop: "2px" }}>{biharConfig.receiptTitle}</div>
           <div style={{ fontSize: "9px", marginTop: "6px", color: "#555" }}>
-            <strong>Printed on :</strong> {data.paymentDateText}
+            <strong>Printed on :</strong> {printedOn}
           </div>
         </div>
 
@@ -233,11 +239,11 @@ export default function BiharReceiptTemplate({ data }: { data: ReceiptData }) {
             {/* Row 6 */}
             <tr>
               <FieldCell label="CheckPost Name"         value={data.checkpostName} />
-              <FieldCell label="Gross Vehicle Wt (In. Kg)" value={String(data.grossVehicleWt ?? "")} />
+              <FieldCell label={data.cap1Label || "Gross Vehicle Wt (In. Kg)"} value={String(data.cap1Value ?? data.grossVehicleWt ?? "")} />
             </tr>
             {/* Row 7 */}
             <tr>
-              <FieldCell label="Unladen Wt (In Kg.)" value={String(data.unladenWt ?? "")} />
+              <FieldCell label={data.cap2Label || "Unladen Wt (In Kg.)"} value={String(data.cap2Value ?? data.unladenWt ?? "")} />
               <FieldCell label="Bank Ref. No."        value={data.bankRefNo} />
             </tr>
             {/* Row 8 */}
