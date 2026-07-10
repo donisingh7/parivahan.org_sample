@@ -324,14 +324,30 @@ function GatewayFooter() {
   );
 }
 
-function generateReceiptNo(stateCode?: string): string {
+// Extracts { yy, mm, dd, yyyy } from a "DD-MMM-YYYY HH:MM:SS AP" string (the
+// canonical Payment Init Date format) so AP's receiptNo/bankRef can be
+// derived from the payment date the user actually picked.
+function parseInitDateParts(s: string): { yy: string; mm: string; dd: string; yyyy: string } | null {
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const m = s.match(/^(\d{2})-([A-Za-z]{3})-(\d{4})/);
+  if (!m) return null;
+  const mi = MONTHS.indexOf(m[2].toUpperCase());
+  if (mi === -1) return null;
+  return { dd: m[1], mm: String(mi + 1).padStart(2, "0"), yyyy: m[3], yy: m[3].slice(2) };
+}
+
+function generateReceiptNo(stateCode?: string, paymentInitDate?: string): string {
   if (stateCode === "HR") return `HRT${Date.now()}`;
   const d    = new Date();
   const yy   = String(d.getFullYear()).slice(2);
   const mm   = String(d.getMonth() + 1).padStart(2, "0");
   const dd   = String(d.getDate()).padStart(2, "0");
   const rand = Math.floor(Math.random() * 9000000 + 1000000);
-  if (stateCode === "AP") return `APR${yy}${mm}${dd}${rand}`;
+  if (stateCode === "AP") {
+    // Receipt No. = APR + YYMMDD of Payment Initialization Date + 7-digit random.
+    const parts = paymentInitDate ? parseInitDateParts(paymentInitDate) : null;
+    return parts ? `APR${parts.yy}${parts.mm}${parts.dd}${rand}` : `APR${yy}${mm}${dd}${rand}`;
+  }
   if (stateCode === "BR") return `BRT${yy}${mm}${dd}${rand}`;
   if (stateCode === "MH") return `MHT${yy}${mm}${dd}${rand}`;
   if (stateCode === "HP") return `HPR${yy}${mm}${dd}${rand}`;
@@ -356,14 +372,14 @@ function generateHRBankRef(): string {
   return chars.join("");
 }
 
-// AP bank ref: <8-digit random> + <mmddyy of booking date>
-function generateAPBankRef(): string {
-  const d   = new Date();
-  const mm  = String(d.getMonth() + 1).padStart(2, "0");
-  const dd  = String(d.getDate()).padStart(2, "0");
-  const yy  = String(d.getFullYear()).slice(2);
-  const rand = Math.floor(Math.random() * 90000000 + 10000000);
-  return `${rand}${mm}${dd}${yy}`;
+// AP bank ref: 14 digits — 10 random digits + the 4-digit year of the
+// Payment Initialization Date (falls back to the current year if that date
+// isn't available/parseable yet).
+function generateAPBankRef(paymentInitDate?: string): string {
+  const parts = paymentInitDate ? parseInitDateParts(paymentInitDate) : null;
+  const yyyy  = parts?.yyyy ?? String(new Date().getFullYear());
+  const rand10 = String(Math.floor(Math.random() * 9000000000 + 1000000000));
+  return `${rand10}${yyyy}`;
 }
 
 function generateUPBankRef(): string {
@@ -450,6 +466,7 @@ function SBIContent() {
   const taxFrom          = searchParams.get("taxFrom")          ?? "";
   const taxTo            = searchParams.get("taxTo")            ?? "";
   const amount           = searchParams.get("amount")           ?? "0";
+  const paymentInitDate  = searchParams.get("paymentInitDate")  ?? "";
 
   const [clientOrderRef, setClientOrderRef] = useState("");
   const [receiptNo,      setReceiptNo]      = useState("");
@@ -458,7 +475,7 @@ function SBIContent() {
   useEffect(() => {
     let orderRef: string;
     if      (stateCode === "HR") orderRef = generateHRBankRef();
-    else if (stateCode === "AP") orderRef = generateAPBankRef();
+    else if (stateCode === "AP") orderRef = generateAPBankRef(paymentInitDate);
     else if (stateCode === "BR") orderRef = generateBRBankRef();
     else if (stateCode === "MH") orderRef = generateMHBankRef();
     else if (stateCode === "JH") orderRef = String(Math.floor(Math.random() * 9000000000000 + 1000000000000));
@@ -471,7 +488,7 @@ function SBIContent() {
       orderRef = generateCheckpostBankRef();
     else orderRef = makeOrderRef(vehicleNo || "VH");
     setClientOrderRef(orderRef);
-    setReceiptNo(generateReceiptNo(stateCode));
+    setReceiptNo(generateReceiptNo(stateCode, paymentInitDate));
     setTxnId(generateTransactionId());
     setPaidAt(new Date());
   }, []); // eslint-disable-line

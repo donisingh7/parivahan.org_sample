@@ -127,12 +127,22 @@ const pageStyle: React.CSSProperties = {
 // ── Main component ─────────────────────────────────────────────────────────
 export default function AndhraPradeshReceiptTemplate({ data }: { data: ReceiptData }) {
   const grandTotal = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
-  const printedOn  = data.paymentDateText || "-";
+  const printedOn  = data.printedOnDate || data.paymentDateText || "-";
+  // Watermark uses the Payment Init date at HH:MM (no seconds, non-padded
+  // hour) — e.g. "23-JUN-2026 9:45 PM".
+  const initWatermark = data.paymentInitDate
+    ? data.paymentInitDate.replace(
+        /^(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{1,2}):(\d{2}):\d{2}\s+(AM|PM)$/i,
+        (_m, d, h, mm, ap) => `${d} ${parseInt(h, 10)}:${mm} ${ap}`)
+    : printedOn;
 
   return (
-    <div style={pageStyle}>
+    <div style={{ fontFamily: "Helvetica, Arial, sans-serif", color: "#000" }}>
+
+      {/* ══════════════════ PAGE 1 — header + field grid ══════════════════ */}
+      <div style={pageStyle}>
       <EmblemWatermark />
-      <Watermark text={`${data.registrationNo} ${printedOn}`} />
+      <Watermark text={`${data.registrationNo} ${initWatermark}`} />
 
       {/* Printed on — top right */}
       <div style={{ position: "relative", zIndex: 1, textAlign: "right", fontSize: "7px", marginBottom: "4px" }}>
@@ -196,9 +206,15 @@ export default function AndhraPradeshReceiptTemplate({ data }: { data: ReceiptDa
           <Field label="Insurance Validity"        value={data.insuranceValidity} />
           <Field label="Service Type"              value={data.serviceType} />
           <Field label="Name of Goods"             value={data.nameOfGoods} />
-          <Field label={"Payment\nConfirmation Date"} value={data.paymentDateText} />
+          <Field label={"Payment\nConfirmation Date"} value={data.paymentConfirmDate} />
         </div>
       </div>
+      {/* Page 1 ends here — the tax table has moved to page 2, so the rest
+          of page 1 below the field grid is intentionally left blank. */}
+      </div>
+
+      {/* ══════════════════ PAGE 2 — tax table, totals, notes, QR note ══════════════════ */}
+      <div style={{ ...pageStyle, minHeight: "auto", borderTop: "2px dashed #ccc" }}>
 
       {/* Tax table */}
       <div style={{ position: "relative", zIndex: 1, marginTop: "14px" }}>
@@ -245,6 +261,7 @@ export default function AndhraPradeshReceiptTemplate({ data }: { data: ReceiptDa
       {/* QR scan note */}
       <div style={{ position: "relative", zIndex: 1, marginTop: "20px", fontSize: "13px", fontWeight: "bold" }}>
         Scan the QR code for genuinity of the receipt.
+      </div>
       </div>
     </div>
   );
