@@ -170,7 +170,7 @@ async function generateReceipt(data) {
   doc.addPage();
 
   await drawImageWatermark(doc, logoPath, pageWidth, pageHeight);
-  drawTextWatermark(doc, watermarkText, pageWidth, pageHeight * 0.85);
+  drawTextWatermark(doc, watermarkText, pageWidth, 525);
 
   // -- Header: Printed on (top right) ------------------------------------------
   let y = margin - 10;
