@@ -64,6 +64,68 @@ const allStates = [
   { value: "WB", label: "WEST BENGAL" },
 ];
 
+const VEHICLE_TYPE_OPTIONS = [
+  { value: "",               label: "-- Select Vehicle Type --" },
+  { value: "TRANSPORT",      label: "TRANSPORT" },
+  { value: "NOT APPLICABLE", label: "NOT APPLICABLE" },
+];
+
+const VEHICLE_CATEGORY_OPTIONS = [
+  { value: "",                                        label: "-- Select Vehicle Category --" },
+  { value: "CONTRACT CARRIAGE/PASSENGER   VEHICLES",   label: "CONTRACT CARRIAGE/PASSENGER VEHICLES" },
+  { value: "PRIVATE SERVICE VEHICLE",                  label: "PRIVATE SERVICE VEHICLE" },
+  { value: "GOODS VEHICLE",                            label: "GOODS VEHICLE" },
+  { value: "STAGE CARRIAGE",                           label: "STAGE CARRIAGE" },
+  { value: "LIGHT PASSENGER VEHICLES",                 label: "LIGHT PASSENGER VEHICLES" },
+  { value: "MEDIUM PASSENGER VEHICLES",                label: "MEDIUM PASSENGER VEHICLES" },
+  { value: "HEAVY PASSENGER VEHICLES",                 label: "HEAVY PASSENGER VEHICLES" },
+  { value: "CONSTRUCTION EQUIPMENT VEHICLE",           label: "CONSTRUCTION EQUIPMENT VEHICLE" },
+  { value: "MEDIUM GOODS VEHICLE",                     label: "MEDIUM GOODS VEHICLE" },
+  { value: "TEMPORARY REGISTERED VEHICLE",             label: "TEMPORARY REGISTERED VEHICLE" },
+];
+
+const CHECKPOST_OPTIONS = [
+  { value: "",              label: "Select District Name..." },
+  { value: "PATNA",         label: "PATNA" },
+  { value: "BHAGALPUR",     label: "BHAGALPUR" },
+  { value: "PURNEA",        label: "PURNEA" },
+  { value: "SAHARSA",       label: "SAHARSA" },
+  { value: "GAYA",          label: "GAYA" },
+  { value: "NALANDA",       label: "NALANDA" },
+  { value: "BETTIAH",       label: "BETTIAH" },
+  { value: "ROHTAS",        label: "ROHTAS" },
+  { value: "JEHANABAD",     label: "JEHANABAD" },
+  { value: "AURANGABAD",    label: "AURANGABAD" },
+  { value: "NAWADA",        label: "NAWADA" },
+  { value: "GOPALGANJ",     label: "GOPALGANJ" },
+  { value: "SIWAN",         label: "SIWAN" },
+  { value: "BHOJPUR",       label: "BHOJPUR" },
+  { value: "SITAMARHI",     label: "SITAMARHI" },
+  { value: "VAISHALI",      label: "VAISHALI" },
+  { value: "MADHUBANI",     label: "MADHUBANI" },
+  { value: "SAMASTIPUR",    label: "SAMASTIPUR" },
+  { value: "KHAGARIA",      label: "KHAGARIA" },
+  { value: "KISHANGANJ",    label: "KISHANGANJ" },
+  { value: "ARARIA",        label: "ARARIA" },
+  { value: "KATIHAR",       label: "KATIHAR" },
+  { value: "CHAPARA",       label: "CHAPARA" },
+  { value: "MADHEPURA",     label: "MADHEPURA" },
+  { value: "BUXUR",         label: "BUXUR" },
+  { value: "BHABHUA",       label: "BHABHUA" },
+  { value: "JAMUI",         label: "JAMUI" },
+  { value: "MOTIHARI",      label: "MOTIHARI" },
+  { value: "SUPAUL",        label: "SUPAUL" },
+  { value: "BANKA",         label: "BANKA" },
+  { value: "SHEIKHPURA",    label: "SHEIKHPURA" },
+  { value: "LAKHISARAI",    label: "LAKHISARAI" },
+  { value: "SHEOHAR",       label: "SHEOHAR" },
+  { value: "ARAWAL",        label: "ARAWAL" },
+  { value: "MUZAFFARPUR",   label: "MUZAFFARPUR" },
+  { value: "DARBHANGA",     label: "DARBHANGA" },
+  { value: "MUNGER",        label: "MUNGER" },
+  { value: "BEGUSARAI",     label: "BEGUSARAI" },
+];
+
 function TaxCollectionContent() {
   const router = useRouter();
 
@@ -130,6 +192,7 @@ function TaxCollectionContent() {
       const d = json.data;
       if (d.chassisNo)       setChassisNo(d.chassisNo);
       if (d.ownerName)       setOwnerName(d.ownerName);
+      if (d.mobileNo)        setMobileNo(d.mobileNo);
       if (d.vehicleType)     setVehicleType(d.vehicleType);
       if (d.vehicleCategory) setVehicleCategory(d.vehicleCategory);
       if (d.vehicleClass)    setVehicleClass(d.vehicleClass);
@@ -248,7 +311,7 @@ function TaxCollectionContent() {
     finally { setPdfLoading(false); }
   };
 
-  const isGoodsVehicle = vehicleType === "GOODS VEHICLE";
+  const isGoodsVehicle = vehicleCategory === "GOODS VEHICLE";
 
   return (
     <div id="masterlaoyoutbody">
@@ -453,13 +516,9 @@ function TaxCollectionContent() {
                       </div>
                       <div className="ui-selectonemenu">
                         <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className="select-autofilled">
-                          <option value="">-- Select Vehicle Type --</option>
-                          <option value="CONTRACT CARRIAGE/PASSENGER VEHICLES">CONTRACT CARRIAGE/PASSENGER VEHICLES</option>
-                          <option value="PRIVATE SERVICE VEHICLE">PRIVATE SERVICE VEHICLE</option>
-                          <option value="GOODS VEHICLE">GOODS VEHICLE</option>
-                          <option value="STAGE CARRIAGE">STAGE CARRIAGE</option>
-                          <option value="CONSTRUCTION EQUIPMENT VEHICLE">CONSTRUCTION EQUIPMENT VEHICLE</option>
-                          <option value="TEMPORARY REGISTERED VEHICLE">TEMPORARY REGISTERED VEHICLE</option>
+                          {VEHICLE_TYPE_OPTIONS.map((t) => (
+                            <option key={t.value} value={t.value}>{t.label}</option>
+                          ))}
                         </select>
                         <span className="ui-selectonemenu-arrow">▼</span>
                       </div>
@@ -500,22 +559,9 @@ function TaxCollectionContent() {
                       </div>
                       <div className="ui-selectonemenu">
                         <select value={vehicleCategory} onChange={(e) => setVehicleCategory(e.target.value)} className="select-autofilled">
-                          <option value="">-- Select Vehicle Category --</option>
-                          <option value="MOTOR CYCLE">MOTOR CYCLE</option>
-                          <option value="THREE WHEELER(PASSENGER)">THREE WHEELER(PASSENGER)</option>
-                          <option value="MOTOR CAB">MOTOR CAB</option>
-                          <option value="MAXI CAB">MAXI CAB</option>
-                          <option value="OMNI BUS">OMNI BUS</option>
-                          <option value="BUS">BUS</option>
-                          <option value="SLEEPER BUS">SLEEPER BUS</option>
-                          <option value="VOLVO OR MERECEDEZ ETC">VOLVO OR MERECEDEZ ETC</option>
-                          <option value="EDUCATIONAL BUS">EDUCATIONAL BUS</option>
-                          <option value="EDUCATIONAL BUS USED BY SCHOOL">EDUCATIONAL BUS USED BY SCHOOL</option>
-                          <option value="PRIVATE ORGANIZATIONS">PRIVATE ORGANIZATIONS</option>
-                          <option value="CRANE MOUNTED VEHICLE">CRANE MOUNTED VEHICLE</option>
-                          <option value="LIGHT GOODS VEHICLE">LIGHT GOODS VEHICLE</option>
-                          <option value="MEDIUM GOODS VEHICLE">MEDIUM GOODS VEHICLE</option>
-                          <option value="HEAVY GOODS VEHICLE">HEAVY GOODS VEHICLE</option>
+                          {VEHICLE_CATEGORY_OPTIONS.map((c) => (
+                            <option key={c.value} value={c.value}>{c.label}</option>
+                          ))}
                         </select>
                         <span className="ui-selectonemenu-arrow">▼</span>
                       </div>
@@ -524,9 +570,14 @@ function TaxCollectionContent() {
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">CheckPost Name</label>
                       </div>
-                      <input type="text" className="ui-inputtext"
-                        value={checkpostName} onChange={(e) => setCheckpostName(e.target.value.toUpperCase())}
-                        maxLength={80} autoComplete="off" placeholder="e.g. RAXAUL CHECKPOST" />
+                      <div className="ui-selectonemenu">
+                        <select value={checkpostName} onChange={(e) => setCheckpostName(e.target.value)}>
+                          {CHECKPOST_OPTIONS.map((c) => (
+                            <option key={c.value} value={c.value}>{c.label}</option>
+                          ))}
+                        </select>
+                        <span className="ui-selectonemenu-arrow">▼</span>
+                      </div>
                     </div>
                   </div>
 

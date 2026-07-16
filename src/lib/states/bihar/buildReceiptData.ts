@@ -106,10 +106,10 @@ export function buildBiharReceiptData(txn: TxnLike): ReceiptData {
     paymentInitDate:        txn.paymentInitDate || fmtDateWithSecs(paymentDate),
     paymentConfirmDate:     txn.paymentConfDate || fmtDateWithSecs(paymentDate),
     printedOnDate:          txn.printedOn      || fmtDateWithSecs(paymentDate),
-    cap1Label: (String(txn.vehicleType || '')).toUpperCase() === 'GOODS VEHICLE' ? 'Gross Vehicle\nWt(In. Kg)' : 'Seating\nCapacity',
-    cap2Label: (String(txn.vehicleType || '')).toUpperCase() === 'GOODS VEHICLE' ? 'Unladen\nWt(In Kg.)' : 'Sleeper Cap',
-    cap1Value: (String(txn.vehicleType || '')).toUpperCase() === 'GOODS VEHICLE' ? (Number((br.brGrossVehicleWt as string) || '0') || 0) : (Number(txn.seatingCap) || 0),
-    cap2Value: (String(txn.vehicleType || '')).toUpperCase() === 'GOODS VEHICLE' ? (Number((br.brUnladenWt as string) || '0') || 0) : (Number(txn.sleeperCap) || 0),
+    cap1Label: (String(txn.vehicleCategory || '')).toUpperCase() === 'GOODS VEHICLE' ? 'Gross Vehicle\nWt(In. Kg)' : 'Seating\nCapacity',
+    cap2Label: (String(txn.vehicleCategory || '')).toUpperCase() === 'GOODS VEHICLE' ? 'Unladen\nWt(In Kg.)' : 'Sleeper Cap',
+    cap1Value: (String(txn.vehicleCategory || '')).toUpperCase() === 'GOODS VEHICLE' ? (Number((br.brGrossVehicleWt as string) || '0') || 0) : (Number(txn.seatingCap) || 0),
+    cap2Value: (String(txn.vehicleCategory || '')).toUpperCase() === 'GOODS VEHICLE' ? (Number((br.brUnladenWt as string) || '0') || 0) : (Number(txn.sleeperCap) || 0),
   };
 }
 
