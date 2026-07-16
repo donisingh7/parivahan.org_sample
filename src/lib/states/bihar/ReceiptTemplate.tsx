@@ -154,21 +154,23 @@ export default function BiharReceiptTemplate({ data }: { data: ReceiptData }) {
     : printedOn;
 
   return (
-    <div
-      id="bihar-receipt"
-      style={{
-        position: "relative",
-        maxWidth: "800px",
-        margin: "0 auto",
-        background: "#fff",
-        padding: "20px 28px 24px",
-        fontFamily: "Arial, sans-serif",
-        color: "#000",
-        fontSize: "12px",
-        boxSizing: "border-box",
-        minHeight: "1100px",
-      }}
-    >
+    <div id="bihar-receipt" style={{ fontFamily: "Arial, sans-serif", color: "#000" }}>
+
+      {/* ══════════════════ PAGE 1 — header + field grid ══════════════════ */}
+      <div
+        style={{
+          position: "relative",
+          maxWidth: "800px",
+          margin: "0 auto",
+          background: "#fff",
+          padding: "20px 28px 24px",
+          fontFamily: "Arial, sans-serif",
+          color: "#000",
+          fontSize: "12px",
+          boxSizing: "border-box",
+          minHeight: "1100px",
+        }}
+      >
       <EmblemWatermark />
       <Watermark text={`${data.registrationNo} / ${initDateHHMM}`} />
 
@@ -269,6 +271,25 @@ export default function BiharReceiptTemplate({ data }: { data: ReceiptData }) {
           </tbody>
         </table>
       </div>
+      {/* Page 1 ends here — the tax table has moved to page 2, so the rest
+          of page 1 below the field grid is intentionally left blank. */}
+      </div>
+
+      {/* ══════════════════ PAGE 2 — tax table, totals, notes, QR note ══════════════════ */}
+      <div
+        style={{
+          position: "relative",
+          maxWidth: "800px",
+          margin: "0 auto",
+          background: "#fff",
+          padding: "20px 28px 24px",
+          fontFamily: "Arial, sans-serif",
+          color: "#000",
+          fontSize: "12px",
+          boxSizing: "border-box",
+          borderTop: "2px dashed #ccc",
+        }}
+      >
 
       {/* Tax table */}
       <div
@@ -320,6 +341,7 @@ export default function BiharReceiptTemplate({ data }: { data: ReceiptData }) {
 
       <div style={{ position: "relative", zIndex: 1, marginTop: "10px", fontSize: "12px", fontWeight: 700 }}>
         Scan the QR code for genuinity of the receipt.
+      </div>
       </div>
     </div>
   );

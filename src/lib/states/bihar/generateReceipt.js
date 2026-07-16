@@ -273,29 +273,31 @@ async function generateReceipt(data) {
   drawField('Payment\nConfirmation\nDate',        data.paymentConfirmDate || '-',            col2X, y);
   y += fh2 * 1.3;
 
-  y += 16;
+  // Page 1 ends here — the tax table has moved to page 2, so the rest of
+  // page 1 below the fields is intentionally left blank.
+
+  // =========================================================
+  // PAGE 2 — Tax Table, Grand Total, Notes, Terms, QR note
+  // =========================================================
+  doc.addPage();
+  let y2 = margin + 10;
 
   // =====================================================
   // TAX TABLE
   // =====================================================
   const taxItems    = data.taxItems || [];
-  const tableStartY = y;
+  const tableStartY = y2;
 
-  y = drawTableHeader(doc, y);
-  doc.moveTo(margin - 2, y).lineTo(pageWidth - margin + 2, y).lineWidth(0.5).stroke(borderColor);
+  y2 = drawTableHeader(doc, y2);
+  doc.moveTo(margin - 2, y2).lineTo(pageWidth - margin + 2, y2).lineWidth(0.5).stroke(borderColor);
 
   taxItems.forEach((item) => {
-    y = drawTableRow(doc, item, y);
-    doc.moveTo(margin - 2, y).lineTo(pageWidth - margin + 2, y).lineWidth(0.5).stroke(borderColor);
+    y2 = drawTableRow(doc, item, y2);
+    doc.moveTo(margin - 2, y2).lineTo(pageWidth - margin + 2, y2).lineWidth(0.5).stroke(borderColor);
   });
 
-  drawTableBorders(doc, tableStartY, y);
-
-  // =========================================================
-  // PAGE 2 — Grand Total, Notes, Terms, QR note
-  // =========================================================
-  doc.addPage();
-  let y2 = margin + 10;
+  drawTableBorders(doc, tableStartY, y2);
+  y2 += 16;
 
   doc.fontSize(11).font('Helvetica-Bold').fillColor('#000000');
   doc.text(`Grand Total : ${grandTotal}/- ${grandTotalWords} Rupees Only`, margin, y2);
