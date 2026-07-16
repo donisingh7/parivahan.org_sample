@@ -75,7 +75,7 @@ export function buildMaharashtraReceiptData(txn: TxnLike): ReceiptData {
     amount,
     amountInWords:   numberToWords(amount),
     taxItems: [
-      { particular: `MV Tax(${taxFromLabel} To ${taxToLabel})`, fees: mvTax,     fine: 0, total: mvTax     },
+      { particular: `MV Tax(${taxFromLabel.toUpperCase()} TO ${taxToLabel.toUpperCase()})`, fees: mvTax,     fine: 0, total: mvTax     },
       { particular: "Permit fee",                               fees: permitFee, fine: 0, total: permitFee },
     ],
     // MH-specific string weight fields

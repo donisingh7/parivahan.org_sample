@@ -184,7 +184,7 @@ async function generateReceipt(data) {
   y += fieldLineHeight;
 
   // Row 3
-  drawField('Payment Init Date', data.paymentInitDate || '-', col1X, y);
+  drawField('Payment Init Date', initDateHHMM || '-', col1X, y);
   y += fieldLineHeight;
 
   // Row 4
@@ -232,30 +232,43 @@ async function generateReceipt(data) {
   y += fieldLineHeight * 1.5;
 
   // -- Tax table -------------------------------------------------------------
-  doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(1).stroke('#000000');
+  doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(0.5).stroke('#000000');
   y += 4;
 
   const col = { particular: margin, fees: 350, fine: 440, total: 510 };
 
-  doc.fontSize(10.5).font('Helvetica-Bold').fillColor('#000000');
+  doc.fontSize(9).font('Helvetica-Bold').fillColor('#000000');
   doc.text('Particular', col.particular, y);
   doc.text('Fees/Tax',   col.fees,       y);
   doc.text('Fine',       col.fine,       y);
   doc.text('Total',      col.total,      y);
-  y += 13;
+  y += 10;
 
   doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(0.5).stroke('#000000');
+
+  // White rectangle behind the whole row area so the tiled watermark is
+  // fully hidden under every row, not just the header.
+  const taxItems = data.taxItems || [];
+  doc.save();
+  doc.fillColor('#ffffff');
+  doc.rect(margin, y, contentWidth, (taxItems.length * 12) + 5).fill();
+  doc.restore();
+
   y += 5;
 
-  doc.font('Helvetica').fontSize(10.5);
-  const taxItems = data.taxItems || [];
-  for (const item of taxItems) {
+  doc.font('Helvetica').fontSize(9).fillColor('#000000');
+  taxItems.forEach((item, index) => {
     doc.text(item.particular, col.particular, y, { width: col.fees - col.particular - 10 });
     doc.text(String(item.fees  ?? 0), col.fees,  y);
     doc.text(String(item.fine  ?? 0), col.fine,  y);
     doc.text(String(item.total ?? 0), col.total, y);
-    y += 14;
-  }
+    y += 12;
+
+    // Separator only between rows — not after the last one.
+    if (index < taxItems.length - 1) {
+      doc.moveTo(margin, y - 3).lineTo(pageWidth - margin, y - 3).lineWidth(0.5).stroke('#000000');
+    }
+  });
 
   doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(0.5).stroke('#000000');
   y += 18;

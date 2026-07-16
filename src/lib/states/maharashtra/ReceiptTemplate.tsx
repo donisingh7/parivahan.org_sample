@@ -219,7 +219,7 @@ export default function MaharashtraReceiptTemplate({ data }: { data: ReceiptData
               <FieldCell label="Receipt No."  value={data.receiptNo} span={2} />
             </tr>
             <tr>
-              <FieldCell label="Payment Init Date" value={data.paymentInitDate} span={2} />
+              <FieldCell label="Payment Init Date" value={initDateHHMM} span={2} />
             </tr>
             <tr>
               <FieldCell label="Owner Name" value={data.ownerName} span={2} />

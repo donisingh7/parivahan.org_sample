@@ -309,7 +309,7 @@ function TaxCollectionContent() {
     setPdfLoading(true);
     try {
       const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, state: STATE_CODE, visitingState: STATE_CODE, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleClass, checkpostName, taxMode, serviceType, mhLadenWeight, mhUnladenWeight, paymentMethod, permitType, mhMvTax: parseFloat(mvTax)||0, mhPermitFee: parseFloat(permitFee)||0, taxFrom, taxTo, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`, noOfPeriods:1, seatingCap, sleeperCap, paymentInitDate: paymentInitDateInput || nowIST(), printedOn: printedOnInput }) });
+        body: JSON.stringify({ transactionId, state: STATE_CODE, visitingState: STATE_CODE, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleClass, checkpostName, taxMode, serviceType, mhLadenWeight, mhUnladenWeight, paymentMethod, permitType, mhMvTax: parseFloat(mvTax)||0, mhPermitFee: parseFloat(permitFee)||0, taxFrom, taxTo, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: String(Math.floor(Math.random()*900000000000+100000000000)), noOfPeriods:1, seatingCap, sleeperCap, paymentInitDate: paymentInitDateInput || nowIST(), printedOn: printedOnInput }) });
       const json = await res.json().catch(()=>({}));
       if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
       const savedId = json.transactionId || transactionId;
