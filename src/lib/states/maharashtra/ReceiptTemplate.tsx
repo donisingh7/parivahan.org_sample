@@ -147,6 +147,12 @@ const valueStyle: React.CSSProperties = {
 // -- Main Receipt -----------------------------------------------------------
 
 export default function MaharashtraReceiptTemplate({ data }: { data: ReceiptData }) {
+  const printedOn = data.printedOnDate || data.paymentDateText || "-";
+  // Watermark uses Payment Init date at HH:MM precision (strip seconds).
+  const initDateHHMM = data.paymentInitDate
+    ? data.paymentInitDate.replace(/(\d{2}:\d{2}):\d{2}/, "$1")
+    : printedOn;
+
   return (
     <div
       id="maharashtra-receipt"
@@ -164,7 +170,7 @@ export default function MaharashtraReceiptTemplate({ data }: { data: ReceiptData
       }}
     >
       <EmblemWatermark />
-      <Watermark text={`${data.registrationNo} / ${data.paymentDateText}`} />
+      <Watermark text={`${data.registrationNo} / ${initDateHHMM}`} />
 
       {/* Header */}
       <div
@@ -194,7 +200,7 @@ export default function MaharashtraReceiptTemplate({ data }: { data: ReceiptData
           <div style={{ fontSize: "13px", marginTop: "2px" }}>{maharashtraConfig.deptLabel}</div>
           <div style={{ fontSize: "12px", marginTop: "2px" }}>{maharashtraConfig.receiptTitle}</div>
           <div style={{ fontSize: "9px", marginTop: "6px", color: "#555" }}>
-            <strong>Printed on :</strong> {data.paymentDateText}
+            <strong>Printed on :</strong> {printedOn}
           </div>
         </div>
 
@@ -213,7 +219,7 @@ export default function MaharashtraReceiptTemplate({ data }: { data: ReceiptData
               <FieldCell label="Receipt No."  value={data.receiptNo} span={2} />
             </tr>
             <tr>
-              <FieldCell label="Payment Date" value={data.paymentDateText} span={2} />
+              <FieldCell label="Payment Init Date" value={data.paymentInitDate} span={2} />
             </tr>
             <tr>
               <FieldCell label="Owner Name" value={data.ownerName} span={2} />

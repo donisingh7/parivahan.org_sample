@@ -8,6 +8,7 @@
 
 import {
   fmtPaymentDate,
+  fmtTaxDate,
   maskChassis,
   maskMobile,
   maskName,
@@ -16,6 +17,22 @@ import {
 } from "../shared/masking";
 import { numberToWords } from "../shared/numberToWords";
 import type { ReceiptData, TxnLike } from "../types";
+
+// Always render in IST (UTC+5:30) regardless of server timezone. Used for
+// auto Payment Init / Printed-On fallbacks.
+function fmtDateWithSecs(d: Date): string {
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const ist = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+  const dd  = String(ist.getUTCDate()).padStart(2, "0");
+  const mon = MONTHS[ist.getUTCMonth()];
+  const yy  = ist.getUTCFullYear();
+  let   hh  = ist.getUTCHours();
+  const mm  = String(ist.getUTCMinutes()).padStart(2, "0");
+  const ss  = String(ist.getUTCSeconds()).padStart(2, "0");
+  const ap  = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12 || 12;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
+}
 
 export function buildMaharashtraReceiptData(txn: TxnLike): ReceiptData {
   const amount       = Number(txn.amount)    || 0;
@@ -28,11 +45,18 @@ export function buildMaharashtraReceiptData(txn: TxnLike): ReceiptData {
   const mvTax     = Number(mh.mhMvTax)    || 0;
   const permitFee = Number(mh.mhPermitFee) || 0;
 
+  // MV Tax row shows the tax period the user picked, e.g.
+  // "MV Tax(13-JUL-2026 To 15-JUL-2026)".
+  const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null);
+  const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null);
+
   return {
     registrationNo:  txn.vehicleNo    || "-",
     receiptNo,
     paymentDate:     paymentDate.toISOString(),
     paymentDateText,
+    paymentInitDate: txn.paymentInitDate || fmtDateWithSecs(paymentDate),
+    printedOnDate:   txn.printedOn      || fmtDateWithSecs(paymentDate),
     ownerName:       maskName(txn.ownerName   ?? ""),
     chassisNo:       maskChassis(txn.chassisNo ?? ""),
     mobileNo:        maskMobile(txn.mobileNo   ?? ""),
@@ -42,8 +66,8 @@ export function buildMaharashtraReceiptData(txn: TxnLike): ReceiptData {
     permitType:      resolveLabel(PERMIT_TYPE_LABELS, txn.permitType ?? ""),
     permitCategory:  "",
     checkpostName:   txn.checkpostName || "-",
-    sleeperCap:      0,
-    seatingCapacity: 0,
+    sleeperCap:      Number(txn.sleeperCap) || 0,
+    seatingCapacity: Number(txn.seatingCap) || 0,
     bankRefNo:       txn.orderRef      || "-",
     paymentMode:     txn.paymentMethod || "ONLINE",
     serviceType:     txn.serviceType   || "NOT APPLICABLE",
@@ -51,8 +75,8 @@ export function buildMaharashtraReceiptData(txn: TxnLike): ReceiptData {
     amount,
     amountInWords:   numberToWords(amount),
     taxItems: [
-      { particular: "MV Tax",     fees: mvTax,     fine: 0, total: mvTax     },
-      { particular: "Permit fee", fees: permitFee, fine: 0, total: permitFee },
+      { particular: `MV Tax(${taxFromLabel} To ${taxToLabel})`, fees: mvTax,     fine: 0, total: mvTax     },
+      { particular: "Permit fee",                               fees: permitFee, fine: 0, total: permitFee },
     ],
     // MH-specific string weight fields
     ladenWeight:    (mh.mhLadenWeight   as string) || "-",

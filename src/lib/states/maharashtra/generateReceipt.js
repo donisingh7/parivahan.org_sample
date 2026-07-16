@@ -3,6 +3,7 @@
  * Returns a Buffer so it plugs into the existing S3-upload pipeline.
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const PDFDocument = require('pdfkit');
 const QRCode      = require('qrcode');
 const moment      = require('moment');
@@ -57,11 +58,16 @@ async function generateQRCode(text) {
 // -- Main Generator ---------------------------------------------------------
 async function generateReceipt(data) {
   const now = moment(data.paymentDate || new Date());
-  const printedDateTime = now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
-  const formattedDate   = now.format('DD-MMM-YYYY hh:mm A').toUpperCase();
-
-  const registrationNo = data.registrationNo || 'XX00X0000';
-  const watermarkText  = `${registrationNo} / ${formattedDate}`;
+  // Receipt Printing Date — prefer upstream value; fall back to current time.
+  const printedDateTime = data.printedOnDate || now.format('DD-MMM-YYYY hh:mm:ss A').toUpperCase();
+  const registrationNo  = data.registrationNo || 'XX00X0000';
+  // Watermark uses Payment Init date at HH:MM (no seconds, non-padded hour).
+  const initDateHHMM = data.paymentInitDate
+    ? String(data.paymentInitDate).replace(
+        /^(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{1,2}):(\d{2}):\d{2}\s+(AM|PM)$/i,
+        (_m, d, h, mm, ap) => `${d} ${parseInt(h, 10)}:${mm} ${ap}`)
+    : now.format('DD-MMM-YYYY hh:mm A').toUpperCase();
+  const watermarkText  = `${registrationNo} / ${initDateHHMM}`;
 
   const grandTotal      = (data.taxItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
   const grandTotalWords = numberToWords(grandTotal);
@@ -102,21 +108,21 @@ async function generateReceipt(data) {
   // -- Watermark image --------------------------------------------------------
   const wmBuffer = await loadGreyscaleImage(logoPath);
   if (wmBuffer) {
-    const wmWidth  = 220;
-    const wmHeight = 210;
+    const wmWidth  = 205;
+    const wmHeight = 185;
     const wmX = (pageWidth - wmWidth) / 2 + 5;
-    const wmY = ((pageHeight - wmHeight) / 2) - 35;
+    const wmY = ((pageHeight - wmHeight) / 2) - 48;
     doc.save();
-    doc.opacity(0.62);
+    doc.opacity(0.7);
     doc.image(wmBuffer, wmX - 10, wmY - 230, { width: wmWidth, height: wmHeight });
     doc.restore();
   }
 
   // -- Text watermark (tiled) ------------------------------------------------
   doc.save();
-  doc.opacity(0.5);
-  doc.fontSize(14).fillColor('#cccccc').font('Helvetica');
-  for (let row = 0; row < 21; row++) {
+  doc.opacity(0.3);
+  doc.fontSize(14).fillColor('#555555').font('Helvetica');
+  for (let row = 0; row < 19; row++) {
     const rowY = (row * 20) + 20;
     doc.text(`${watermarkText},  `.repeat(2), 30, rowY, { width: pageWidth, lineBreak: false });
   }
@@ -136,11 +142,11 @@ async function generateReceipt(data) {
   doc.text('GOVERNMENT OF MAHARASHTRA', titleX, y + 2,
     { width: titleWidth, align: 'center', underline: true });
 
-  doc.fontSize(14).font('Helvetica');
+  doc.fontSize(11).font('Helvetica-Bold');
   doc.text('Department of Transport', titleX, y + 13 + 5 + 3,
     { width: titleWidth, align: 'center' });
 
-  doc.fontSize(12).font('Helvetica');
+  doc.fontSize(10).font('Helvetica-Bold');
   doc.text('Checkpost Tax e-Receipt', titleX, y + 27 + 5 + 5 + 2,
     { width: titleWidth, align: 'center' });
 
@@ -178,7 +184,7 @@ async function generateReceipt(data) {
   y += fieldLineHeight;
 
   // Row 3
-  drawField('Payment Date', formattedDate, col1X, y);
+  drawField('Payment Init Date', data.paymentInitDate || '-', col1X, y);
   y += fieldLineHeight;
 
   // Row 4
