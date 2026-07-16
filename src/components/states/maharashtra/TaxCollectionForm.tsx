@@ -269,6 +269,8 @@ function TaxCollectionContent() {
       serviceType,
       mhLadenWeight,
       mhUnladenWeight,
+      seatingCap,
+      sleeperCap,
       paymentMethod,
       permitType,
       mhMvTax:    mvTax     || "0",
