@@ -50,13 +50,25 @@ const allStates = [
 ];
 
 const VEHICLE_TYPE_OPTIONS = [
-  { value: "",                                     label: "-- Select Vehicle Type --" },
+  { value: "",               label: "-- Select Vehicle Type --" },
+  { value: "TRANSPORT",      label: "TRANSPORT" },
+  { value: "NOT APPLICABLE", label: "NOT APPLICABLE" },
+];
+
+const VEHICLE_CATEGORY_OPTIONS = [
+  { value: "",                                     label: "-- Select Vehicle Category --" },
   { value: "CONTRACT CARRIAGE/PASSENGER VEHICLES", label: "CONTRACT CARRIAGE/PASSENGER VEHICLES" },
   { value: "PRIVATE SERVICE VEHICLE",              label: "PRIVATE SERVICE VEHICLE" },
   { value: "GOODS VEHICLE",                        label: "GOODS VEHICLE" },
   { value: "STAGE CARRIAGE",                       label: "STAGE CARRIAGE" },
   { value: "CONSTRUCTION EQUIPMENT VEHICLE",       label: "CONSTRUCTION EQUIPMENT VEHICLE" },
   { value: "TEMPORARY REGISTERED VEHICLE",         label: "TEMPORARY REGISTERED VEHICLE" },
+];
+
+const CHECKPOST_OPTIONS = [
+  "ICHCHAPURAM", "JEELUGUMILLI", "PANCHALINGALA", "PENUKONDA", "SUNNIPENTA",
+  "THIRUVURU", "GARIKAPADU", "PALAMANERU", "TADA", "BV PALEM",
+  "RENIGUNTA", "NARAHARIPET", "DACHEPALLI", "MACHARLA", "BENDAPUDI",
 ];
 
 const TAX_ROW_NAMES = [
@@ -372,7 +384,7 @@ function TaxCollectionContent() {
     }
   };
 
-  const isGoodsVehicle = vehicleType === "GOODS VEHICLE";
+  const isGoodsVehicle = vehicleCategory === "GOODS VEHICLE";
 
   return (
     <div id="masterlaoyoutbody">
@@ -618,11 +630,16 @@ function TaxCollectionContent() {
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel">Vehicle Category</label>
+                        <label className="ui-outputlabel field-label-mandate">Vehicle Category</label>
                       </div>
-                      <input type="text" className="ui-inputtext" value={vehicleCategory}
-                        onChange={(e) => setVehicleCategory(e.target.value.toUpperCase())}
-                        maxLength={50} autoComplete="off" placeholder="e.g. HEAVY GOODS" />
+                      <div className="ui-selectonemenu">
+                        <select value={vehicleCategory} onChange={(e) => setVehicleCategory(e.target.value)}>
+                          {VEHICLE_CATEGORY_OPTIONS.map((c) => (
+                            <option key={c.value} value={c.value}>{c.label}</option>
+                          ))}
+                        </select>
+                        <span className="ui-selectonemenu-arrow">▼</span>
+                      </div>
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
@@ -649,7 +666,11 @@ function TaxCollectionContent() {
                       </div>
                       <input type="text" className="ui-inputtext" value={checkpostName}
                         onChange={(e) => setCheckpostName(e.target.value.toUpperCase())}
-                        maxLength={80} autoComplete="off" placeholder="e.g. KRISHNAPATNAM PORT" />
+                        maxLength={80} autoComplete="off" placeholder="Select or type a checkpost"
+                        list="ap-checkpost-options" />
+                      <datalist id="ap-checkpost-options">
+                        {CHECKPOST_OPTIONS.map((c) => <option key={c} value={c} />)}
+                      </datalist>
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
