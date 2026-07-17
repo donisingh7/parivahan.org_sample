@@ -244,15 +244,17 @@ async function generateReceipt(data) {
   doc.text('Total',      col.total,      y);
   y += 10;
 
-  doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(0.5).stroke('#000000');
-
   // White rectangle behind the whole row area so the tiled watermark is
-  // fully hidden under every row, not just the header.
+  // fully hidden under every row, not just the header. Drawn BEFORE the
+  // separator line below so the line paints on top of the fill instead of
+  // being erased by it.
   const taxItems = data.taxItems || [];
   doc.save();
   doc.fillColor('#ffffff');
   doc.rect(margin, y, contentWidth, (taxItems.length * 12) + 5).fill();
   doc.restore();
+
+  doc.moveTo(margin, y).lineTo(pageWidth - margin, y).lineWidth(0.5).stroke('#000000');
 
   y += 5;
 
