@@ -5,6 +5,7 @@ import RajasthanForm       from "@/components/states/rajasthan/TaxCollectionForm
 import BiharForm           from "@/components/states/bihar/TaxCollectionForm";
 import AndhraPradeshForm   from "@/components/states/andhrapradesh/TaxCollectionForm";
 import MaharashtraForm     from "@/components/states/maharashtra/TaxCollectionForm";
+import GujaratForm         from "@/components/states/gujarat/TaxCollectionForm";
 import JharkhandForm       from "@/components/states/jharkhand/TaxCollectionForm";
 import PunjabForm          from "@/components/states/punjab/TaxCollectionForm";
 import UttarPradeshForm    from "@/components/states/uttarpradesh/TaxCollectionForm";
@@ -29,6 +30,7 @@ const FORM_COMPONENTS: Record<StateCode, ComponentType> = {
   BR: BiharForm,
   AP: AndhraPradeshForm,
   MH: MaharashtraForm,
+  GJ: GujaratForm,
   JH: JharkhandForm,
   PB: PunjabForm,
   UP: UttarPradeshForm,

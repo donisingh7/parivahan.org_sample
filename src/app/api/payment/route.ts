@@ -85,6 +85,8 @@ export async function POST(req: NextRequest) {
       brGrossVehicleWt, brUnladenWt, brFitnessValidity, brInsuranceValidity, brPuccValidity,
       // ── Maharashtra-specific ─────────────────────────────────────────
       mhLadenWeight, mhUnladenWeight, mhMvTax, mhPermitFee,
+      // ── Gujarat-specific ─────────────────────────────────────────────
+      gjLadenWeight, gjUnladenWeight, gjMvTax, gjPermitFee, gjMakerStatus,
     } = body;
 
     const missing: string[] = [];
@@ -201,6 +203,11 @@ export async function POST(req: NextRequest) {
       mhUnladenWeight:        mhUnladenWeight        ?? "",
       mhMvTax:                Number(mhMvTax)         || 0,
       mhPermitFee:            Number(mhPermitFee)     || 0,
+      gjLadenWeight:          gjLadenWeight          ?? "",
+      gjUnladenWeight:        gjUnladenWeight        ?? "",
+      gjMvTax:                Number(gjMvTax)         || 0,
+      gjPermitFee:            Number(gjPermitFee)     || 0,
+      gjMakerStatus:          gjMakerStatus          ?? "",
     });
 
     // ── Upsert VehicleCache with grey-field values ────────────────────────
@@ -209,8 +216,8 @@ export async function POST(req: NextRequest) {
     // a single grossVehicleWt / unladenWt pair covers all states.
     try {
       const normVehicleNo = String(vehicleNo).toUpperCase().trim();
-      const resolvedGvw  = String(grossVehicleWt  || jhGrossVehicleWt  || brGrossVehicleWt  || mhLadenWeight  || "");
-      const resolvedUwt  = String(unladenWt        || jhUnladenWt       || brUnladenWt       || mhUnladenWeight || "");
+      const resolvedGvw  = String(grossVehicleWt  || jhGrossVehicleWt  || brGrossVehicleWt  || mhLadenWeight  || gjLadenWeight  || "");
+      const resolvedUwt  = String(unladenWt        || jhUnladenWt       || brUnladenWt       || mhUnladenWeight || gjUnladenWeight || "");
       await VehicleCache.findOneAndUpdate(
         { vehicleNo: normVehicleNo },
         {

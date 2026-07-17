@@ -20,6 +20,7 @@ export type StateCode =
   | "BR" // Bihar
   | "AP" // Andhra Pradesh
   | "MH" // Maharashtra
+  | "GJ" // Gujarat
   | "JH" // Jharkhand
   | "PB" // Punjab
   | "UP" // Uttar Pradesh
@@ -73,6 +74,7 @@ export interface ReceiptData {
   vehicleClass:    string;
   permitType:      string;
   permitCategory:  string;
+  makerStatus?:    string;   // Gujarat-specific — blank or "INDIAN"
   checkpostName:   string;
   sleeperCap:      number;
   seatingCapacity: number;
@@ -130,7 +132,7 @@ export interface ReceiptData {
   unladenWeight?:          string;
 }
 
-// Loose Mongo doc shape — both lean()'d documents and POJOs work for the
+// Loose Mongo doc shape — GJ reuses ladenWeight/unladenWeight above. — both lean()'d documents and POJOs work for the
 // per-state buildReceiptData functions. Each state's buildReceiptData reads
 // only the subset it cares about; unknown fields are silently ignored.
 export interface TxnLike {
@@ -201,6 +203,12 @@ export interface TxnLike {
   mhUnladenWeight?:        string;
   mhMvTax?:                number;
   mhPermitFee?:            number;
+  // Gujarat-specific string weight / tax / maker-status fields
+  gjLadenWeight?:          string;
+  gjUnladenWeight?:        string;
+  gjMvTax?:                number;
+  gjPermitFee?:            number;
+  gjMakerStatus?:          string;
 }
 
 // ── State module — the contract every state folder must satisfy. ────────────
@@ -255,6 +263,7 @@ export interface GenerateReceiptInput {
   serviceType:     string;
   permitType:      string;
   permitCategory:  string;
+  makerStatus?:    string;   // Gujarat-specific — blank or "INDIAN"
   qrUrl:           string;
   taxItems:        TaxItem[];
   // Optional state-specific extras — generator reads what it needs.
@@ -376,6 +385,12 @@ export interface TransactionDoc {
   mhUnladenWeight?:     string;
   mhMvTax?:             number;
   mhPermitFee?:         number;
+  // Gujarat-specific
+  gjLadenWeight?:       string;
+  gjUnladenWeight?:     string;
+  gjMvTax?:             number;
+  gjPermitFee?:         number;
+  gjMakerStatus?:       string;
 }
 
 // Re-export Schema for convenience in shared/baseSchema consumers.

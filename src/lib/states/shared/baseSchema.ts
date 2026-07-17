@@ -125,6 +125,12 @@ export function createTransactionSchema(): Schema<TransactionDoc> {
       // Maharashtra-specific tax split fields
       mhMvTax:            { type: Number, default: 0 },
       mhPermitFee:        { type: Number, default: 0 },
+      // Gujarat-specific string weight / tax split / maker-status fields
+      gjLadenWeight:      { type: String, default: "" },
+      gjUnladenWeight:    { type: String, default: "" },
+      gjMvTax:            { type: Number, default: 0 },
+      gjPermitFee:        { type: Number, default: 0 },
+      gjMakerStatus:      { type: String, default: "" },
     },
     { timestamps: true }
   );

@@ -12,6 +12,7 @@ import { rajasthanConfig }       from "./rajasthan/config";
 import { biharConfig }           from "./bihar/config";
 import { andhraPradeshConfig }   from "./andhrapradesh/config";
 import { maharashtraConfig }     from "./maharashtra/config";
+import { gujaratConfig }         from "./gujarat/config";
 import { jharkhandConfig }       from "./jharkhand/config";
 import { punjabConfig }          from "./punjab/config";
 import { uttarPradeshConfig }    from "./uttarpradesh/config";
@@ -24,6 +25,7 @@ export const STATE_CONFIGS: Record<StateCode, StateConfig> = {
   BR: biharConfig,
   AP: andhraPradeshConfig,
   MH: maharashtraConfig,
+  GJ: gujaratConfig,
   JH: jharkhandConfig,
   PB: punjabConfig,
   UP: uttarPradeshConfig,
@@ -36,7 +38,7 @@ export const STATE_CONFIGS: Record<StateCode, StateConfig> = {
  * Fixed iteration order for the dropdown — Rajasthan first (the original
  * state) then alphabetical so newly added states slot in predictably.
  */
-const ORDER: StateCode[] = ["RJ", "AP", "BR", "HR", "HP", "JH", "MH", "PB", "UP", "UK"];
+const ORDER: StateCode[] = ["RJ", "AP", "BR", "GJ", "HR", "HP", "JH", "MH", "PB", "UP", "UK"];
 
 export function listSupportedStates(): StateConfig[] {
   return ORDER.map((c) => STATE_CONFIGS[c]);

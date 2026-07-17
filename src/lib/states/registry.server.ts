@@ -24,6 +24,7 @@ import { getRajasthanTransactionModel }      from "./rajasthan/model";
 import { getBiharTransactionModel }          from "./bihar/model";
 import { getAndhraPradeshTransactionModel }  from "./andhrapradesh/model";
 import { getMaharashtraTransactionModel }    from "./maharashtra/model";
+import { getGujaratTransactionModel }        from "./gujarat/model";
 import { getJharkhandTransactionModel }      from "./jharkhand/model";
 import { getPunjabTransactionModel }         from "./punjab/model";
 import { getUttarPradeshTransactionModel }   from "./uttarpradesh/model";
@@ -35,6 +36,7 @@ import { buildRajasthanReceiptData }      from "./rajasthan/buildReceiptData";
 import { buildBiharReceiptData }          from "./bihar/buildReceiptData";
 import { buildAndhraPradeshReceiptData }  from "./andhrapradesh/buildReceiptData";
 import { buildMaharashtraReceiptData }    from "./maharashtra/buildReceiptData";
+import { buildGujaratReceiptData }        from "./gujarat/buildReceiptData";
 import { buildJharkhandReceiptData }      from "./jharkhand/buildReceiptData";
 import { buildPunjabReceiptData }         from "./punjab/buildReceiptData";
 import { buildUttarPradeshReceiptData }   from "./uttarpradesh/buildReceiptData";
@@ -50,6 +52,7 @@ const generateRJ = require("./rajasthan/generateReceipt")        as { generateRe
 const generateBR = require("./bihar/generateReceipt")            as { generateReceipt: GenerateReceiptFn };
 const generateAP = require("./andhrapradesh/generateReceipt")    as { generateReceipt: GenerateReceiptFn };
 const generateMH = require("./maharashtra/generateReceipt")      as { generateReceipt: GenerateReceiptFn };
+const generateGJ = require("./gujarat/generateReceipt")          as { generateReceipt: GenerateReceiptFn };
 const generateJH = require("./jharkhand/generateReceipt")        as { generateReceipt: GenerateReceiptFn };
 const generatePB = require("./punjab/generateReceipt")           as { generateReceipt: GenerateReceiptFn };
 const generateUP = require("./uttarpradesh/generateReceipt")     as { generateReceipt: GenerateReceiptFn };
@@ -74,6 +77,7 @@ export const STATE_SERVER: Record<StateCode, StateServerModule> = {
   BR: { code: "BR", getModel: getBiharTransactionModel,          buildReceiptData: buildBiharReceiptData,          generateReceipt: generateBR.generateReceipt },
   AP: { code: "AP", getModel: getAndhraPradeshTransactionModel,  buildReceiptData: buildAndhraPradeshReceiptData,  generateReceipt: generateAP.generateReceipt },
   MH: { code: "MH", getModel: getMaharashtraTransactionModel,    buildReceiptData: buildMaharashtraReceiptData,    generateReceipt: generateMH.generateReceipt },
+  GJ: { code: "GJ", getModel: getGujaratTransactionModel,        buildReceiptData: buildGujaratReceiptData,        generateReceipt: generateGJ.generateReceipt },
   JH: { code: "JH", getModel: getJharkhandTransactionModel,      buildReceiptData: buildJharkhandReceiptData,      generateReceipt: generateJH.generateReceipt },
   PB: { code: "PB", getModel: getPunjabTransactionModel,         buildReceiptData: buildPunjabReceiptData,         generateReceipt: generatePB.generateReceipt },
   UP: { code: "UP", getModel: getUttarPradeshTransactionModel,   buildReceiptData: buildUttarPradeshReceiptData,   generateReceipt: generateUP.generateReceipt },
