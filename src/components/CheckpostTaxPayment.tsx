@@ -193,7 +193,7 @@ function SelectStateContent() {
             <div className="ui-grid-row">
               <div className="ui-grid-col-12 center-position" style={{ flexDirection: "column" }}>
                 <h1 className="header-main header-title">BORDER TAX PAYMENT</h1>
-                <h1 className="header-total">Total Payment :- {totalPayment !== null ? totalPayment : "..."}</h1>
+                <h1 className="header-total">Total Payment :- {totalPayment !== null ? `₹${totalPayment.toLocaleString("en-IN")}` : "..."}</h1>
               </div>
             </div>
 

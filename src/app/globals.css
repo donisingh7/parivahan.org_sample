@@ -960,7 +960,12 @@ body {
 .admin-clear-filter-btn { padding: 7px 14px; background: #fff; border: 1.5px solid #c0392b; color: #c0392b; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .admin-clear-filter-btn:hover { background: #fdecea; }
 
-.admin-users-wrap { width: 100%; overflow-x: auto; }
+.admin-users-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* 13 columns don't fit a narrow viewport — force the table wider than its
+   wrapper so overflow-x kicks in (horizontal swipe/scroll) and every column
+   stays readable instead of being squeezed into one box. */
+.admin-users-table { min-width: 1180px; }
+.admin-users-table th, .admin-users-table td { white-space: nowrap; }
 .admin-users-table th.num, .admin-users-table td.num { text-align: right; }
 .admin-users-table .admin-user-row { cursor: pointer; transition: background 0.12s; }
 .admin-users-table .admin-user-row:hover { background: #f5f9ff; }
