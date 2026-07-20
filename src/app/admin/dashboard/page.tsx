@@ -320,7 +320,7 @@ export default function AdminDashboard() {
 
   const selectedUser = users.find((u) => u.portalUserId === userFilter) ?? null;
 
-  const STATE_CODES = ["AP","BR","GJ","HR","HP","JH","MH","PB","RJ","UK","UP"];
+  const STATE_CODES = ["AP","BR","CG","GJ","HR","HP","JH","MH","MP","OR","PB","RJ","TS","UK","UP"];
 
   return (
     <div className="admin-page">

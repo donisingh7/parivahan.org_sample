@@ -87,6 +87,10 @@ export async function POST(req: NextRequest) {
       mhLadenWeight, mhUnladenWeight, mhMvTax, mhPermitFee,
       // ── Gujarat-specific ─────────────────────────────────────────────
       gjLadenWeight, gjUnladenWeight, gjMvTax, gjPermitFee, gjMakerStatus,
+      // ── Chhattisgarh-specific ────────────────────────────────────────
+      cgLadenWeight, cgUnladenWeight, cgMvTax, cgPermitFee,
+      // ── Telangana-specific ───────────────────────────────────────────
+      tsLadenWeight, tsUnladenWeight, tsMvTax, tsPermitFee,
     } = body;
 
     const missing: string[] = [];
@@ -208,6 +212,14 @@ export async function POST(req: NextRequest) {
       gjMvTax:                Number(gjMvTax)         || 0,
       gjPermitFee:            Number(gjPermitFee)     || 0,
       gjMakerStatus:          gjMakerStatus          ?? "",
+      cgLadenWeight:          cgLadenWeight          ?? "",
+      cgUnladenWeight:        cgUnladenWeight        ?? "",
+      cgMvTax:                Number(cgMvTax)         || 0,
+      cgPermitFee:            Number(cgPermitFee)     || 0,
+      tsLadenWeight:          tsLadenWeight          ?? "",
+      tsUnladenWeight:        tsUnladenWeight        ?? "",
+      tsMvTax:                Number(tsMvTax)         || 0,
+      tsPermitFee:            Number(tsPermitFee)     || 0,
     });
 
     // ── Upsert VehicleCache with grey-field values ────────────────────────
@@ -216,8 +228,8 @@ export async function POST(req: NextRequest) {
     // a single grossVehicleWt / unladenWt pair covers all states.
     try {
       const normVehicleNo = String(vehicleNo).toUpperCase().trim();
-      const resolvedGvw  = String(grossVehicleWt  || jhGrossVehicleWt  || brGrossVehicleWt  || mhLadenWeight  || gjLadenWeight  || "");
-      const resolvedUwt  = String(unladenWt        || jhUnladenWt       || brUnladenWt       || mhUnladenWeight || gjUnladenWeight || "");
+      const resolvedGvw  = String(grossVehicleWt  || jhGrossVehicleWt  || brGrossVehicleWt  || mhLadenWeight  || gjLadenWeight  || cgLadenWeight  || tsLadenWeight  || "");
+      const resolvedUwt  = String(unladenWt        || jhUnladenWt       || brUnladenWt       || mhUnladenWeight || gjUnladenWeight || cgUnladenWeight || tsUnladenWeight || "");
       await VehicleCache.findOneAndUpdate(
         { vehicleNo: normVehicleNo },
         {

@@ -131,6 +131,16 @@ export function createTransactionSchema(): Schema<TransactionDoc> {
       gjMvTax:            { type: Number, default: 0 },
       gjPermitFee:        { type: Number, default: 0 },
       gjMakerStatus:      { type: String, default: "" },
+      // Chhattisgarh-specific string weight / tax split fields
+      cgLadenWeight:      { type: String, default: "" },
+      cgUnladenWeight:    { type: String, default: "" },
+      cgMvTax:            { type: Number, default: 0 },
+      cgPermitFee:        { type: Number, default: 0 },
+      // Telangana-specific string weight / tax split fields
+      tsLadenWeight:      { type: String, default: "" },
+      tsUnladenWeight:    { type: String, default: "" },
+      tsMvTax:            { type: Number, default: 0 },
+      tsPermitFee:        { type: Number, default: 0 },
     },
     { timestamps: true }
   );

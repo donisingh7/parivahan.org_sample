@@ -21,6 +21,10 @@ export type StateCode =
   | "AP" // Andhra Pradesh
   | "MH" // Maharashtra
   | "GJ" // Gujarat
+  | "CG" // Chhattisgarh
+  | "TS" // Telangana
+  | "OR" // Odisha
+  | "MP" // Madhya Pradesh
   | "JH" // Jharkhand
   | "PB" // Punjab
   | "UP" // Uttar Pradesh
@@ -209,6 +213,16 @@ export interface TxnLike {
   gjMvTax?:                number;
   gjPermitFee?:            number;
   gjMakerStatus?:          string;
+  // Chhattisgarh-specific string weight / tax fields
+  cgLadenWeight?:          string;
+  cgUnladenWeight?:        string;
+  cgMvTax?:                number;
+  cgPermitFee?:            number;
+  // Telangana-specific string weight / tax fields
+  tsLadenWeight?:          string;
+  tsUnladenWeight?:        string;
+  tsMvTax?:                number;
+  tsPermitFee?:            number;
 }
 
 // ── State module — the contract every state folder must satisfy. ────────────
@@ -391,6 +405,16 @@ export interface TransactionDoc {
   gjMvTax?:             number;
   gjPermitFee?:         number;
   gjMakerStatus?:       string;
+  // Chhattisgarh-specific
+  cgLadenWeight?:       string;
+  cgUnladenWeight?:     string;
+  cgMvTax?:             number;
+  cgPermitFee?:         number;
+  // Telangana-specific
+  tsLadenWeight?:       string;
+  tsUnladenWeight?:     string;
+  tsMvTax?:             number;
+  tsPermitFee?:         number;
 }
 
 // Re-export Schema for convenience in shared/baseSchema consumers.

@@ -351,6 +351,10 @@ function generateReceiptNo(stateCode?: string, paymentInitDate?: string): string
   if (stateCode === "BR") return `BRT${yy}${mm}${dd}${rand}`;
   if (stateCode === "MH") return `MHT${yy}${mm}${dd}${rand}`;
   if (stateCode === "GJ") return `GJT${yy}${mm}${dd}${rand}`;
+  if (stateCode === "CG") return `CGT${yy}${mm}${dd}${rand}`;
+  if (stateCode === "TS") return `TST${yy}${mm}${dd}${rand}`;
+  if (stateCode === "OR") return `ORT${yy}${mm}${dd}${rand}`;
+  if (stateCode === "MP") return `MPR${yy}${mm}${dd}${rand}`;
   if (stateCode === "HP") return `HPR${yy}${mm}${dd}${rand}`;
   if (stateCode === "JH") return `JHR${yy}${mm}${dd}${rand}`;
   if (stateCode === "PB") return `PBR${yy}${mm}${dd}${rand}`;
@@ -480,6 +484,10 @@ function SBIContent() {
     else if (stateCode === "BR") orderRef = generateBRBankRef();
     else if (stateCode === "MH") orderRef = generateMHBankRef();
     else if (stateCode === "GJ") orderRef = generateMHBankRef();
+    else if (stateCode === "CG") orderRef = generateMHBankRef();
+    else if (stateCode === "TS") orderRef = generateMHBankRef();
+    else if (stateCode === "OR") orderRef = generateHRBankRef();
+    else if (stateCode === "MP") orderRef = generateMHBankRef();
     else if (stateCode === "JH") orderRef = String(Math.floor(Math.random() * 9000000000000 + 1000000000000));
     else if (stateCode === "UP") orderRef = generateUPBankRef();
     else if (stateCode === "HP")
