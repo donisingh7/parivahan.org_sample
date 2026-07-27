@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  DeleteObjectsCommand,
   S3ServiceException,
 } from "@aws-sdk/client-s3";
 
@@ -109,6 +110,31 @@ export async function receiptExists(key: string): Promise<boolean> {
     if ((err as { name?: string })?.name === "NotFound") return false;
     throw err;
   }
+}
+
+/**
+ * Deletes receipt PDFs from S3 in batches (S3 caps DeleteObjects at 1000 keys
+ * per request). Empty/blank keys are skipped. Returns the number of objects
+ * S3 confirmed deleted. Used by the admin "reset account" action.
+ */
+export async function deleteReceipts(keys: string[]): Promise<number> {
+  const valid = keys.filter((k) => k && k.trim().length > 0);
+  if (valid.length === 0) return 0;
+  let deleted = 0;
+  for (let i = 0; i < valid.length; i += 1000) {
+    const batch = valid.slice(i, i + 1000).map((Key) => ({ Key }));
+    const out = await client().send(
+      new DeleteObjectsCommand({
+        Bucket: bucket(),
+        Delete: { Objects: batch, Quiet: false },
+      })
+    );
+    deleted += (out.Deleted ?? []).length;
+    if (out.Errors && out.Errors.length > 0) {
+      console.error("[s3] deleteReceipts errors:", JSON.stringify(out.Errors));
+    }
+  }
+  return deleted;
 }
 
 /**

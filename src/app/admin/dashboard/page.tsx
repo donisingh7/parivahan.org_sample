@@ -340,6 +340,45 @@ export default function AdminDashboard() {
     }
   };
 
+  // ── Reset account (family / test users) — irreversible ────────────────────
+  const [resetModalUser, setResetModalUser] = useState<string | null>(null);
+  const [resetDelTxns,     setResetDelTxns]     = useState(true);
+  const [resetDelReceipts, setResetDelReceipts] = useState(true);
+  const [resetSaving,      setResetSaving]      = useState(false);
+  const [resetMsg,         setResetMsg]         = useState<{ ok: boolean; text: string } | null>(null);
+  const resetTargetRow = users.find((u) => u.portalUserId === resetModalUser) ?? null;
+
+  const openResetModal = (loginId: string) => {
+    setResetModalUser(loginId); setResetDelTxns(true); setResetDelReceipts(true); setResetMsg(null);
+  };
+  const closeResetModal = () => { setResetModalUser(null); setResetMsg(null); };
+
+  const handleResetUser = async () => {
+    if (!resetModalUser) return;
+    if (!resetDelTxns && !resetDelReceipts) { setResetMsg({ ok: false, text: "Select at least one thing to delete" }); return; }
+    setResetSaving(true); setResetMsg(null);
+    try {
+      const res = await fetch("/api/admin/reset-user-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: resetModalUser, deleteTransactions: resetDelTxns, deleteReceipts: resetDelReceipts }),
+      });
+      if (res.status === 401) { router.push("/admin"); return; }
+      const data = await res.json().catch(() => ({}));
+      if (data.success) {
+        setResetMsg({ ok: true, text: data.message || "Account reset" });
+        fetchUsers();   // refresh so amount/booking counts drop to 0
+        fetchData();
+      } else {
+        setResetMsg({ ok: false, text: data.message || "Failed to reset account" });
+      }
+    } catch {
+      setResetMsg({ ok: false, text: "Network error — please try again" });
+    } finally {
+      setResetSaving(false);
+    }
+  };
+
   const fmt = (iso: string | null | undefined) => {
     if (!iso) return "—";
     const d = new Date(iso);
@@ -468,6 +507,7 @@ export default function AdminDashboard() {
                     <th>Last Booking</th>
                     <th>Status</th>
                     <th>Password</th>
+                    <th>Reset</th>
                     <th>Filter</th>
                   </tr>
                 </thead>
@@ -504,6 +544,19 @@ export default function AdminDashboard() {
                               onClick={(e) => { e.stopPropagation(); openPwdModal(u.portalUserId); }}
                             >
                               <i className="fa fa-key"></i> Change
+                            </button>
+                          ) : (
+                            <span style={{ color: "#bbb" }}>—</span>
+                          )}
+                        </td>
+                        <td>
+                          {PWD_CHANGEABLE_TYPES.includes((u.type || "").toLowerCase()) ? (
+                            <button
+                              type="button"
+                              className="admin-user-reset-btn"
+                              onClick={(e) => { e.stopPropagation(); openResetModal(u.portalUserId); }}
+                            >
+                              <i className="fa fa-eraser"></i> Reset
                             </button>
                           ) : (
                             <span style={{ color: "#bbb" }}>—</span>
@@ -702,6 +755,55 @@ export default function AdminDashboard() {
               <button className="admin-pwd-cancel" onClick={closePwdModal}>Cancel</button>
               <button className="admin-pwd-save" onClick={handleChangePassword} disabled={pwdSaving}>
                 {pwdSaving ? <><i className="fa fa-spinner fa-spin"></i> Saving…</> : <><i className="fa fa-check"></i> Update Password</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset-account modal (family / test users) — irreversible */}
+      {resetModalUser && (
+        <div className="adm-modal-overlay" onClick={closeResetModal}>
+          <div className="admin-pwd-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-pwd-modal-header admin-reset-header">
+              <span><i className="fa fa-exclamation-triangle"></i>&nbsp; Reset Account</span>
+              <button className="admin-pwd-modal-close" onClick={closeResetModal} aria-label="Close">×</button>
+            </div>
+            <div className="admin-pwd-modal-body">
+              <p className="admin-pwd-modal-user">
+                Login ID: <strong>{resetModalUser}</strong>
+              </p>
+              <div className="admin-reset-warn">
+                <i className="fa fa-exclamation-triangle"></i>&nbsp;
+                This permanently deletes the selected data. <strong>It cannot be undone.</strong>
+                {resetTargetRow && (
+                  <div className="admin-reset-scope">
+                    Currently: <strong>{resetTargetRow.bookingCount}</strong> booking(s),
+                    total <strong>{fmtAmt(resetTargetRow.totalAmount)}</strong>.
+                  </div>
+                )}
+              </div>
+
+              <p className="admin-pwd-label" style={{ marginTop: 14 }}>Choose what to delete</p>
+              <label className="admin-reset-check">
+                <input type="checkbox" checked={resetDelTxns} onChange={(e) => { setResetDelTxns(e.target.checked); setResetMsg(null); }} />
+                <span><strong>Booking transactions</strong> — clears all bookings &amp; history; amount becomes ₹0 (database)</span>
+              </label>
+              <label className="admin-reset-check">
+                <input type="checkbox" checked={resetDelReceipts} onChange={(e) => { setResetDelReceipts(e.target.checked); setResetMsg(null); }} />
+                <span><strong>Receipt PDFs</strong> — deletes the generated receipts from storage (S3)</span>
+              </label>
+
+              {resetMsg && (
+                <div className={`admin-pwd-msg ${resetMsg.ok ? "ok" : "err"}`}>
+                  <i className={`fa ${resetMsg.ok ? "fa-check-circle" : "fa-exclamation-triangle"}`}></i>&nbsp;{resetMsg.text}
+                </div>
+              )}
+            </div>
+            <div className="admin-pwd-modal-footer">
+              <button className="admin-pwd-cancel" onClick={closeResetModal}>Cancel</button>
+              <button className="admin-reset-confirm" onClick={handleResetUser} disabled={resetSaving || (!resetDelTxns && !resetDelReceipts)}>
+                {resetSaving ? <><i className="fa fa-spinner fa-spin"></i> Deleting…</> : <><i className="fa fa-eraser"></i> Delete &amp; Reset</>}
               </button>
             </div>
           </div>
