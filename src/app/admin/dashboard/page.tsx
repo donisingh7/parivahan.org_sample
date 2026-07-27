@@ -305,7 +305,7 @@ export default function AdminDashboard() {
   // Password can be changed for family / test / reselling. Reselling needs an
   // extra auth password. Account "Reset" stays family / test only.
   const PWD_CHANGE_TYPES = ["family", "test", "reselling"];
-  const RESET_TYPES      = ["family", "test"];
+  const RESET_TYPES      = ["family", "test", "reselling"];
   const [pwdModalUser, setPwdModalUser] = useState<string | null>(null);
   const [pwdValue,     setPwdValue]     = useState("");
   const [pwdAuth,      setPwdAuth]      = useState("");
@@ -346,18 +346,33 @@ export default function AdminDashboard() {
     }
   };
 
-  // ── Reset account (family / test users) — irreversible ────────────────────
+  // ── Reset account (family / test / reselling) — irreversible ──────────────
+  // Reselling needs the auth password first (same gate as password change);
+  // family/test go straight to the delete options.
   const [resetModalUser, setResetModalUser] = useState<string | null>(null);
   const [resetDelTxns,     setResetDelTxns]     = useState(true);
   const [resetDelReceipts, setResetDelReceipts] = useState(true);
+  const [resetAuth,        setResetAuth]        = useState("");
+  const [resetAuthed,      setResetAuthed]      = useState(false);
   const [resetSaving,      setResetSaving]      = useState(false);
   const [resetMsg,         setResetMsg]         = useState<{ ok: boolean; text: string } | null>(null);
   const resetTargetRow = users.find((u) => u.portalUserId === resetModalUser) ?? null;
+  const resetNeedsAuth = (resetTargetRow?.type || "").toLowerCase() === "reselling";
 
   const openResetModal = (loginId: string) => {
-    setResetModalUser(loginId); setResetDelTxns(true); setResetDelReceipts(true); setResetMsg(null);
+    const row = users.find((u) => u.portalUserId === loginId);
+    const isReselling = (row?.type || "").toLowerCase() === "reselling";
+    setResetModalUser(loginId);
+    setResetDelTxns(true); setResetDelReceipts(true);
+    setResetAuth(""); setResetAuthed(!isReselling);   // non-reselling: skip auth step
+    setResetMsg(null);
   };
-  const closeResetModal = () => { setResetModalUser(null); setResetMsg(null); };
+  const closeResetModal = () => { setResetModalUser(null); setResetAuth(""); setResetAuthed(false); setResetMsg(null); };
+
+  const handleResetContinue = () => {
+    if (resetAuth.trim().length === 0) { setResetMsg({ ok: false, text: "Enter the authentication password" }); return; }
+    setResetMsg(null); setResetAuthed(true);   // real validation happens server-side on reset
+  };
 
   const handleResetUser = async () => {
     if (!resetModalUser) return;
@@ -367,10 +382,21 @@ export default function AdminDashboard() {
       const res = await fetch("/api/admin/reset-user-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: resetModalUser, deleteTransactions: resetDelTxns, deleteReceipts: resetDelReceipts }),
+        body: JSON.stringify({
+          userId: resetModalUser,
+          deleteTransactions: resetDelTxns,
+          deleteReceipts: resetDelReceipts,
+          authPassword: resetNeedsAuth ? resetAuth : undefined,
+        }),
       });
-      if (res.status === 401) { router.push("/admin"); return; }
       const data = await res.json().catch(() => ({}));
+      if (res.status === 401 && resetNeedsAuth && !data.success) {
+        // wrong auth password → send admin back to the auth step
+        setResetAuthed(false);
+        setResetMsg({ ok: false, text: data.message || "Invalid authentication password" });
+        return;
+      }
+      if (res.status === 401) { router.push("/admin"); return; }
       if (data.success) {
         setResetMsg({ ok: true, text: data.message || "Account reset" });
         fetchUsers();   // refresh so amount/booking counts drop to 0
@@ -801,27 +827,55 @@ export default function AdminDashboard() {
             <div className="admin-pwd-modal-body">
               <p className="admin-pwd-modal-user">
                 Login ID: <strong>{resetModalUser}</strong>
+                {resetTargetRow?.type && <span className="admin-pwd-type-tag">{resetTargetRow.type}</span>}
               </p>
-              <div className="admin-reset-warn">
-                <i className="fa fa-exclamation-triangle"></i>&nbsp;
-                This permanently deletes the selected data. <strong>It cannot be undone.</strong>
-                {resetTargetRow && (
-                  <div className="admin-reset-scope">
-                    Currently: <strong>{resetTargetRow.bookingCount}</strong> booking(s),
-                    total <strong>{fmtAmt(resetTargetRow.totalAmount)}</strong>.
-                  </div>
-                )}
-              </div>
 
-              <p className="admin-pwd-label" style={{ marginTop: 14 }}>Choose what to delete</p>
-              <label className="admin-reset-check">
-                <input type="checkbox" checked={resetDelTxns} onChange={(e) => { setResetDelTxns(e.target.checked); setResetMsg(null); }} />
-                <span><strong>Booking transactions</strong> — clears all bookings &amp; history; amount becomes ₹0 (database)</span>
-              </label>
-              <label className="admin-reset-check">
-                <input type="checkbox" checked={resetDelReceipts} onChange={(e) => { setResetDelReceipts(e.target.checked); setResetMsg(null); }} />
-                <span><strong>Receipt PDFs</strong> — deletes the generated receipts from storage (S3)</span>
-              </label>
+              {resetNeedsAuth && !resetAuthed ? (
+                /* ── Step 1 (reselling only): authenticate ── */
+                <>
+                  <div className="admin-reset-warn">
+                    <i className="fa fa-shield"></i>&nbsp;
+                    <strong>Reselling account</strong> — enter the authentication password to continue to the reset options.
+                  </div>
+                  <label className="admin-pwd-label" style={{ marginTop: 14 }}>Authentication Password</label>
+                  <div className="admin-pwd-input-row">
+                    <input
+                      type="password"
+                      className="admin-pwd-input"
+                      value={resetAuth}
+                      autoFocus
+                      autoComplete="off"
+                      placeholder="Enter authentication password"
+                      onChange={(e) => { setResetAuth(e.target.value); setResetMsg(null); }}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleResetContinue(); }}
+                    />
+                  </div>
+                </>
+              ) : (
+                /* ── Step 2: choose what to delete ── */
+                <>
+                  <div className="admin-reset-warn">
+                    <i className="fa fa-exclamation-triangle"></i>&nbsp;
+                    This permanently deletes the selected data. <strong>It cannot be undone.</strong>
+                    {resetTargetRow && (
+                      <div className="admin-reset-scope">
+                        Currently: <strong>{resetTargetRow.bookingCount}</strong> booking(s),
+                        total <strong>{fmtAmt(resetTargetRow.totalAmount)}</strong>.
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="admin-pwd-label" style={{ marginTop: 14 }}>Choose what to delete</p>
+                  <label className="admin-reset-check">
+                    <input type="checkbox" checked={resetDelTxns} onChange={(e) => { setResetDelTxns(e.target.checked); setResetMsg(null); }} />
+                    <span><strong>Booking transactions</strong> — clears all bookings &amp; history; amount becomes ₹0 (database)</span>
+                  </label>
+                  <label className="admin-reset-check">
+                    <input type="checkbox" checked={resetDelReceipts} onChange={(e) => { setResetDelReceipts(e.target.checked); setResetMsg(null); }} />
+                    <span><strong>Receipt PDFs</strong> — deletes the generated receipts from storage (S3)</span>
+                  </label>
+                </>
+              )}
 
               {resetMsg && (
                 <div className={`admin-pwd-msg ${resetMsg.ok ? "ok" : "err"}`}>
@@ -831,9 +885,15 @@ export default function AdminDashboard() {
             </div>
             <div className="admin-pwd-modal-footer">
               <button className="admin-pwd-cancel" onClick={closeResetModal}>Cancel</button>
-              <button className="admin-reset-confirm" onClick={handleResetUser} disabled={resetSaving || (!resetDelTxns && !resetDelReceipts)}>
-                {resetSaving ? <><i className="fa fa-spinner fa-spin"></i> Deleting…</> : <><i className="fa fa-eraser"></i> Delete &amp; Reset</>}
-              </button>
+              {resetNeedsAuth && !resetAuthed ? (
+                <button className="admin-pwd-save" onClick={handleResetContinue}>
+                  <i className="fa fa-arrow-right"></i> Continue
+                </button>
+              ) : (
+                <button className="admin-reset-confirm" onClick={handleResetUser} disabled={resetSaving || (!resetDelTxns && !resetDelReceipts)}>
+                  {resetSaving ? <><i className="fa fa-spinner fa-spin"></i> Deleting…</> : <><i className="fa fa-eraser"></i> Delete &amp; Reset</>}
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { connectDB } from "@/lib/mongodb";
 import PortalUser from "@/models/PortalUser";
 import { requireAuth } from "@/lib/auth";
@@ -9,7 +10,20 @@ export const runtime = "nodejs";
 
 // Only these portal-user types may be reset from the admin panel. Enforced
 // server-side so the UI restriction can't be bypassed.
-const RESETTABLE_TYPES = ["family", "test"];
+const RESETTABLE_TYPES = ["family", "test", "reselling"];
+
+// Reselling accounts need an extra layer: the admin must supply an
+// authentication password (RESELLING_AUTH_PASSWORD env) on top of being a
+// logged-in admin before a reselling user can be reset. Family / test don't.
+const AUTH_REQUIRED_TYPES = ["reselling"];
+
+// Constant-time string compare so a wrong auth password can't be timed out.
+function safeEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a, "utf8");
+  const bb = Buffer.from(b, "utf8");
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
 
 /**
  * POST /api/admin/reset-user-data
@@ -32,6 +46,7 @@ export async function POST(req: NextRequest) {
     const userId = typeof body.userId === "string" ? body.userId.trim() : "";
     const doTxns = body.deleteTransactions === true;
     const doReceipts = body.deleteReceipts === true;
+    const authPassword = typeof body.authPassword === "string" ? body.authPassword : "";
 
     if (!userId) {
       return NextResponse.json({ success: false, message: "userId is required" }, { status: 400 });
@@ -55,6 +70,23 @@ export async function POST(req: NextRequest) {
         { success: false, message: `Only ${RESETTABLE_TYPES.join(" / ")} users can be reset` },
         { status: 403 }
       );
+    }
+
+    // Extra auth layer for reselling accounts.
+    if (AUTH_REQUIRED_TYPES.includes(type)) {
+      const expected = process.env.RESELLING_AUTH_PASSWORD ?? "";
+      if (!expected) {
+        return NextResponse.json(
+          { success: false, message: "Reselling auth password is not configured on the server" },
+          { status: 500 }
+        );
+      }
+      if (!authPassword || !safeEqual(authPassword, expected)) {
+        return NextResponse.json(
+          { success: false, message: "Invalid authentication password" },
+          { status: 401 }
+        );
+      }
     }
 
     const servers = getAllStateServers();
