@@ -302,6 +302,44 @@ export default function AdminDashboard() {
     setPage(1);
   };
 
+  // ── Password change (family / test portal users only) ─────────────────────
+  const PWD_CHANGEABLE_TYPES = ["family", "test"];
+  const [pwdModalUser, setPwdModalUser] = useState<string | null>(null);
+  const [pwdValue,     setPwdValue]     = useState("");
+  const [pwdShow,      setPwdShow]      = useState(false);
+  const [pwdSaving,    setPwdSaving]    = useState(false);
+  const [pwdMsg,       setPwdMsg]       = useState<{ ok: boolean; text: string } | null>(null);
+
+  const openPwdModal = (loginId: string) => {
+    setPwdModalUser(loginId); setPwdValue(""); setPwdShow(false); setPwdMsg(null);
+  };
+  const closePwdModal = () => { setPwdModalUser(null); setPwdValue(""); setPwdMsg(null); };
+
+  const handleChangePassword = async () => {
+    if (!pwdModalUser) return;
+    if (pwdValue.trim().length < 4) { setPwdMsg({ ok: false, text: "Password must be at least 4 characters" }); return; }
+    setPwdSaving(true); setPwdMsg(null);
+    try {
+      const res = await fetch("/api/admin/change-user-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: pwdModalUser, newPassword: pwdValue }),
+      });
+      if (res.status === 401) { router.push("/admin"); return; }
+      const data = await res.json().catch(() => ({}));
+      if (data.success) {
+        setPwdMsg({ ok: true, text: data.message || "Password updated" });
+        setPwdValue("");
+      } else {
+        setPwdMsg({ ok: false, text: data.message || "Failed to update password" });
+      }
+    } catch {
+      setPwdMsg({ ok: false, text: "Network error — please try again" });
+    } finally {
+      setPwdSaving(false);
+    }
+  };
+
   const fmt = (iso: string | null | undefined) => {
     if (!iso) return "—";
     const d = new Date(iso);
@@ -429,6 +467,7 @@ export default function AdminDashboard() {
                     <th>First Booking</th>
                     <th>Last Booking</th>
                     <th>Status</th>
+                    <th>Password</th>
                     <th>Filter</th>
                   </tr>
                 </thead>
@@ -456,6 +495,19 @@ export default function AdminDashboard() {
                           <span className={`admin-status ${u.isActive ? "admin-status-success" : "admin-status-failed"}`}>
                             {u.isActive ? "Active" : "Inactive"}
                           </span>
+                        </td>
+                        <td>
+                          {PWD_CHANGEABLE_TYPES.includes((u.type || "").toLowerCase()) ? (
+                            <button
+                              type="button"
+                              className="admin-user-view-btn"
+                              onClick={(e) => { e.stopPropagation(); openPwdModal(u.portalUserId); }}
+                            >
+                              <i className="fa fa-key"></i> Change
+                            </button>
+                          ) : (
+                            <span style={{ color: "#bbb" }}>—</span>
+                          )}
                         </td>
                         <td className="num">
                           <button
@@ -611,6 +663,50 @@ export default function AdminDashboard() {
 
       {/* Detail modal */}
       {selectedTxn && <DetailModal txn={selectedTxn} onClose={() => setSelectedTxn(null)} />}
+
+      {/* Change-password modal (family / test users) */}
+      {pwdModalUser && (
+        <div className="adm-modal-overlay" onClick={closePwdModal}>
+          <div className="admin-pwd-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-pwd-modal-header">
+              <span><i className="fa fa-key"></i>&nbsp; Change Password</span>
+              <button className="admin-pwd-modal-close" onClick={closePwdModal} aria-label="Close">×</button>
+            </div>
+            <div className="admin-pwd-modal-body">
+              <p className="admin-pwd-modal-user">
+                Login ID: <strong>{pwdModalUser}</strong>
+              </p>
+              <label className="admin-pwd-label">New Password</label>
+              <div className="admin-pwd-input-row">
+                <input
+                  type={pwdShow ? "text" : "password"}
+                  className="admin-pwd-input"
+                  value={pwdValue}
+                  autoFocus
+                  autoComplete="new-password"
+                  placeholder="Enter new password (min 4 chars)"
+                  onChange={(e) => { setPwdValue(e.target.value); setPwdMsg(null); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleChangePassword(); }}
+                />
+                <button type="button" className="admin-pwd-eye" onClick={() => setPwdShow((s) => !s)} aria-label="Toggle visibility">
+                  <i className={`fa fa-eye${pwdShow ? "-slash" : ""}`}></i>
+                </button>
+              </div>
+              {pwdMsg && (
+                <div className={`admin-pwd-msg ${pwdMsg.ok ? "ok" : "err"}`}>
+                  <i className={`fa ${pwdMsg.ok ? "fa-check-circle" : "fa-exclamation-triangle"}`}></i>&nbsp;{pwdMsg.text}
+                </div>
+              )}
+            </div>
+            <div className="admin-pwd-modal-footer">
+              <button className="admin-pwd-cancel" onClick={closePwdModal}>Cancel</button>
+              <button className="admin-pwd-save" onClick={handleChangePassword} disabled={pwdSaving}>
+                {pwdSaving ? <><i className="fa fa-spinner fa-spin"></i> Saving…</> : <><i className="fa fa-check"></i> Update Password</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
