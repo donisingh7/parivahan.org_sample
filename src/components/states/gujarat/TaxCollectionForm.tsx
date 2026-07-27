@@ -294,6 +294,10 @@ function TaxCollectionContent() {
   };
 
   const isGoodsVehicle = vehicleType === "GOODS VEHICLE";
+  // When "SINGLE RETURN TRIP PERMIT" is selected, the permit-fee field is
+  // labelled "Single Return Trip Permit Fee" everywhere (form + receipt).
+  const isSingleReturnTrip = permitType === "SINGLE RETURN TRIP PERMIT";
+  const permitFeeLabel = isSingleReturnTrip ? "Single Return Trip Permit Fee" : "Permit fee";
 
   return (
     <div id="masterlaoyoutbody">
@@ -594,6 +598,7 @@ function TaxCollectionContent() {
                           <option value="TEMPORARY PERMIT">TEMPORARY PERMIT</option>
                           <option value="TOURIST PERMIT">TOURIST PERMIT</option>
                           <option value="SEPECIAL PERMIT">SEPECIAL PERMIT</option>
+                          <option value="SINGLE RETURN TRIP PERMIT">SINGLE RETURN TRIP PERMIT</option>
                           <option value="NOT APPLICABLE">NOT APPLICABLE</option>
                         </select>
                         <span className="ui-selectonemenu-arrow">▼</span>
@@ -703,7 +708,7 @@ function TaxCollectionContent() {
                                 </tr>
                                 <tr>
                                   <td>2</td>
-                                  <td>Permit fee</td>
+                                  <td>{permitFeeLabel}</td>
                                   <td>{permitFee || "0"}</td>
                                   <td>0</td>
                                   <td>{permitFee || "0"}</td>
@@ -762,14 +767,14 @@ function TaxCollectionContent() {
                     </div>
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Permit fee (Rs.)</label>
+                        <label className="ui-outputlabel field-label-mandate">{permitFeeLabel} (Rs.)</label>
                       </div>
                       <input
                         type="number"
                         className="ui-inputtext"
                         value={permitFee}
                         onChange={(e) => { setPermitFee(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
-                        placeholder="Enter Permit fee"
+                        placeholder={`Enter ${permitFeeLabel}`}
                         min="0"
                       />
                     </div>
@@ -885,7 +890,7 @@ function TaxCollectionContent() {
                     <td><span className="small-text-font">Rs. {mvTax || "0"}/-</span></td>
                   </tr>
                   <tr>
-                    <td><span className="small-text-font">Permit fee</span></td>
+                    <td><span className="small-text-font">{permitFeeLabel}</span></td>
                     <td><span className="small-text-font">:</span></td>
                     <td><span className="small-text-font">Rs. {permitFee || "0"}/-</span></td>
                   </tr>

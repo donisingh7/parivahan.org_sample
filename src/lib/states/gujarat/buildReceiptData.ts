@@ -50,6 +50,13 @@ export function buildGujaratReceiptData(txn: TxnLike): ReceiptData {
   const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null);
   const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null);
 
+  // The permit-fee tax row is labelled "Single Return Trip Permit Fee" when
+  // that permit type was selected; otherwise the default "Permit fee".
+  const permitFeeLabel =
+    String(txn.permitType || "").toUpperCase() === "SINGLE RETURN TRIP PERMIT"
+      ? "Single Return Trip Permit Fee"
+      : "Permit fee";
+
   return {
     registrationNo:  txn.vehicleNo    || "-",
     receiptNo,
@@ -77,7 +84,7 @@ export function buildGujaratReceiptData(txn: TxnLike): ReceiptData {
     amountInWords:   numberToWords(amount),
     taxItems: [
       { particular: `MV Tax(${taxFromLabel.toUpperCase()} TO ${taxToLabel.toUpperCase()})`, fees: mvTax,     fine: 0, total: mvTax     },
-      { particular: "Permit fee",                               fees: permitFee, fine: 0, total: permitFee },
+      { particular: permitFeeLabel,                             fees: permitFee, fine: 0, total: permitFee },
     ],
     // GJ-specific string weight fields
     ladenWeight:    (gj.gjLadenWeight   as string) || "-",
