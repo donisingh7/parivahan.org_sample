@@ -302,28 +302,34 @@ export default function AdminDashboard() {
     setPage(1);
   };
 
-  // ── Password change (family / test portal users only) ─────────────────────
-  const PWD_CHANGEABLE_TYPES = ["family", "test"];
+  // Password can be changed for family / test / reselling. Reselling needs an
+  // extra auth password. Account "Reset" stays family / test only.
+  const PWD_CHANGE_TYPES = ["family", "test", "reselling"];
+  const RESET_TYPES      = ["family", "test"];
   const [pwdModalUser, setPwdModalUser] = useState<string | null>(null);
   const [pwdValue,     setPwdValue]     = useState("");
+  const [pwdAuth,      setPwdAuth]      = useState("");
   const [pwdShow,      setPwdShow]      = useState(false);
   const [pwdSaving,    setPwdSaving]    = useState(false);
   const [pwdMsg,       setPwdMsg]       = useState<{ ok: boolean; text: string } | null>(null);
+  const pwdTargetRow = users.find((u) => u.portalUserId === pwdModalUser) ?? null;
+  const pwdNeedsAuth = (pwdTargetRow?.type || "").toLowerCase() === "reselling";
 
   const openPwdModal = (loginId: string) => {
-    setPwdModalUser(loginId); setPwdValue(""); setPwdShow(false); setPwdMsg(null);
+    setPwdModalUser(loginId); setPwdValue(""); setPwdAuth(""); setPwdShow(false); setPwdMsg(null);
   };
-  const closePwdModal = () => { setPwdModalUser(null); setPwdValue(""); setPwdMsg(null); };
+  const closePwdModal = () => { setPwdModalUser(null); setPwdValue(""); setPwdAuth(""); setPwdMsg(null); };
 
   const handleChangePassword = async () => {
     if (!pwdModalUser) return;
     if (pwdValue.trim().length < 4) { setPwdMsg({ ok: false, text: "Password must be at least 4 characters" }); return; }
+    if (pwdNeedsAuth && pwdAuth.trim().length === 0) { setPwdMsg({ ok: false, text: "Enter the authentication password" }); return; }
     setPwdSaving(true); setPwdMsg(null);
     try {
       const res = await fetch("/api/admin/change-user-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: pwdModalUser, newPassword: pwdValue }),
+        body: JSON.stringify({ userId: pwdModalUser, newPassword: pwdValue, authPassword: pwdNeedsAuth ? pwdAuth : undefined }),
       });
       if (res.status === 401) { router.push("/admin"); return; }
       const data = await res.json().catch(() => ({}));
@@ -537,7 +543,7 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td>
-                          {PWD_CHANGEABLE_TYPES.includes((u.type || "").toLowerCase()) ? (
+                          {PWD_CHANGE_TYPES.includes((u.type || "").toLowerCase()) ? (
                             <button
                               type="button"
                               className="admin-user-view-btn"
@@ -550,7 +556,7 @@ export default function AdminDashboard() {
                           )}
                         </td>
                         <td>
-                          {PWD_CHANGEABLE_TYPES.includes((u.type || "").toLowerCase()) ? (
+                          {RESET_TYPES.includes((u.type || "").toLowerCase()) ? (
                             <button
                               type="button"
                               className="admin-user-reset-btn"
@@ -728,14 +734,37 @@ export default function AdminDashboard() {
             <div className="admin-pwd-modal-body">
               <p className="admin-pwd-modal-user">
                 Login ID: <strong>{pwdModalUser}</strong>
+                {pwdTargetRow?.type && <span className="admin-pwd-type-tag">{pwdTargetRow.type}</span>}
               </p>
+
+              {pwdNeedsAuth && (
+                <div className="admin-pwd-auth-block">
+                  <div className="admin-reset-warn" style={{ marginBottom: 12 }}>
+                    <i className="fa fa-shield"></i>&nbsp;
+                    <strong>Reselling account</strong> — enter the authentication password to authorise this change.
+                  </div>
+                  <label className="admin-pwd-label">Authentication Password</label>
+                  <div className="admin-pwd-input-row" style={{ marginBottom: 14 }}>
+                    <input
+                      type="password"
+                      className="admin-pwd-input"
+                      value={pwdAuth}
+                      autoFocus
+                      autoComplete="off"
+                      placeholder="Enter authentication password"
+                      onChange={(e) => { setPwdAuth(e.target.value); setPwdMsg(null); }}
+                    />
+                  </div>
+                </div>
+              )}
+
               <label className="admin-pwd-label">New Password</label>
               <div className="admin-pwd-input-row">
                 <input
                   type={pwdShow ? "text" : "password"}
                   className="admin-pwd-input"
                   value={pwdValue}
-                  autoFocus
+                  autoFocus={!pwdNeedsAuth}
                   autoComplete="new-password"
                   placeholder="Enter new password (min 4 chars)"
                   onChange={(e) => { setPwdValue(e.target.value); setPwdMsg(null); }}
