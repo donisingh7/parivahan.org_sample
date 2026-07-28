@@ -91,6 +91,8 @@ export async function POST(req: NextRequest) {
       cgLadenWeight, cgUnladenWeight, cgMvTax, cgPermitFee,
       // ── Telangana-specific ───────────────────────────────────────────
       tsLadenWeight, tsUnladenWeight, tsMvTax, tsPermitFee,
+      // ── Madhya Pradesh-specific ──────────────────────────────────────
+      mpDto, mpStandingCap, mpRoadTaxValidity, mpPermitFee, mpMvTax, mpUserCharge, mpSgst, mpCgst,
     } = body;
 
     const missing: string[] = [];
@@ -220,6 +222,14 @@ export async function POST(req: NextRequest) {
       tsUnladenWeight:        tsUnladenWeight        ?? "",
       tsMvTax:                Number(tsMvTax)         || 0,
       tsPermitFee:            Number(tsPermitFee)     || 0,
+      mpDto:                  mpDto                  ?? "",
+      mpStandingCap:          Number(mpStandingCap)   || 0,
+      mpRoadTaxValidity:      mpRoadTaxValidity      ?? "",
+      mpPermitFee:            Number(mpPermitFee)     || 0,
+      mpMvTax:                Number(mpMvTax)         || 0,
+      mpUserCharge:           Number(mpUserCharge)    || 0,
+      mpSgst:                 Number(mpSgst)          || 0,
+      mpCgst:                 Number(mpCgst)          || 0,
     });
 
     // ── Upsert VehicleCache with grey-field values ────────────────────────

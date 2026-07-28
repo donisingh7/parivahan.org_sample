@@ -147,67 +147,34 @@ const PERMIT_TYPE_OPTIONS = [
   { value: "SEPECIAL PERMIT",   label: "SEPECIAL PERMIT" },
 ];
 
-// UP's 35 border-district options (inspect lines 5527-5563).
-// Madhya Pradesh checkpost / district list (major RTO districts + the
-// MAJHGAWAN checkpost seen on the sample receipt — refinable with an exact
-// web-sourced border-checkpost list later).
-const BORDER_DISTRICT_OPTIONS = [
-  { value: "",             label: "---Select CheckPost---" },
-  { value: "MAJHGAWAN",    label: "MAJHGAWAN" },
-  { value: "BHOPAL",       label: "BHOPAL" },
-  { value: "INDORE",       label: "INDORE" },
-  { value: "GWALIOR",      label: "GWALIOR" },
-  { value: "JABALPUR",     label: "JABALPUR" },
-  { value: "UJJAIN",       label: "UJJAIN" },
-  { value: "SAGAR",        label: "SAGAR" },
-  { value: "REWA",         label: "REWA" },
-  { value: "SATNA",        label: "SATNA" },
-  { value: "RATLAM",       label: "RATLAM" },
-  { value: "DEWAS",        label: "DEWAS" },
-  { value: "KHANDWA",      label: "KHANDWA" },
-  { value: "CHHINDWARA",   label: "CHHINDWARA" },
-  { value: "VIDISHA",      label: "VIDISHA" },
-  { value: "SEHORE",       label: "SEHORE" },
-  { value: "NARMADAPURAM", label: "NARMADAPURAM (HOSHANGABAD)" },
-  { value: "BETUL",        label: "BETUL" },
-  { value: "GUNA",         label: "GUNA" },
-  { value: "SHIVPURI",     label: "SHIVPURI" },
-  { value: "MORENA",       label: "MORENA" },
-  { value: "BHIND",        label: "BHIND" },
-  { value: "SHEOPUR",      label: "SHEOPUR" },
-  { value: "DATIA",        label: "DATIA" },
-  { value: "CHHATARPUR",   label: "CHHATARPUR" },
-  { value: "TIKAMGARH",    label: "TIKAMGARH" },
-  { value: "PANNA",        label: "PANNA" },
-  { value: "DAMOH",        label: "DAMOH" },
-  { value: "KATNI",        label: "KATNI" },
-  { value: "UMARIA",       label: "UMARIA" },
-  { value: "SHAHDOL",      label: "SHAHDOL" },
-  { value: "ANUPPUR",      label: "ANUPPUR" },
-  { value: "SIDHI",        label: "SIDHI" },
-  { value: "SINGRAULI",    label: "SINGRAULI" },
-  { value: "BALAGHAT",     label: "BALAGHAT" },
-  { value: "SEONI",        label: "SEONI" },
-  { value: "MANDLA",       label: "MANDLA" },
-  { value: "DINDORI",      label: "DINDORI" },
-  { value: "NARSINGHPUR",  label: "NARSINGHPUR" },
-  { value: "RAISEN",       label: "RAISEN" },
-  { value: "RAJGARH",      label: "RAJGARH" },
-  { value: "SHAJAPUR",     label: "SHAJAPUR" },
-  { value: "AGAR MALWA",   label: "AGAR MALWA" },
-  { value: "MANDSAUR",     label: "MANDSAUR" },
-  { value: "NEEMUCH",      label: "NEEMUCH" },
-  { value: "JHABUA",       label: "JHABUA" },
-  { value: "ALIRAJPUR",    label: "ALIRAJPUR" },
-  { value: "DHAR",         label: "DHAR" },
-  { value: "BARWANI",      label: "BARWANI" },
-  { value: "KHARGONE",     label: "KHARGONE" },
-  { value: "BURHANPUR",    label: "BURHANPUR" },
-  { value: "HARDA",        label: "HARDA" },
-  { value: "ASHOKNAGAR",   label: "ASHOKNAGAR" },
-  { value: "NIWARI",       label: "NIWARI" },
-  { value: "MAIHAR",       label: "MAIHAR" },
+// DTO (District Transport Office) list — MP districts. The DTO field auto-fills
+// from the chosen checkpost but stays an editable dropdown so the operator can
+// override it.
+const DTO_OPTIONS = [
+  "", "SATNA", "BHOPAL", "INDORE", "GWALIOR", "JABALPUR", "UJJAIN", "SAGAR",
+  "REWA", "RATLAM", "DEWAS", "KHANDWA", "CHHINDWARA", "PANDHURNA", "VIDISHA",
+  "SEHORE", "NARMADAPURAM", "BETUL", "GUNA", "SHIVPURI", "MORENA", "BHIND",
+  "SHEOPUR", "DATIA", "CHHATARPUR", "TIKAMGARH", "PANNA", "DAMOH", "KATNI",
+  "UMARIA", "SHAHDOL", "ANUPPUR", "SIDHI", "SINGRAULI", "BALAGHAT", "SEONI",
+  "MANDLA", "DINDORI", "NARSINGHPUR", "RAISEN", "RAJGARH", "SHAJAPUR",
+  "AGAR MALWA", "MANDSAUR", "NEEMUCH", "JHABUA", "ALIRAJPUR", "DHAR",
+  "BARWANI", "KHARGONE", "BURHANPUR", "HARDA", "ASHOKNAGAR", "NIWARI", "MAIHAR",
 ];
+
+// Checkpost → DTO (district) mapping. Web-confirmed MP border checkposts; the
+// checkpost field is pick-or-type (datalist) so any checkpost not listed can
+// still be typed, and the DTO can then be picked/edited manually.
+const CHECKPOST_DTO: Record<string, string> = {
+  "MAJHGAWAN": "SATNA",
+  "SENDHWA":   "BARWANI",
+  "MALANPUR":  "BHIND",
+  "MULTAI":    "BETUL",
+  "PITOL":     "JHABUA",
+  "SAUSAR":    "PANDHURNA",
+  "NAYAGAON":  "NEEMUCH",
+  "CHAKGHAT":  "REWA",
+};
+const CHECKPOST_OPTIONS = Object.keys(CHECKPOST_DTO);
 
 // IST timestamp (UTC+5:30), browser-timezone-independent, with seconds.
 function nowIST(): string {
@@ -239,11 +206,14 @@ function TaxCollectionContent() {
   const [vehicleClass,      setVehicleClass]      = useState("");
   const [seatingCap,        setSeatingCap]        = useState("");
   const [sleeperCap,        setSleeperCap]        = useState("0");
+  const [standingCap,       setStandingCap]       = useState("0");
   const [grossVehicleWt,    setGrossVehicleWt]    = useState("");
   const [unladenWt,         setUnladenWt]         = useState("");
+  const [grossCombWt,       setGrossCombWt]       = useState("");
   const [serviceType,       setServiceType]       = useState("");
   const [taxMode,           setTaxMode]           = useState("");
-  const [borderDistrict,    setBorderDistrict]    = useState("");
+  const [checkpostName,     setCheckpostName]     = useState("");
+  const [dto,               setDto]               = useState("");
   const [taxFrom,           setTaxFrom]           = useState("");
   const [taxTo,             setTaxTo]             = useState("");
   const [permitType,        setPermitType]        = useState("");
@@ -252,10 +222,33 @@ function TaxCollectionContent() {
   const [fitnessValidity,   setFitnessValidity]   = useState("");
   const [insuranceValidity, setInsuranceValidity] = useState("");
   const [puccValidity,      setPuccValidity]      = useState("");
-  const [totalAmount,       setTotalAmount]       = useState("0");
+  const [roadTaxValidity,   setRoadTaxValidity]   = useState("");
+  // Five fixed tax rows (manual amounts).
+  const [permitFeeAmt,  setPermitFeeAmt]  = useState("");
+  const [mvTaxAmt,      setMvTaxAmt]      = useState("");
+  const [userChargeAmt, setUserChargeAmt] = useState("");
+  const [sgstAmt,       setSgstAmt]       = useState("");
+  const [cgstAmt,       setCgstAmt]       = useState("");
   const [paymentInitDateInput, setPaymentInitDateInput] = useState("");
   const [paymentConfDateInput, setPaymentConfDateInput] = useState("");
   const [printedOnInput,       setPrintedOnInput]       = useState("");
+
+  // Total = sum of the five tax rows (derived, always in sync).
+  const totalAmount = String(
+    (parseFloat(permitFeeAmt)  || 0) +
+    (parseFloat(mvTaxAmt)      || 0) +
+    (parseFloat(userChargeAmt) || 0) +
+    (parseFloat(sgstAmt)       || 0) +
+    (parseFloat(cgstAmt)       || 0)
+  );
+
+  // Picking a known checkpost auto-fills the DTO (still editable below).
+  const handleCheckpostChange = (val: string) => {
+    const v = val.toUpperCase();
+    setCheckpostName(v);
+    const mapped = CHECKPOST_DTO[v];
+    if (mapped) setDto(mapped);
+  };
 
   const [dateError,   setDateError]   = useState("");
   const [formError,   setFormError]   = useState("");
@@ -347,7 +340,10 @@ function TaxCollectionContent() {
       sleeperCap,
       serviceType,
       taxMode,
-      borderDistrict,
+      checkpostName,
+      mpDto: dto,
+      mpStandingCap: standingCap,
+      grossCombinationWeight: grossCombWt,
       taxFrom,
       taxTo,
       permitType,
@@ -356,6 +352,12 @@ function TaxCollectionContent() {
       fitnessValidity,
       insuranceValidity,
       puccValidity,
+      mpRoadTaxValidity: roadTaxValidity,
+      mpPermitFee:  permitFeeAmt  || "0",
+      mpMvTax:      mvTaxAmt      || "0",
+      mpUserCharge: userChargeAmt || "0",
+      mpSgst:       sgstAmt       || "0",
+      mpCgst:       cgstAmt       || "0",
       amount: totalAmount || "0",
       paymentInitDate: paymentInitDateInput || nowIST(),
       paymentConfDate: paymentConfDateInput,
@@ -367,11 +369,12 @@ function TaxCollectionContent() {
   const handleReset = () => {
     setVehicleNo(""); setChassisNo(""); setOwnerName(""); setMobileNo("");
     setFromState(""); setVehicleType(""); setVehicleCategory(""); setVehicleClass("");
-    setSeatingCap(""); setSleeperCap("0"); setGrossVehicleWt(""); setUnladenWt(""); setServiceType(""); setTaxMode("");
-    setBorderDistrict(""); setTaxFrom(""); setTaxTo("");
+    setSeatingCap(""); setSleeperCap("0"); setStandingCap("0"); setGrossVehicleWt(""); setUnladenWt(""); setGrossCombWt("");
+    setServiceType(""); setTaxMode("");
+    setCheckpostName(""); setDto(""); setTaxFrom(""); setTaxTo("");
     setPermitType(""); setPermitUpto(""); setPermitNumber("");
-    setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity("");
-    setTotalAmount("0");
+    setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity(""); setRoadTaxValidity("");
+    setPermitFeeAmt(""); setMvTaxAmt(""); setUserChargeAmt(""); setSgstAmt(""); setCgstAmt("");
     setPaymentInitDateInput(""); setPaymentConfDateInput(""); setPrintedOnInput("");
     setDateError(""); setFormError(""); setShowModal(false); setPdfError("");
     setNavOpen(false); setReportsOpen(false);
@@ -393,7 +396,7 @@ function TaxCollectionContent() {
     setPdfLoading(true);
     try {
       const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, seatingCap, sleeperCap, serviceType, taxMode, borderDistrict, taxFrom, taxTo, permitType, permitUpto, permitNumber, fitnessValidity, insuranceValidity, puccValidity, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`, noOfPeriods:1, grossVehicleWt, unladenWt, paymentInitDate: paymentInitDateInput || nowIST(), paymentConfDate: paymentConfDateInput, printedOn: printedOnInput }) });
+        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, seatingCap, sleeperCap, serviceType, taxMode, checkpostName, mpDto: dto, mpStandingCap: standingCap, grossCombinationWeight: grossCombWt, taxFrom, taxTo, permitType, permitUpto, permitNumber, fitnessValidity, insuranceValidity, puccValidity, mpRoadTaxValidity: roadTaxValidity, mpPermitFee: parseFloat(permitFeeAmt)||0, mpMvTax: parseFloat(mvTaxAmt)||0, mpUserCharge: parseFloat(userChargeAmt)||0, mpSgst: parseFloat(sgstAmt)||0, mpCgst: parseFloat(cgstAmt)||0, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: String(Math.floor(Math.random()*900000000000+100000000000)), noOfPeriods:1, grossVehicleWt, unladenWt, paymentInitDate: paymentInitDateInput || nowIST(), paymentConfDate: paymentConfDateInput, printedOn: printedOnInput }) });
       const json = await res.json().catch(()=>({}));
       if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
       const savedId = json.transactionId || transactionId;
@@ -756,23 +759,58 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
-                  {/* Row 6: Border/Barrier District (col-6) + Tax From (col-3) +
-                      Tax Upto (col-3) — inspect 5520-5580. */}
+                  {/* Row 5b: Standing Capacity + Gross Combination Weight */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Standing Capacity</label>
+                      </div>
+                      <input type="text" className="ui-inputtext" value={standingCap}
+                        onChange={(e) => setStandingCap(e.target.value.replace(/\D/g, ""))}
+                        maxLength={7} autoComplete="off" />
+                    </div>
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Gross Combination Weight (In Kg.)</label>
+                      </div>
+                      <input type="text" className="ui-inputtext" value={grossCombWt}
+                        onChange={(e) => setGrossCombWt(e.target.value.replace(/\D/g, ""))}
+                        maxLength={9} autoComplete="off" placeholder="e.g. 16200" />
+                    </div>
+                  </div>
+
+                  {/* Row 6: CheckPost Name (pick-or-type) + DTO (auto-fills, editable) */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">CheckPost Name</label>
                       </div>
+                      <input type="text" className="ui-inputtext" value={checkpostName}
+                        onChange={(e) => handleCheckpostChange(e.target.value)}
+                        maxLength={60} autoComplete="off" list="mp-checkpost-options"
+                        placeholder="Select or type a checkpost" />
+                      <datalist id="mp-checkpost-options">
+                        {CHECKPOST_OPTIONS.map((c) => <option key={c} value={c} />)}
+                      </datalist>
+                    </div>
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel field-label-mandate">DTO</label>
+                      </div>
                       <div className="ui-selectonemenu">
-                        <select value={borderDistrict} onChange={(e) => setBorderDistrict(e.target.value)}>
-                          {BORDER_DISTRICT_OPTIONS.map((d) => (
-                            <option key={d.value} value={d.value}>{d.label}</option>
+                        <select value={dto} onChange={(e) => setDto(e.target.value)}>
+                          {DTO_OPTIONS.map((d) => (
+                            <option key={d} value={d}>{d || "---Select DTO---"}</option>
                           ))}
                         </select>
                         <span className="ui-selectonemenu-arrow">▼</span>
                       </div>
                     </div>
-                    <div className="ui-grid-col-3">
+                  </div>
+
+                  {/* Row 6b: Tax From + Tax Upto */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Tax From</label>
                       </div>
@@ -782,7 +820,7 @@ function TaxCollectionContent() {
                         hasError={!!(dateError && taxFrom && taxTo && taxFrom > taxTo)}
                       />
                     </div>
-                    <div className="ui-grid-col-3">
+                    <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Tax Upto</label>
                       </div>
@@ -870,7 +908,7 @@ function TaxCollectionContent() {
                         />
                       </div>
                     </div>
-                    <div className="ui-grid-col-6">
+                    <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">PUCC Validity</label>
                       </div>
@@ -880,6 +918,20 @@ function TaxCollectionContent() {
                           className="ui-inputtext cp-date-input"
                           value={puccValidity}
                           onChange={(e) => setPuccValidity(e.target.value)}
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Road Tax Validity</label>
+                      </div>
+                      <div className="ui-calendar">
+                        <input
+                          type="date"
+                          className="ui-inputtext cp-date-input"
+                          value={roadTaxValidity}
+                          onChange={(e) => setRoadTaxValidity(e.target.value)}
                           autoComplete="off"
                         />
                       </div>
@@ -951,19 +1003,64 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
-                  {/* Total Amount */}
+                  {/* Tax table — five fixed rows (manual amounts) */}
                   <div className="ui-grid-row">
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel field-label-mandate">Permit Fee (Rs.)</label>
+                      </div>
+                      <input type="number" className="ui-inputtext" min="0" value={permitFeeAmt}
+                        onChange={(e) => { setPermitFeeAmt(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        placeholder="0" />
+                    </div>
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel field-label-mandate">MV Tax (Rs.)</label>
+                      </div>
+                      <input type="number" className="ui-inputtext" min="0" value={mvTaxAmt}
+                        onChange={(e) => { setMvTaxAmt(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        placeholder="0" />
+                    </div>
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Service/User Charge (Rs.)</label>
+                      </div>
+                      <input type="number" className="ui-inputtext" min="0" value={userChargeAmt}
+                        onChange={(e) => { setUserChargeAmt(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        placeholder="0" />
+                    </div>
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Tax Mode</label>
+                      </div>
+                      <input type="text" className="ui-inputtext" value={taxMode} readOnly
+                        style={{ background: "#f5f5f5" }} placeholder="—" />
+                    </div>
+                  </div>
+
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">SGST (Rs.)</label>
+                      </div>
+                      <input type="number" className="ui-inputtext" min="0" value={sgstAmt}
+                        onChange={(e) => { setSgstAmt(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        placeholder="0" />
+                    </div>
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">CGST (Rs.)</label>
+                      </div>
+                      <input type="number" className="ui-inputtext" min="0" value={cgstAmt}
+                        onChange={(e) => { setCgstAmt(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        placeholder="0" />
+                    </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Total Amount.</label>
+                        <label className="ui-outputlabel field-label-mandate">Total Amount (Rs.)</label>
                       </div>
-                      <input
-                        type="text"
-                        className="ui-inputtext font-bold medium-text-font"
-                        value={totalAmount}
-                        onChange={(e) => { setTotalAmount(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
-                        placeholder="0.00"
-                      />
+                      <input type="text" className="ui-inputtext font-bold medium-text-font"
+                        value={totalAmount} readOnly placeholder="0" style={{ background: "#f5f5f5" }} />
                     </div>
                   </div>
 

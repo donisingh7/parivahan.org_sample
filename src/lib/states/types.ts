@@ -134,6 +134,13 @@ export interface ReceiptData {
   // Maharashtra-specific string weight fields
   ladenWeight?:            string;
   unladenWeight?:          string;
+  // Madhya Pradesh-specific receipt extras (FORM MPMVR-51 / CheckPost V4)
+  dto?:                    string;   // District Transport Office (e.g. "SATNA")
+  standingCapacity?:       number;
+  roadTaxValidity?:        string;
+  routesOrArea?:           string;
+  purposeOfJourney?:       string;
+  permitIssueDate?:        string;
 }
 
 // Loose Mongo doc shape — GJ reuses ladenWeight/unladenWeight above. — both lean()'d documents and POJOs work for the
@@ -223,6 +230,15 @@ export interface TxnLike {
   tsUnladenWeight?:        string;
   tsMvTax?:                number;
   tsPermitFee?:            number;
+  // Madhya Pradesh-specific fields (5-row tax + DTO + standing cap + road-tax)
+  mpDto?:                  string;
+  mpStandingCap?:          number;
+  mpRoadTaxValidity?:      string;
+  mpPermitFee?:            number;
+  mpMvTax?:                number;
+  mpUserCharge?:           number;
+  mpSgst?:                 number;
+  mpCgst?:                 number;
 }
 
 // ── State module — the contract every state folder must satisfy. ────────────
@@ -415,6 +431,15 @@ export interface TransactionDoc {
   tsUnladenWeight?:     string;
   tsMvTax?:             number;
   tsPermitFee?:         number;
+  // Madhya Pradesh-specific
+  mpDto?:               string;
+  mpStandingCap?:       number;
+  mpRoadTaxValidity?:   string;
+  mpPermitFee?:         number;
+  mpMvTax?:             number;
+  mpUserCharge?:        number;
+  mpSgst?:              number;
+  mpCgst?:              number;
 }
 
 // Re-export Schema for convenience in shared/baseSchema consumers.

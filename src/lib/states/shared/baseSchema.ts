@@ -141,6 +141,15 @@ export function createTransactionSchema(): Schema<TransactionDoc> {
       tsUnladenWeight:    { type: String, default: "" },
       tsMvTax:            { type: Number, default: 0 },
       tsPermitFee:        { type: Number, default: 0 },
+      // Madhya Pradesh-specific (DTO, standing cap, road-tax, 5-row tax split)
+      mpDto:              { type: String, default: "" },
+      mpStandingCap:      { type: Number, default: 0 },
+      mpRoadTaxValidity:  { type: String, default: "" },
+      mpPermitFee:        { type: Number, default: 0 },
+      mpMvTax:            { type: Number, default: 0 },
+      mpUserCharge:       { type: Number, default: 0 },
+      mpSgst:             { type: Number, default: 0 },
+      mpCgst:             { type: Number, default: 0 },
     },
     { timestamps: true }
   );
