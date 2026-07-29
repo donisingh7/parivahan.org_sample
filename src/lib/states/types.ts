@@ -95,8 +95,9 @@ export interface ReceiptData {
   //   cap2 = Unladen Weight. Otherwise: cap1 = Seating Capacity, cap2 = Sleeper Cap.
   cap1Label?:      string;
   cap2Label?:      string;
-  cap1Value?:      number;
-  cap2Value?:      number;
+  // number for capacities (seating/sleeper), string for weights ("2625 KG.").
+  cap1Value?:      number | string;
+  cap2Value?:      number | string;
 
   // ── State-specific receipt extras (optional, populated per-state) ───────
   // These show up on a particular state's receipt design in addition to the

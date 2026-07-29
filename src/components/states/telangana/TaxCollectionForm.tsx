@@ -78,43 +78,31 @@ const VEHICLE_CLASS_OPTIONS = [
   { value: "HEAVY GOODS VEHICLE",               label: "HEAVY GOODS VEHICLE" },
 ];
 
-// Telangana checkpost / RTO list (district RTOs — refinable with an exact
-// web-sourced border-checkpost list later).
+// Telangana checkpost list (web-informed border check posts + district RTOs;
+// pick-or-type — operator can type any checkpost not listed). Telangana runs
+// 14 state-border check posts + 1 intra-state check post at Kamareddy.
 const CHECKPOST_OPTIONS = [
-  { value: "",                     label: "---Select Checkpost Name---" },
-  { value: "HYDERABAD",            label: "HYDERABAD" },
-  { value: "RANGAREDDY",           label: "RANGAREDDY" },
-  { value: "MEDCHAL-MALKAJGIRI",   label: "MEDCHAL-MALKAJGIRI" },
-  { value: "SANGAREDDY",           label: "SANGAREDDY" },
-  { value: "NIZAMABAD",            label: "NIZAMABAD" },
-  { value: "KARIMNAGAR",           label: "KARIMNAGAR" },
-  { value: "WARANGAL",             label: "WARANGAL" },
-  { value: "HANAMKONDA",           label: "HANAMKONDA" },
-  { value: "KHAMMAM",              label: "KHAMMAM" },
-  { value: "NALGONDA",             label: "NALGONDA" },
-  { value: "MAHBUBNAGAR",          label: "MAHBUBNAGAR" },
-  { value: "ADILABAD",             label: "ADILABAD" },
-  { value: "NIRMAL",               label: "NIRMAL" },
-  { value: "MANCHERIAL",           label: "MANCHERIAL" },
-  { value: "JAGTIAL",              label: "JAGTIAL" },
-  { value: "PEDDAPALLI",           label: "PEDDAPALLI" },
-  { value: "KOTHAGUDEM",           label: "BHADRADRI KOTHAGUDEM" },
-  { value: "SURYAPET",             label: "SURYAPET" },
-  { value: "SIDDIPET",             label: "SIDDIPET" },
-  { value: "MEDAK",                label: "MEDAK" },
-  { value: "VIKARABAD",            label: "VIKARABAD" },
-  { value: "WANAPARTHY",           label: "WANAPARTHY" },
-  { value: "NAGARKURNOOL",         label: "NAGARKURNOOL" },
-  { value: "GADWAL",               label: "JOGULAMBA GADWAL" },
-  { value: "KAMAREDDY",            label: "KAMAREDDY" },
-  { value: "SIRCILLA",             label: "RAJANNA SIRCILLA" },
-  { value: "JANGAON",              label: "JANGAON" },
-  { value: "MAHABUBABAD",          label: "MAHABUBABAD" },
-  { value: "BHUPALPALLY",          label: "JAYASHANKAR BHUPALPALLY" },
-  { value: "MULUGU",               label: "MULUGU" },
-  { value: "NARAYANPET",           label: "NARAYANPET" },
-  { value: "BHUVANAGIRI",          label: "YADADRI BHUVANAGIRI" },
+  // State-border check posts (major road entry points).
+  "RAMAGUNDAM", "MANOHARABAD", "KAGAZNAGAR", "BASARA", "ZAHEERABAD",
+  "JADCHERLA", "KODAD", "KALWAKURTHY", "BHADRACHALAM", "WANKIDI",
+  "ICHODA", "KHANAPUR", "PALVANCHA", "KAMAREDDY (INTRA-STATE)",
+  // District RTOs / towns.
+  "HYDERABAD", "RANGAREDDY", "MEDCHAL-MALKAJGIRI", "SANGAREDDY", "NIZAMABAD",
+  "KARIMNAGAR", "WARANGAL", "HANAMKONDA", "KHAMMAM", "NALGONDA", "MAHBUBNAGAR",
+  "ADILABAD", "NIRMAL", "MANCHERIAL", "JAGTIAL", "PEDDAPALLI",
+  "BHADRADRI KOTHAGUDEM", "SURYAPET", "SIDDIPET", "MEDAK", "VIKARABAD",
+  "WANAPARTHY", "NAGARKURNOOL", "JOGULAMBA GADWAL", "RAJANNA SIRCILLA",
+  "JANGAON", "MAHABUBABAD", "JAYASHANKAR BHUPALPALLY", "MULUGU", "NARAYANPET",
+  "YADADRI BHUVANAGIRI",
 ];
+
+// Telangana bank reference: 10-char uppercase alphanumeric (e.g. "BKQXB4B884").
+function makeTsBankRef(): string {
+  const ALPHANUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let s = "";
+  for (let i = 0; i < 10; i++) s += ALPHANUM[Math.floor(Math.random() * ALPHANUM.length)];
+  return s;
+}
 
 // IST timestamp (UTC+5:30), browser-timezone-independent, with seconds.
 function nowIST(): string {
@@ -297,7 +285,7 @@ function TaxCollectionContent() {
     setPdfLoading(true);
     try {
       const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, state: STATE_CODE, visitingState: STATE_CODE, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleClass, checkpostName, taxMode, serviceType, tsLadenWeight, tsUnladenWeight, paymentMethod, permitType, tsMvTax: parseFloat(mvTax)||0, tsPermitFee: parseFloat(permitFee)||0, taxFrom, taxTo, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: String(Math.floor(Math.random()*900000000000+100000000000)), noOfPeriods:1, seatingCap, sleeperCap, paymentInitDate: paymentInitDateInput || nowIST(), printedOn: printedOnInput }) });
+        body: JSON.stringify({ transactionId, state: STATE_CODE, visitingState: STATE_CODE, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleClass, checkpostName, taxMode, serviceType, tsLadenWeight, tsUnladenWeight, paymentMethod, permitType, tsMvTax: parseFloat(mvTax)||0, tsPermitFee: parseFloat(permitFee)||0, taxFrom, taxTo, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: makeTsBankRef(), noOfPeriods:1, seatingCap, sleeperCap, paymentInitDate: paymentInitDateInput || nowIST(), printedOn: printedOnInput }) });
       const json = await res.json().catch(()=>({}));
       if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
       const savedId = json.transactionId || transactionId;
@@ -539,14 +527,13 @@ function TaxCollectionContent() {
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">CheckPost Name</label>
                       </div>
-                      <div className="ui-selectonemenu">
-                        <select value={checkpostName} onChange={(e) => setCheckpostName(e.target.value)}>
-                          {CHECKPOST_OPTIONS.map((c) => (
-                            <option key={c.value} value={c.value}>{c.label}</option>
-                          ))}
-                        </select>
-                        <span className="ui-selectonemenu-arrow">▼</span>
-                      </div>
+                      <input type="text" className="ui-inputtext" value={checkpostName}
+                        onChange={(e) => setCheckpostName(e.target.value.toUpperCase())}
+                        maxLength={60} autoComplete="off" list="ts-checkpost-options"
+                        placeholder="Select or type a checkpost" />
+                      <datalist id="ts-checkpost-options">
+                        {CHECKPOST_OPTIONS.map((c) => <option key={c} value={c} />)}
+                      </datalist>
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">

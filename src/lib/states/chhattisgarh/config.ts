@@ -13,7 +13,7 @@ export const chhattisgarhConfig: StateConfig = {
   govLabel:       "GOVERNMENT OF CHHATTISGARH",
   deptLabel:      "Department of Transport",
   receiptTitle:   "Checkpost Tax e-Receipt",
-  watermarkImage: "/Images/MMVD_logo.jpg",
+  watermarkImage: "/Images/chhattisgarh-seal.png",
   themeColor:     "#a83232",
   collection:     "chhattisgarh_transactions",
 };

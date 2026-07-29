@@ -78,38 +78,15 @@ const VEHICLE_CLASS_OPTIONS = [
   { value: "HEAVY GOODS VEHICLE",               label: "HEAVY GOODS VEHICLE" },
 ];
 
-// Chhattisgarh checkpost / RTO list (district RTOs — refinable with an exact
-// web-sourced border-checkpost list later).
+// Chhattisgarh checkpost / RTO list (web-informed district RTOs + border towns;
+// pick-or-type — operator can type any checkpost not listed, e.g. "AMBIKAPUR RTO").
 const CHECKPOST_OPTIONS = [
-  { value: "",                  label: "---Select Checkpost Name---" },
-  { value: "AMBIKAPUR",         label: "AMBIKAPUR" },
-  { value: "RAIPUR",            label: "RAIPUR" },
-  { value: "BILASPUR",          label: "BILASPUR" },
-  { value: "DURG",              label: "DURG" },
-  { value: "BHILAI",            label: "BHILAI" },
-  { value: "RAJNANDGAON",       label: "RAJNANDGAON" },
-  { value: "JAGDALPUR",         label: "JAGDALPUR" },
-  { value: "KORBA",             label: "KORBA" },
-  { value: "RAIGARH",           label: "RAIGARH" },
-  { value: "DHAMTARI",          label: "DHAMTARI" },
-  { value: "MAHASAMUND",        label: "MAHASAMUND" },
-  { value: "KANKER",            label: "KANKER" },
-  { value: "KAWARDHA",          label: "KAWARDHA" },
-  { value: "JANJGIR-CHAMPA",    label: "JANJGIR-CHAMPA" },
-  { value: "BEMETARA",          label: "BEMETARA" },
-  { value: "BALODA BAZAR",      label: "BALODA BAZAR" },
-  { value: "MUNGELI",           label: "MUNGELI" },
-  { value: "SURAJPUR",          label: "SURAJPUR" },
-  { value: "BAIKUNTHPUR",       label: "BAIKUNTHPUR (KORIYA)" },
-  { value: "JASHPUR",           label: "JASHPUR" },
-  { value: "KONDAGAON",         label: "KONDAGAON" },
-  { value: "DANTEWADA",         label: "DANTEWADA" },
-  { value: "BIJAPUR",           label: "BIJAPUR" },
-  { value: "NARAYANPUR",        label: "NARAYANPUR" },
-  { value: "SUKMA",             label: "SUKMA" },
-  { value: "BALOD",             label: "BALOD" },
-  { value: "GARIABAND",         label: "GARIABAND" },
-  { value: "BALRAMPUR",         label: "BALRAMPUR" },
+  "AMBIKAPUR RTO", "RAIPUR RTO", "BILASPUR RTO", "DURG RTO", "BHILAI",
+  "RAJNANDGAON", "JAGDALPUR RTO", "KORBA", "RAIGARH RTO", "DHAMTARI",
+  "MAHASAMUND", "KANKER", "KAWARDHA (KABIRDHAM)", "JANJGIR-CHAMPA", "BEMETARA",
+  "BALODA BAZAR", "MUNGELI", "SURAJPUR", "BAIKUNTHPUR (KORIYA)", "JASHPUR",
+  "KONDAGAON", "DANTEWADA", "BIJAPUR", "NARAYANPUR", "SUKMA", "BALOD",
+  "GARIABAND", "BALRAMPUR", "SURGUJA",
 ];
 
 // IST timestamp (UTC+5:30), browser-timezone-independent, with seconds.
@@ -535,14 +512,13 @@ function TaxCollectionContent() {
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">CheckPost Name</label>
                       </div>
-                      <div className="ui-selectonemenu">
-                        <select value={checkpostName} onChange={(e) => setCheckpostName(e.target.value)}>
-                          {CHECKPOST_OPTIONS.map((c) => (
-                            <option key={c.value} value={c.value}>{c.label}</option>
-                          ))}
-                        </select>
-                        <span className="ui-selectonemenu-arrow">▼</span>
-                      </div>
+                      <input type="text" className="ui-inputtext" value={checkpostName}
+                        onChange={(e) => setCheckpostName(e.target.value.toUpperCase())}
+                        maxLength={60} autoComplete="off" list="cg-checkpost-options"
+                        placeholder="Select or type a checkpost" />
+                      <datalist id="cg-checkpost-options">
+                        {CHECKPOST_OPTIONS.map((c) => <option key={c} value={c} />)}
+                      </datalist>
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">

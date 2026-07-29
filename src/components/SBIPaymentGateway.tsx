@@ -486,7 +486,7 @@ function SBIContent() {
     else if (stateCode === "MH") orderRef = generateMHBankRef();
     else if (stateCode === "GJ") orderRef = generateMHBankRef();
     else if (stateCode === "CG") orderRef = generateMHBankRef();
-    else if (stateCode === "TS") orderRef = generateMHBankRef();
+    else if (stateCode === "TS") orderRef = generateHRBankRef();
     else if (stateCode === "OR") orderRef = generateHRBankRef();
     else if (stateCode === "MP") orderRef = generateMHBankRef();
     else if (stateCode === "TN") orderRef = generateHRBankRef();

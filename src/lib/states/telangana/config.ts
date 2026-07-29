@@ -13,7 +13,7 @@ export const telanganaConfig: StateConfig = {
   govLabel:       "GOVERNMENT OF TELANGANA",
   deptLabel:      "Department of Transport",
   receiptTitle:   "Checkpost Tax e-Receipt",
-  watermarkImage: "/Images/MMVD_logo.jpg",
+  watermarkImage: "/Images/telangana-seal.png",
   themeColor:     "#a83232",
   collection:     "telangana_transactions",
 };

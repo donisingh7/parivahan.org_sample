@@ -4,6 +4,9 @@
  * Both the on-screen ReceiptTemplate and the PDF generator (generateReceipt.js)
  * consume the shape produced here, so a single Mongo Transaction document
  * drives identical output everywhere.
+ *
+ * Tax rows are dynamic: MV Tax and Permit Fee each appear only when their
+ * amount is greater than zero, so a receipt never shows an empty/₹0 line.
  */
 
 import {
@@ -16,6 +19,7 @@ import {
   resolveLabel,
 } from "../shared/masking";
 import { numberToWords } from "../shared/numberToWords";
+import { buildGoodsCaps } from "../shared/goodsCaps";
 import type { ReceiptData, TxnLike } from "../types";
 
 // Always render in IST (UTC+5:30) regardless of server timezone. Used for
@@ -35,20 +39,35 @@ function fmtDateWithSecs(d: Date): string {
 }
 
 export function buildTelanganaReceiptData(txn: TxnLike): ReceiptData {
-  const amount       = Number(txn.amount)    || 0;
-  const paymentDate  = txn.paidAt ? new Date(txn.paidAt) : new Date();
+  const paymentDate     = txn.paidAt ? new Date(txn.paidAt) : new Date();
   const paymentDateText = fmtPaymentDate(paymentDate);
-  const receiptNo    = txn.receiptNo || "-";
+  const receiptNo       = txn.receiptNo || "-";
 
-  // Read TS-specific fields from the document record.
   const ts = txn as Record<string, unknown>;
-  const mvTax     = Number(ts.tsMvTax)    || 0;
+  const mvTax     = Number(ts.tsMvTax)     || 0;
   const permitFee = Number(ts.tsPermitFee) || 0;
 
-  // MV Tax row shows the tax period the user picked, e.g.
-  // "MV Tax(13-JUL-2026 To 15-JUL-2026)".
-  const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null);
-  const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null);
+  const taxFromLabel = fmtTaxDate(txn.taxFrom ?? null).toUpperCase();
+  const taxToLabel   = fmtTaxDate(txn.taxTo   ?? null).toUpperCase();
+
+  // Dynamic rows: only include a fee that is actually charged.
+  const taxItems: ReceiptData["taxItems"] = [];
+  if (mvTax > 0) {
+    taxItems.push({ particular: `MV Tax(${taxFromLabel} TO ${taxToLabel})`, fees: mvTax, fine: 0, total: mvTax });
+  }
+  if (permitFee > 0) {
+    taxItems.push({ particular: "Permit Fee", fees: permitFee, fine: 0, total: permitFee });
+  }
+  const amount = mvTax + permitFee;
+
+  // Two capacity slots toggle for goods vs passenger vehicles.
+  const caps = buildGoodsCaps(
+    txn.vehicleType,
+    { label1: "Gross Vehicle Wt(In Kg.)", label2: "Unladen Wt(In Kg.)",
+      value1: (ts.tsLadenWeight as string) || "", value2: (ts.tsUnladenWeight as string) || "" },
+    { label1: "Seating Capacity", label2: "Sleeper Cap.",
+      value1: Number(txn.seatingCap) || 0, value2: Number(txn.sleeperCap) || 0 },
+  );
 
   return {
     registrationNo:  txn.vehicleNo    || "-",
@@ -74,17 +93,13 @@ export function buildTelanganaReceiptData(txn: TxnLike): ReceiptData {
     qrUrl:           `https://kms.parivahan.gov.in/verify?receipt=${receiptNo}`,
     amount,
     amountInWords:   numberToWords(amount),
-    taxItems: [
-      { particular: `MV Tax(${taxFromLabel.toUpperCase()} TO ${taxToLabel.toUpperCase()})`, fees: mvTax,     fine: 0, total: mvTax     },
-      { particular: "Permit fee",                               fees: permitFee, fine: 0, total: permitFee },
-    ],
-    // TS-specific string weight fields
+    taxItems,
+    // TS-specific string weight fields (kept for the on-screen template).
     ladenWeight:    (ts.tsLadenWeight   as string) || "-",
     unladenWeight:  (ts.tsUnladenWeight as string) || "-",
-    cap1Label: (String(txn.vehicleType || '')).toUpperCase() === 'GOODS VEHICLE' ? 'Gross Vehicle\nWt(In. Kg)' : 'Seating\nCapacity',
-    cap2Label: (String(txn.vehicleType || '')).toUpperCase() === 'GOODS VEHICLE' ? 'Unladen\nWt(In Kg.)' : 'Sleeper Cap',
-    cap1Value: (String(txn.vehicleType || '')).toUpperCase() === 'GOODS VEHICLE' ? (Number(ts.tsLadenWeight as string) || 0) : (Number(txn.seatingCap) || 0),
-    cap2Value: (String(txn.vehicleType || '')).toUpperCase() === 'GOODS VEHICLE' ? (Number(ts.tsUnladenWeight as string) || 0) : (Number(txn.sleeperCap) || 0),
+    cap1Label: caps.cap1Label,
+    cap2Label: caps.cap2Label,
+    cap1Value: caps.cap1Value,
+    cap2Value: caps.cap2Value,
   };
 }
-
