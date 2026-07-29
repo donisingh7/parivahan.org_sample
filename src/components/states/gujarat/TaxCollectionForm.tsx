@@ -760,7 +760,7 @@ function TaxCollectionContent() {
                         type="number"
                         className="ui-inputtext"
                         value={mvTax}
-                        onChange={(e) => { setMvTax(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        onChange={(e) => { setMvTax(e.target.value.replace(/[^0-9.]/g, "")); setTotalAmount(""); setFormError(""); }}
                         placeholder="Enter MV Tax"
                         min="0"
                       />
@@ -773,7 +773,7 @@ function TaxCollectionContent() {
                         type="number"
                         className="ui-inputtext"
                         value={permitFee}
-                        onChange={(e) => { setPermitFee(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        onChange={(e) => { setPermitFee(e.target.value.replace(/[^0-9.]/g, "")); setTotalAmount(""); setFormError(""); }}
                         placeholder={`Enter ${permitFeeLabel}`}
                         min="0"
                       />

@@ -816,6 +816,7 @@ function TaxCollectionContent() {
                         value={mvTax}
                         onChange={(e) => {
                           setMvTax(e.target.value.replace(/[^0-9.]/g, ""));
+                          setTotalAmount("");   // force a fresh Calculate Tax
                           setFormError("");
                         }}
                         placeholder="Enter MV Tax amount"

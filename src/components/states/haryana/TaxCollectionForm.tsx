@@ -205,6 +205,8 @@ function TaxCollectionContent() {
   const [taxTo,             setTaxTo]             = useState("");
   const [taxToTime,         setTaxToTime]         = useState("23:59");
   const [totalAmount,       setTotalAmount]       = useState("0");
+  // Gate: PDF/Pay require a deliberate Calculate Tax; editing the total resets it.
+  const [taxCalculated,     setTaxCalculated]     = useState(false);
 
   const [paymentInitDateInput, setPaymentInitDateInput] = useState("");
   const [paymentConfDateInput, setPaymentConfDateInput] = useState("");
@@ -275,6 +277,7 @@ function TaxCollectionContent() {
     if (!taxFrom)                                     missing.push("Tax From Date");
     if (!taxTo)                                       missing.push("Tax Upto Date");
     if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("Total Amount");
+    else if (!taxCalculated)                          missing.push("Total Amount (click Calculate Tax first)");
     if (missing.length > 0) {
       setFormError(`Please fill the following before paying: ${missing.join(", ")}`);
       return;
@@ -321,7 +324,7 @@ function TaxCollectionContent() {
     setFromState(""); setVehicleType(""); setVehicleCategory(""); setVehicleClass("");
     setSeatingCap(""); setSleeperCap("0"); setGrossVehicleWt(""); setUnladenWt(""); setServiceType(""); setDistance(""); setTaxMode("");
     setBorderDistrict(""); setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity("");
-    setTaxFrom(""); setTaxFromTime("00:00"); setTaxTo(""); setTaxToTime("23:59"); setTotalAmount("0");
+    setTaxFrom(""); setTaxFromTime("00:00"); setTaxTo(""); setTaxToTime("23:59"); setTotalAmount("0"); setTaxCalculated(false);
     setPaymentInitDateInput(""); setPaymentConfDateInput(""); setPrintedOnInput("");
     setDateError(""); setFormError(""); setShowModal(false); setPdfError("");
     setNavOpen(false); setReportsOpen(false);
@@ -334,6 +337,8 @@ function TaxCollectionContent() {
     if (!vehicleNo.trim()) missing.push("Registration No.");
     if (!taxFrom)          missing.push("Tax From Date");
     if (!taxTo)            missing.push("Tax Upto Date");
+    if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("Total Amount");
+    else if (!taxCalculated)                          missing.push("Total Amount (click Calculate Tax first)");
     if (missing.length > 0) { setPdfError(`Please fill the following before downloading: ${missing.join(", ")}`); return; }
     const d = new Date(); const yy = String(d.getFullYear()).slice(2); const mm = String(d.getMonth()+1).padStart(2,"0"); const dd2 = String(d.getDate()).padStart(2,"0");
     const receiptNo = `HRT${Date.now()}`;
@@ -912,7 +917,7 @@ function TaxCollectionContent() {
                         type="text"
                         className="ui-inputtext font-bold medium-text-font"
                         value={totalAmount}
-                        onChange={(e) => { setTotalAmount(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        onChange={(e) => { setTotalAmount(e.target.value.replace(/[^0-9.]/g, "")); setTaxCalculated(false); setFormError(""); }}
                         placeholder="0"
                       />
                     </div>
@@ -924,7 +929,14 @@ function TaxCollectionContent() {
                       className="ui-grid-col-12 top_mar1"
                       style={{ display: "flex", flexWrap: "wrap", gap: "14px", justifyContent: "center", marginTop: "16px" }}
                     >
-                      <button className="ui-button" type="button">
+                      <button
+                        className="ui-button"
+                        type="button"
+                        onClick={() => {
+                          if ((parseFloat(totalAmount) || 0) > 0) { setTaxCalculated(true); setFormError(""); }
+                          else { setTaxCalculated(false); setFormError("Please enter Total Amount, then Calculate Tax."); }
+                        }}
+                      >
                         <i className="fa fa-calculator"></i>
                         <span className="ui-button-text">Calculate Tax</span>
                       </button>

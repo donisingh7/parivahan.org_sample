@@ -2,7 +2,7 @@
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TaxDateField, PaymentDateTimeField } from "../shared/TaxDateField";
-import { uttarPradeshConfig } from "@/lib/states/uttarpradesh/config";
+import { tamilNaduConfig } from "@/lib/states/tamilnadu/config";
 
 /**
  * Uttar Pradesh checkpost border-tax collection form.
@@ -31,8 +31,8 @@ import { uttarPradeshConfig } from "@/lib/states/uttarpradesh/config";
  * pixel-for-pixel.
  */
 
-const STATE_CODE  = uttarPradeshConfig.code;
-const STATE_LABEL = uttarPradeshConfig.label;
+const STATE_CODE  = tamilNaduConfig.code;
+const STATE_LABEL = tamilNaduConfig.label;
 
 const BASE   = "https://checkpost.parivahan.gov.in";
 const LOGO   = `${BASE}/checkpost/faces/javax.faces.resource/checkpost-logo.png?ln=images`;
@@ -147,44 +147,14 @@ const PERMIT_TYPE_OPTIONS = [
   { value: "SEPECIAL PERMIT",   label: "SEPECIAL PERMIT" },
 ];
 
-// UP's 35 border-district options (inspect lines 5527-5563).
-const BORDER_DISTRICT_OPTIONS = [
-  { value: "",                    label: "---Select Barrier---" },
-  { value: "AGRA",                label: "AGRA" },
-  { value: "ALIGARH",             label: "ALIGARH" },
-  { value: "BAGHPAT",             label: "BAGHPAT" },
-  { value: "BAHRAICH",            label: "BAHRAICH" },
-  { value: "BALLIA",              label: "BALLIA" },
-  { value: "BALRAMPUR",           label: "BALRAMPUR" },
-  { value: "BANDA",               label: "BANDA" },
-  { value: "BAREILLY",            label: "BAREILLY" },
-  { value: "BIJNOR",              label: "BIJNOR" },
-  { value: "CHANDAULI",           label: "CHANDAULI" },
-  { value: "CHITRAKOOT",          label: "CHITRAKOOT" },
-  { value: "DEORIA",              label: "DEORIA" },
-  { value: "ETAWAH",              label: "ETAWAH" },
-  { value: "GAUTAM BUDDHA NAGAR", label: "GAUTAM BUDDHA NAGAR" },
-  { value: "GHAZIABAD",           label: "GHAZIABAD" },
-  { value: "GHAZIPUR",            label: "GHAZIPUR" },
-  { value: "HAMIRPUR",            label: "HAMIRPUR" },
-  { value: "JHANSI",              label: "JHANSI" },
-  { value: "KUSHINAGAR",          label: "KUSHINAGAR" },
-  { value: "LAKHIMPUR",           label: "LAKHIMPUR" },
-  { value: "LALITPUR",            label: "LALITPUR" },
-  { value: "MAHARAJGANJ",         label: "MAHARAJGANJ" },
-  { value: "MAHOBA",              label: "MAHOBA" },
-  { value: "MATHURA",             label: "MATHURA" },
-  { value: "MIRZAPUR",            label: "MIRZAPUR" },
-  { value: "MUZAFFARNAGAR",       label: "MUZAFFARNAGAR" },
-  { value: "ORAI",                label: "ORAI" },
-  { value: "PILIBHIT",            label: "PILIBHIT" },
-  { value: "PRAYAGRAJ",           label: "PRAYAGRAJ" },
-  { value: "RAMPUR",              label: "RAMPUR" },
-  { value: "SAHARANPUR",          label: "SAHARANPUR" },
-  { value: "SHAMLI",              label: "SHAMLI" },
-  { value: "SHRAVASTI",           label: "SHRAVASTI" },
-  { value: "SIDDHARTH NAGAR",     label: "SIDDHARTH NAGAR" },
-  { value: "SONBHADRA",           label: "SONBHADRA" },
+// Tamil Nadu checkpost list (web-confirmed border/RTO checkposts + major border
+// towns — pick-or-type, operator can type any checkpost not listed).
+const CHECKPOST_OPTIONS = [
+  "HOSUR", "BAGALUR", "THIRUCHITRAMBALAM", "VANIYAMBADI", "KRISHNAGIRI",
+  "DHARMAPURI", "VELLORE", "SALEM", "COIMBATORE", "ERODE", "GUDALUR",
+  "OOTY (NILGIRIS)", "KUMILY", "BODINAYAKANUR", "DINDIGUL", "MADURAI",
+  "THENI", "TIRUNELVELI", "KANYAKUMARI", "CUDDALORE", "TIRUVANNAMALAI",
+  "NAGERCOIL", "PALLADAM", "METTUPALAYAM", "PENNAGARAM",
 ];
 
 // IST timestamp (UTC+5:30), browser-timezone-independent, with seconds.
@@ -200,6 +170,14 @@ function nowIST(): string {
   const ap  = hh >= 12 ? "PM" : "AM";
   hh = hh % 12 || 12;
   return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
+}
+
+// TN bank reference: 10-char uppercase alphanumeric (e.g. "CHX6046256").
+function makeTnBankRef(): string {
+  const ALPHANUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let s = "";
+  for (let i = 0; i < 10; i++) s += ALPHANUM[Math.floor(Math.random() * ALPHANUM.length)];
+  return s;
 }
 
 function TaxCollectionContent() {
@@ -221,7 +199,7 @@ function TaxCollectionContent() {
   const [unladenWt,         setUnladenWt]         = useState("");
   const [serviceType,       setServiceType]       = useState("");
   const [taxMode,           setTaxMode]           = useState("");
-  const [borderDistrict,    setBorderDistrict]    = useState("");
+  const [checkpostName,     setCheckpostName]     = useState("");
   const [taxFrom,           setTaxFrom]           = useState("");
   const [taxTo,             setTaxTo]             = useState("");
   const [permitType,        setPermitType]        = useState("");
@@ -230,9 +208,14 @@ function TaxCollectionContent() {
   const [fitnessValidity,   setFitnessValidity]   = useState("");
   const [insuranceValidity, setInsuranceValidity] = useState("");
   const [puccValidity,      setPuccValidity]      = useState("");
-  const [totalAmount,       setTotalAmount]       = useState("0");
-  // Gate: PDF/Pay require a deliberate Calculate Tax; editing the total resets it.
-  const [taxCalculated,     setTaxCalculated]     = useState(false);
+  const [greenTaxValidity,  setGreenTaxValidity]  = useState("");
+  const [basePermitValidity, setBasePermitValidity] = useState("");
+  // Four fixed tax rows (manual amounts). Total is set by Calculate Tax.
+  const [permitFeeAmt,  setPermitFeeAmt]  = useState("");
+  const [mvTaxAmt,      setMvTaxAmt]      = useState("");
+  const [welfareTaxAmt, setWelfareTaxAmt] = useState("");
+  const [userChargeAmt, setUserChargeAmt] = useState("");
+  const [totalAmount,   setTotalAmount]   = useState("");
   const [paymentInitDateInput, setPaymentInitDateInput] = useState("");
   const [paymentConfDateInput, setPaymentConfDateInput] = useState("");
   const [printedOnInput,       setPrintedOnInput]       = useState("");
@@ -246,6 +229,23 @@ function TaxCollectionContent() {
   const [reportsOpen, setReportsOpen] = useState(false);
 
   const router = useRouter();
+
+  // Calculate Tax: sum the four tax rows. Total must be calculated before
+  // Pay/PDF; changing any fee clears it (strict re-calculate rule).
+  const handleCalculateTax = () => {
+    const sum =
+      (parseFloat(permitFeeAmt)  || 0) +
+      (parseFloat(mvTaxAmt)      || 0) +
+      (parseFloat(welfareTaxAmt) || 0) +
+      (parseFloat(userChargeAmt) || 0);
+    setTotalAmount(sum > 0 ? String(sum) : "");
+    setFormError(sum > 0 ? "" : "Please enter at least one tax amount, then Calculate Tax.");
+  };
+  const onFeeChange = (setter: (v: string) => void) => (raw: string) => {
+    setter(raw.replace(/[^0-9.]/g, ""));
+    setTotalAmount("");   // force a fresh Calculate Tax
+    setFormError("");
+  };
 
   // ── Handlers ───────────────────────────────────────────────────────────
 
@@ -304,7 +304,6 @@ function TaxCollectionContent() {
     if (!taxFrom)                                     missing.push("Tax From");
     if (!taxTo)                                       missing.push("Tax Upto");
     if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("Total Amount");
-    else if (!taxCalculated)                          missing.push("Total Amount (click Calculate Tax first)");
     if (missing.length > 0) {
       setFormError(`Please fill the following before paying: ${missing.join(", ")}`);
       return;
@@ -328,7 +327,9 @@ function TaxCollectionContent() {
       sleeperCap,
       serviceType,
       taxMode,
-      borderDistrict,
+      checkpostName,
+      grossVehicleWt,
+      unladenWt,
       taxFrom,
       taxTo,
       permitType,
@@ -337,6 +338,12 @@ function TaxCollectionContent() {
       fitnessValidity,
       insuranceValidity,
       puccValidity,
+      tnGreenTaxValidity:   greenTaxValidity,
+      tnBasePermitValidity: basePermitValidity,
+      tnPermitFee:  permitFeeAmt  || "0",
+      tnMvTax:      mvTaxAmt      || "0",
+      tnWelfareTax: welfareTaxAmt || "0",
+      tnUserCharge: userChargeAmt || "0",
       amount: totalAmount || "0",
       paymentInitDate: paymentInitDateInput || nowIST(),
       paymentConfDate: paymentConfDateInput,
@@ -348,11 +355,12 @@ function TaxCollectionContent() {
   const handleReset = () => {
     setVehicleNo(""); setChassisNo(""); setOwnerName(""); setMobileNo("");
     setFromState(""); setVehicleType(""); setVehicleCategory(""); setVehicleClass("");
-    setSeatingCap(""); setSleeperCap("0"); setGrossVehicleWt(""); setUnladenWt(""); setServiceType(""); setTaxMode("");
-    setBorderDistrict(""); setTaxFrom(""); setTaxTo("");
+    setSeatingCap(""); setSleeperCap("0"); setGrossVehicleWt(""); setUnladenWt("");
+    setServiceType(""); setTaxMode("");
+    setCheckpostName(""); setTaxFrom(""); setTaxTo("");
     setPermitType(""); setPermitUpto(""); setPermitNumber("");
-    setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity("");
-    setTotalAmount("0"); setTaxCalculated(false);
+    setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity(""); setGreenTaxValidity(""); setBasePermitValidity("");
+    setPermitFeeAmt(""); setMvTaxAmt(""); setWelfareTaxAmt(""); setUserChargeAmt(""); setTotalAmount("");
     setPaymentInitDateInput(""); setPaymentConfDateInput(""); setPrintedOnInput("");
     setDateError(""); setFormError(""); setShowModal(false); setPdfError("");
     setNavOpen(false); setReportsOpen(false);
@@ -366,20 +374,19 @@ function TaxCollectionContent() {
     if (!taxFrom)                                     missing.push("Tax From Date");
     if (!taxTo)                                       missing.push("Tax Upto Date");
     if (!totalAmount || parseFloat(totalAmount) <= 0) missing.push("Total Amount");
-    else if (!taxCalculated)                          missing.push("Total Amount (click Calculate Tax first)");
     if (missing.length > 0) { setPdfError(`Please fill the following before downloading: ${missing.join(", ")}`); return; }
     const d = new Date(); const yy = String(d.getFullYear()).slice(2); const mm = String(d.getMonth()+1).padStart(2,"0"); const dd2 = String(d.getDate()).padStart(2,"0");
     const rand = Math.floor(Math.random()*9000000+1000000);
-    const receiptNo = `UPR${yy}${mm}${dd2}${rand}`;
+    const receiptNo = `TNR${yy}${mm}${dd2}${rand}`;
     const transactionId = `TXN${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2,6).toUpperCase()}`;
     setPdfLoading(true);
     try {
       const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, seatingCap, sleeperCap, serviceType, taxMode, borderDistrict, taxFrom, taxTo, permitType, permitUpto, permitNumber, fitnessValidity, insuranceValidity, puccValidity, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`, noOfPeriods:1, grossVehicleWt, unladenWt, paymentInitDate: paymentInitDateInput || nowIST(), paymentConfDate: paymentConfDateInput, printedOn: printedOnInput }) });
+        body: JSON.stringify({ transactionId, state: stateCode, visitingState: stateCode, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, seatingCap, sleeperCap, serviceType, taxMode, checkpostName, taxFrom, taxTo, permitType, permitUpto, permitNumber, fitnessValidity, insuranceValidity, puccValidity, tnGreenTaxValidity: greenTaxValidity, tnBasePermitValidity: basePermitValidity, tnPermitFee: parseFloat(permitFeeAmt)||0, tnMvTax: parseFloat(mvTaxAmt)||0, tnWelfareTax: parseFloat(welfareTaxAmt)||0, tnUserCharge: parseFloat(userChargeAmt)||0, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: makeTnBankRef(), noOfPeriods:1, grossVehicleWt, unladenWt, paymentInitDate: paymentInitDateInput || nowIST(), paymentConfDate: paymentConfDateInput, printedOn: printedOnInput }) });
       const json = await res.json().catch(()=>({}));
       if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
       const savedId = json.transactionId || transactionId;
-      const link = document.createElement("a"); link.href=`/api/receipt/${savedId}?state=UP&download=1`; link.download=`receipt_${savedId}.pdf`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      const link = document.createElement("a"); link.href=`/api/receipt/${savedId}?state=TN&download=1`; link.download=`receipt_${savedId}.pdf`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
     } catch(err) { setPdfError(err instanceof Error ? err.message : "PDF download failed."); }
     finally { setPdfLoading(false); }
   };
@@ -491,7 +498,7 @@ function TaxCollectionContent() {
             Verify the validity of the receipt by sending sms&nbsp;
             <strong className="cp-news-highlight">VAHAN &lt;STATE CODE&gt; CP &lt;VEHICLE NO&gt;</strong>
             &nbsp;to 7738299899 (e.g.&nbsp;
-            <strong className="cp-news-highlight">VAHAN UP CP XXXXXXXXXX</strong>)
+            <strong className="cp-news-highlight">VAHAN TN CP XXXXXXXXXX</strong>)
           </div>
         </div>
       </div>
@@ -510,7 +517,7 @@ function TaxCollectionContent() {
           {/* Page heading */}
           <div className="ui-grid-row top-space center-position contents-Space">
             <h1 className="header-main">
-              <span style={{ color: uttarPradeshConfig.themeColor, fontWeight: "bold" }}>
+              <span style={{ color: tamilNaduConfig.themeColor, fontWeight: "bold" }}>
                 BORDER TAX PAYMENT FOR ENTRY INTO
               </span>
               <span className="red"> {stateLabel || "STATE"}</span>
@@ -538,7 +545,7 @@ function TaxCollectionContent() {
                         value={vehicleNo}
                         onChange={(e) => setVehicleNo(e.target.value.toUpperCase())}
                         autoComplete="off"
-                        placeholder="e.g. UP14AB1234"
+                        placeholder="e.g. TN01AB1234"
                       />
                     </div>
                     <div className="ui-grid-col-6">
@@ -738,23 +745,39 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
-                  {/* Row 6: Border/Barrier District (col-6) + Tax From (col-3) +
-                      Tax Upto (col-3) — inspect 5520-5580. */}
+                  {/* Row 6: CheckPost Name (pick-or-type) + Green Tax Validity */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Border/Barrier District through Entering</label>
+                        <label className="ui-outputlabel field-label-mandate">CheckPost Name</label>
                       </div>
-                      <div className="ui-selectonemenu">
-                        <select value={borderDistrict} onChange={(e) => setBorderDistrict(e.target.value)}>
-                          {BORDER_DISTRICT_OPTIONS.map((d) => (
-                            <option key={d.value} value={d.value}>{d.label}</option>
-                          ))}
-                        </select>
-                        <span className="ui-selectonemenu-arrow">▼</span>
+                      <input type="text" className="ui-inputtext" value={checkpostName}
+                        onChange={(e) => setCheckpostName(e.target.value.toUpperCase())}
+                        maxLength={60} autoComplete="off" list="tn-checkpost-options"
+                        placeholder="Select or type a checkpost" />
+                      <datalist id="tn-checkpost-options">
+                        {CHECKPOST_OPTIONS.map((c) => <option key={c} value={c} />)}
+                      </datalist>
+                    </div>
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Green Tax Validity</label>
+                      </div>
+                      <div className="ui-calendar">
+                        <input
+                          type="date"
+                          className="ui-inputtext cp-date-input"
+                          value={greenTaxValidity}
+                          onChange={(e) => setGreenTaxValidity(e.target.value)}
+                          autoComplete="off"
+                        />
                       </div>
                     </div>
-                    <div className="ui-grid-col-3">
+                  </div>
+
+                  {/* Row 6b: Tax From + Tax Upto */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Tax From</label>
                       </div>
@@ -764,7 +787,7 @@ function TaxCollectionContent() {
                         hasError={!!(dateError && taxFrom && taxTo && taxFrom > taxTo)}
                       />
                     </div>
-                    <div className="ui-grid-col-3">
+                    <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">Tax Upto</label>
                       </div>
@@ -852,7 +875,7 @@ function TaxCollectionContent() {
                         />
                       </div>
                     </div>
-                    <div className="ui-grid-col-6">
+                    <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel field-label-mandate">PUCC Validity</label>
                       </div>
@@ -862,6 +885,20 @@ function TaxCollectionContent() {
                           className="ui-inputtext cp-date-input"
                           value={puccValidity}
                           onChange={(e) => setPuccValidity(e.target.value)}
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Base Permit Validity</label>
+                      </div>
+                      <div className="ui-calendar">
+                        <input
+                          type="date"
+                          className="ui-inputtext cp-date-input"
+                          value={basePermitValidity}
+                          onChange={(e) => setBasePermitValidity(e.target.value)}
                           autoComplete="off"
                         />
                       </div>
@@ -933,19 +970,57 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
-                  {/* Total Amount */}
+                  {/* Tax table — four fixed rows (manual amounts). Any change
+                      clears Total; user must press Calculate Tax again. */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel field-label-mandate">Permit Fee (Rs.)</label>
+                      </div>
+                      <input type="number" className="ui-inputtext" min="0" value={permitFeeAmt}
+                        onChange={(e) => onFeeChange(setPermitFeeAmt)(e.target.value)}
+                        placeholder="0" />
+                    </div>
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel field-label-mandate">MV Tax (Rs.)</label>
+                      </div>
+                      <input type="number" className="ui-inputtext" min="0" value={mvTaxAmt}
+                        onChange={(e) => onFeeChange(setMvTaxAmt)(e.target.value)}
+                        placeholder="0" />
+                    </div>
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Welfare Tax (Rs.)</label>
+                      </div>
+                      <input type="number" className="ui-inputtext" min="0" value={welfareTaxAmt}
+                        onChange={(e) => onFeeChange(setWelfareTaxAmt)(e.target.value)}
+                        placeholder="0" />
+                    </div>
+                    <div className="ui-grid-col-3">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Service/User Charge (Rs.)</label>
+                      </div>
+                      <input type="number" className="ui-inputtext" min="0" value={userChargeAmt}
+                        onChange={(e) => onFeeChange(setUserChargeAmt)(e.target.value)}
+                        placeholder="0" />
+                    </div>
+                  </div>
+
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel field-label-mandate">Total Amount.</label>
+                        <label className="ui-outputlabel">Tax Mode</label>
                       </div>
-                      <input
-                        type="text"
-                        className="ui-inputtext font-bold medium-text-font"
-                        value={totalAmount}
-                        onChange={(e) => { setTotalAmount(e.target.value.replace(/[^0-9.]/g, "")); setTaxCalculated(false); setFormError(""); }}
-                        placeholder="0.00"
-                      />
+                      <input type="text" className="ui-inputtext" value={taxMode} readOnly
+                        style={{ background: "#f5f5f5" }} placeholder="—" />
+                    </div>
+                    <div className="ui-grid-col-6">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel field-label-mandate">Total Amount (Rs.)</label>
+                      </div>
+                      <input type="text" className="ui-inputtext font-bold medium-text-font"
+                        value={totalAmount} readOnly placeholder="0" style={{ background: "#f5f5f5" }} />
                     </div>
                   </div>
 
@@ -955,14 +1030,7 @@ function TaxCollectionContent() {
                       className="ui-grid-col-12 top_mar1"
                       style={{ display: "flex", flexWrap: "wrap", gap: "14px", justifyContent: "center", marginTop: "16px" }}
                     >
-                      <button
-                        className="ui-button"
-                        type="button"
-                        onClick={() => {
-                          if ((parseFloat(totalAmount) || 0) > 0) { setTaxCalculated(true); setFormError(""); }
-                          else { setTaxCalculated(false); setFormError("Please enter Total Amount, then Calculate Tax."); }
-                        }}
-                      >
+                      <button className="ui-button" type="button" onClick={handleCalculateTax}>
                         <i className="fa fa-calculator"></i>
                         <span className="ui-button-text">Calculate Tax</span>
                       </button>

@@ -10,6 +10,7 @@ import ChhattisgarhForm    from "@/components/states/chhattisgarh/TaxCollectionF
 import TelanganaForm       from "@/components/states/telangana/TaxCollectionForm";
 import OdishaForm          from "@/components/states/odisha/TaxCollectionForm";
 import MadhyaPradeshForm   from "@/components/states/madhyapradesh/TaxCollectionForm";
+import TamilNaduForm       from "@/components/states/tamilnadu/TaxCollectionForm";
 import JharkhandForm       from "@/components/states/jharkhand/TaxCollectionForm";
 import PunjabForm          from "@/components/states/punjab/TaxCollectionForm";
 import UttarPradeshForm    from "@/components/states/uttarpradesh/TaxCollectionForm";
@@ -39,6 +40,7 @@ const FORM_COMPONENTS: Record<StateCode, ComponentType> = {
   TS: TelanganaForm,
   OR: OdishaForm,
   MP: MadhyaPradeshForm,
+  TN: TamilNaduForm,
   JH: JharkhandForm,
   PB: PunjabForm,
   UP: UttarPradeshForm,

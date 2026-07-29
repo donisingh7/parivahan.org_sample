@@ -229,18 +229,28 @@ function TaxCollectionContent() {
   const [userChargeAmt, setUserChargeAmt] = useState("");
   const [sgstAmt,       setSgstAmt]       = useState("");
   const [cgstAmt,       setCgstAmt]       = useState("");
+  const [totalAmount,   setTotalAmount]   = useState("");
   const [paymentInitDateInput, setPaymentInitDateInput] = useState("");
   const [paymentConfDateInput, setPaymentConfDateInput] = useState("");
   const [printedOnInput,       setPrintedOnInput]       = useState("");
 
-  // Total = sum of the five tax rows (derived, always in sync).
-  const totalAmount = String(
-    (parseFloat(permitFeeAmt)  || 0) +
-    (parseFloat(mvTaxAmt)      || 0) +
-    (parseFloat(userChargeAmt) || 0) +
-    (parseFloat(sgstAmt)       || 0) +
-    (parseFloat(cgstAmt)       || 0)
-  );
+  // Calculate Tax: sum the five tax rows. Total must be calculated before
+  // Pay/PDF; changing any fee clears it (strict re-calculate rule).
+  const handleCalculateTax = () => {
+    const sum =
+      (parseFloat(permitFeeAmt)  || 0) +
+      (parseFloat(mvTaxAmt)      || 0) +
+      (parseFloat(userChargeAmt) || 0) +
+      (parseFloat(sgstAmt)       || 0) +
+      (parseFloat(cgstAmt)       || 0);
+    setTotalAmount(sum > 0 ? String(sum) : "");
+    setFormError(sum > 0 ? "" : "Please enter at least one tax amount, then Calculate Tax.");
+  };
+  const onFeeChange = (setter: (v: string) => void) => (raw: string) => {
+    setter(raw.replace(/[^0-9.]/g, ""));
+    setTotalAmount("");   // force a fresh Calculate Tax
+    setFormError("");
+  };
 
   // Picking a known checkpost auto-fills the DTO (still editable below).
   const handleCheckpostChange = (val: string) => {
@@ -374,7 +384,7 @@ function TaxCollectionContent() {
     setCheckpostName(""); setDto(""); setTaxFrom(""); setTaxTo("");
     setPermitType(""); setPermitUpto(""); setPermitNumber("");
     setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity(""); setRoadTaxValidity("");
-    setPermitFeeAmt(""); setMvTaxAmt(""); setUserChargeAmt(""); setSgstAmt(""); setCgstAmt("");
+    setPermitFeeAmt(""); setMvTaxAmt(""); setUserChargeAmt(""); setSgstAmt(""); setCgstAmt(""); setTotalAmount("");
     setPaymentInitDateInput(""); setPaymentConfDateInput(""); setPrintedOnInput("");
     setDateError(""); setFormError(""); setShowModal(false); setPdfError("");
     setNavOpen(false); setReportsOpen(false);
@@ -1010,7 +1020,7 @@ function TaxCollectionContent() {
                         <label className="ui-outputlabel field-label-mandate">Permit Fee (Rs.)</label>
                       </div>
                       <input type="number" className="ui-inputtext" min="0" value={permitFeeAmt}
-                        onChange={(e) => { setPermitFeeAmt(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        onChange={(e) => onFeeChange(setPermitFeeAmt)(e.target.value)}
                         placeholder="0" />
                     </div>
                     <div className="ui-grid-col-3">
@@ -1018,7 +1028,7 @@ function TaxCollectionContent() {
                         <label className="ui-outputlabel field-label-mandate">MV Tax (Rs.)</label>
                       </div>
                       <input type="number" className="ui-inputtext" min="0" value={mvTaxAmt}
-                        onChange={(e) => { setMvTaxAmt(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        onChange={(e) => onFeeChange(setMvTaxAmt)(e.target.value)}
                         placeholder="0" />
                     </div>
                     <div className="ui-grid-col-3">
@@ -1026,7 +1036,7 @@ function TaxCollectionContent() {
                         <label className="ui-outputlabel">Service/User Charge (Rs.)</label>
                       </div>
                       <input type="number" className="ui-inputtext" min="0" value={userChargeAmt}
-                        onChange={(e) => { setUserChargeAmt(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        onChange={(e) => onFeeChange(setUserChargeAmt)(e.target.value)}
                         placeholder="0" />
                     </div>
                     <div className="ui-grid-col-3">
@@ -1044,7 +1054,7 @@ function TaxCollectionContent() {
                         <label className="ui-outputlabel">SGST (Rs.)</label>
                       </div>
                       <input type="number" className="ui-inputtext" min="0" value={sgstAmt}
-                        onChange={(e) => { setSgstAmt(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        onChange={(e) => onFeeChange(setSgstAmt)(e.target.value)}
                         placeholder="0" />
                     </div>
                     <div className="ui-grid-col-3">
@@ -1052,7 +1062,7 @@ function TaxCollectionContent() {
                         <label className="ui-outputlabel">CGST (Rs.)</label>
                       </div>
                       <input type="number" className="ui-inputtext" min="0" value={cgstAmt}
-                        onChange={(e) => { setCgstAmt(e.target.value.replace(/[^0-9.]/g, "")); setFormError(""); }}
+                        onChange={(e) => onFeeChange(setCgstAmt)(e.target.value)}
                         placeholder="0" />
                     </div>
                     <div className="ui-grid-col-6">
@@ -1070,7 +1080,7 @@ function TaxCollectionContent() {
                       className="ui-grid-col-12 top_mar1"
                       style={{ display: "flex", flexWrap: "wrap", gap: "14px", justifyContent: "center", marginTop: "16px" }}
                     >
-                      <button className="ui-button" type="button">
+                      <button className="ui-button" type="button" onClick={handleCalculateTax}>
                         <i className="fa fa-calculator"></i>
                         <span className="ui-button-text">Calculate Tax</span>
                       </button>

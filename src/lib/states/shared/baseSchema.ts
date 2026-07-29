@@ -150,6 +150,13 @@ export function createTransactionSchema(): Schema<TransactionDoc> {
       mpUserCharge:       { type: Number, default: 0 },
       mpSgst:             { type: Number, default: 0 },
       mpCgst:             { type: Number, default: 0 },
+      // Tamil Nadu-specific (4-row tax + green-tax / base-permit validity)
+      tnPermitFee:        { type: Number, default: 0 },
+      tnMvTax:            { type: Number, default: 0 },
+      tnWelfareTax:       { type: Number, default: 0 },
+      tnUserCharge:       { type: Number, default: 0 },
+      tnGreenTaxValidity: { type: String, default: "" },
+      tnBasePermitValidity: { type: String, default: "" },
     },
     { timestamps: true }
   );

@@ -1,10 +1,50 @@
 "use client";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PaymentDateTimeField } from "../shared/TaxDateField";
 import { jharkhandConfig } from "@/lib/states/jharkhand/config";
 
 const STATE_CODE  = jharkhandConfig.code;
 const STATE_LABEL = jharkhandConfig.label;
+
+// Jharkhand district / checkpost list (pick-or-type — operator can type any
+// checkpost that isn't listed).
+const CHECKPOST_OPTIONS = [
+  "BOKARO", "CHATRA", "DEOGHAR", "DHANBAD", "DUMKA", "EAST SINGHBHUM (JAMSHEDPUR)",
+  "GARHWA", "GIRIDIH", "GODDA", "GUMLA", "HAZARIBAGH", "JAMTARA", "KHUNTI",
+  "KODERMA", "LATEHAR", "LOHARDAGA", "PAKUR", "PALAMU (DALTONGANJ)", "RAMGARH",
+  "RANCHI", "SAHIBGANJ", "SARAIKELA-KHARSAWAN", "SIMDEGA", "WEST SINGHBHUM (CHAIBASA)",
+];
+
+// Jharkhand bank ref — 10 chars, 7-9 uppercase letters + 1-3 digits, shuffled
+// (e.g. "3KG9W322PT"), matching the reference receipt.
+function makeJhBankRef(): string {
+  const numDigits  = Math.floor(Math.random() * 3) + 1;
+  const numLetters = 10 - numDigits;
+  const chars: string[] = [];
+  for (let i = 0; i < numLetters; i++) chars.push(String.fromCharCode(65 + Math.floor(Math.random() * 26)));
+  for (let i = 0; i < numDigits;  i++) chars.push(String(Math.floor(Math.random() * 10)));
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+}
+
+// IST timestamp (UTC+5:30), browser-timezone-independent, with seconds.
+function nowIST(): string {
+  const ist = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const dd  = String(ist.getUTCDate()).padStart(2, "0");
+  const mon = MONTHS[ist.getUTCMonth()];
+  const yy  = ist.getUTCFullYear();
+  let   hh  = ist.getUTCHours();
+  const mm  = String(ist.getUTCMinutes()).padStart(2, "0");
+  const ss  = String(ist.getUTCSeconds()).padStart(2, "0");
+  const ap  = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12 || 12;
+  return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
+}
 
 const BASE   = "https://checkpost.parivahan.gov.in";
 const LOGO   = `${BASE}/checkpost/faces/javax.faces.resource/checkpost-logo.png?ln=images`;
@@ -154,10 +194,15 @@ function TaxCollectionContent() {
   const [permitType,    setPermitType]    = useState("");
   const [paymentMethod, setPaymentMethod] = useState("ONLINE");
 
-  // ── Validity text fields ─────────────────────────────────────────────────
+  // ── Validity date fields (calendars) ─────────────────────────────────────
   const [jhFitnessValidity,   setJhFitnessValidity]   = useState("");
   const [jhInsuranceValidity, setJhInsuranceValidity] = useState("");
   const [jhPuccValidity,      setJhPuccValidity]      = useState("");
+
+  // ── Payment Init / Conf / Printed On (auto = current IST if left blank) ──
+  const [paymentInitDateInput, setPaymentInitDateInput] = useState("");
+  const [paymentConfDateInput, setPaymentConfDateInput] = useState("");
+  const [printedOnInput,       setPrintedOnInput]       = useState("");
 
   // ── Tax window ──────────────────────────────────────────────────────────
   const [taxFrom, setTaxFrom] = useState("");
@@ -269,6 +314,9 @@ function TaxCollectionContent() {
       taxFrom,
       taxTo,
       amount: totalAmount || "0",
+      paymentInitDate: paymentInitDateInput || nowIST(),
+      paymentConfDate: paymentConfDateInput,
+      printedOn:       printedOnInput,
     });
     router.push(`/payment/sbi?${params.toString()}`);
   };
@@ -279,6 +327,7 @@ function TaxCollectionContent() {
     setJhGrossVehicleWt(""); setJhUnladenWt(""); setSeatingCap(""); setSleeperCap("0"); setServiceType(""); setGrossCombinationWeight("");
     setTaxMode(""); setPermitType(""); setPaymentMethod("ONLINE");
     setJhFitnessValidity(""); setJhInsuranceValidity(""); setJhPuccValidity("");
+    setPaymentInitDateInput(""); setPaymentConfDateInput(""); setPrintedOnInput("");
     setTaxFrom(""); setTaxTo(""); setMvTax(""); setTotalAmount("");
     setDateError(""); setFormError(""); setShowModal(false); setPdfError("");
     setNavOpen(false); setReportsOpen(false);
@@ -300,7 +349,7 @@ function TaxCollectionContent() {
     setPdfLoading(true);
     try {
       const res = await fetch("/api/payment", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, state: STATE_CODE, visitingState: STATE_CODE, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, checkpostName, borderDistrict, taxMode, serviceType, grossCombinationWeight, jhGrossVehicleWt, jhUnladenWt, paymentMethod, jhFitnessValidity, jhInsuranceValidity, jhPuccValidity, permitType, taxFrom, taxTo, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: `CPT${vehicleNo.replace(/\s/g,"").toUpperCase()}${Date.now().toString().slice(-8)}`, noOfPeriods:1, seatingCap, sleeperCap }) });
+        body: JSON.stringify({ transactionId, state: STATE_CODE, visitingState: STATE_CODE, vehicleNo, chassisNo, ownerName, mobileNo, fromState, vehicleType, vehicleCategory, vehicleClass, checkpostName, borderDistrict, taxMode, serviceType, grossCombinationWeight, jhGrossVehicleWt, jhUnladenWt, paymentMethod, jhFitnessValidity, jhInsuranceValidity, jhPuccValidity, permitType, taxFrom, taxTo, amount: parseFloat(totalAmount)||0, receiptNo, orderRef: makeJhBankRef(), noOfPeriods:1, seatingCap, sleeperCap, paymentInitDate: paymentInitDateInput || nowIST(), paymentConfDate: paymentConfDateInput, printedOn: printedOnInput }) });
       const json = await res.json().catch(()=>({}));
       if (!res.ok || !json.success) throw new Error(json.message||"Failed to save transaction");
       const savedId = json.transactionId || transactionId;
@@ -573,8 +622,11 @@ function TaxCollectionContent() {
                       </div>
                       <input type="text" className="ui-inputtext"
                         value={checkpostName} onChange={(e) => setCheckpostName(e.target.value.toUpperCase())}
-                        maxLength={80} autoComplete="off"
-                        placeholder="e.g. RAMGARH CHECKPOST" />
+                        maxLength={80} autoComplete="off" list="jh-checkpost-options"
+                        placeholder="Select or type a checkpost" />
+                      <datalist id="jh-checkpost-options">
+                        {CHECKPOST_OPTIONS.map((c) => <option key={c} value={c} />)}
+                      </datalist>
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
@@ -681,38 +733,41 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
-                  {/* Row 9: Fitness Validity + Insurance Validity (text string) */}
+                  {/* Row 9: Fitness Validity + Insurance Validity (calendars) */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel">Fitness Validity</label>
                       </div>
-                      <input type="text" className="ui-inputtext"
-                        value={jhFitnessValidity} onChange={(e) => setJhFitnessValidity(e.target.value.toUpperCase())}
-                        maxLength={30} autoComplete="off"
-                        placeholder="e.g. 31-DEC-2026" />
+                      <div className="ui-calendar">
+                        <input type="date" className="ui-inputtext cp-date-input"
+                          value={jhFitnessValidity} onChange={(e) => setJhFitnessValidity(e.target.value)}
+                          autoComplete="off" />
+                      </div>
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel">Insurance Validity</label>
                       </div>
-                      <input type="text" className="ui-inputtext"
-                        value={jhInsuranceValidity} onChange={(e) => setJhInsuranceValidity(e.target.value.toUpperCase())}
-                        maxLength={30} autoComplete="off"
-                        placeholder="e.g. 31-DEC-2026" />
+                      <div className="ui-calendar">
+                        <input type="date" className="ui-inputtext cp-date-input"
+                          value={jhInsuranceValidity} onChange={(e) => setJhInsuranceValidity(e.target.value)}
+                          autoComplete="off" />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Row 10: PUCC Validity (text string) + Tax From/Upto dates */}
+                  {/* Row 10: PUCC Validity (calendar) + Tax From/Upto dates */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-3">
                       <div className="field-label resp-label-section">
                         <label className="ui-outputlabel">PUCC Validity</label>
                       </div>
-                      <input type="text" className="ui-inputtext"
-                        value={jhPuccValidity} onChange={(e) => setJhPuccValidity(e.target.value.toUpperCase())}
-                        maxLength={30} autoComplete="off"
-                        placeholder="e.g. 30-JUN-2026" />
+                      <div className="ui-calendar">
+                        <input type="date" className="ui-inputtext cp-date-input"
+                          value={jhPuccValidity} onChange={(e) => setJhPuccValidity(e.target.value)}
+                          autoComplete="off" />
+                      </div>
                     </div>
                     <div className="ui-grid-col-3">
                       {/* spacer */}
@@ -794,6 +849,28 @@ function TaxCollectionContent() {
                     </div>
                   )}
 
+                  {/* Payment Init Date + Payment Confirmation Date + Printed On */}
+                  <div className="ui-grid-row">
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Payment Init Date</label>
+                      </div>
+                      <PaymentDateTimeField value={paymentInitDateInput} onChange={setPaymentInitDateInput} />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Payment Confirmation Date</label>
+                      </div>
+                      <PaymentDateTimeField value={paymentConfDateInput} onChange={setPaymentConfDateInput} />
+                    </div>
+                    <div className="ui-grid-col-4">
+                      <div className="field-label resp-label-section">
+                        <label className="ui-outputlabel">Printed On</label>
+                      </div>
+                      <PaymentDateTimeField value={printedOnInput} onChange={setPrintedOnInput} />
+                    </div>
+                  </div>
+
                   {/* MV Tax input + buttons */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-4">
@@ -806,6 +883,7 @@ function TaxCollectionContent() {
                         value={mvTax}
                         onChange={(e) => {
                           setMvTax(e.target.value.replace(/[^0-9.]/g, ""));
+                          setTotalAmount("");   // force a fresh Calculate Tax
                           setFormError("");
                         }}
                         placeholder="Enter MV Tax amount"

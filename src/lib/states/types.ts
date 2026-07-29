@@ -25,6 +25,7 @@ export type StateCode =
   | "TS" // Telangana
   | "OR" // Odisha
   | "MP" // Madhya Pradesh
+  | "TN" // Tamil Nadu
   | "JH" // Jharkhand
   | "PB" // Punjab
   | "UP" // Uttar Pradesh
@@ -141,6 +142,9 @@ export interface ReceiptData {
   routesOrArea?:           string;
   purposeOfJourney?:       string;
   permitIssueDate?:        string;
+  // Tamil Nadu-specific receipt extras
+  greenTaxValidity?:       string;
+  basePermitValidity?:     string;
 }
 
 // Loose Mongo doc shape — GJ reuses ladenWeight/unladenWeight above. — both lean()'d documents and POJOs work for the
@@ -239,6 +243,13 @@ export interface TxnLike {
   mpUserCharge?:           number;
   mpSgst?:                 number;
   mpCgst?:                 number;
+  // Tamil Nadu-specific fields (4-row tax + green-tax / base-permit validity)
+  tnPermitFee?:            number;
+  tnMvTax?:                number;
+  tnWelfareTax?:           number;
+  tnUserCharge?:           number;
+  tnGreenTaxValidity?:     string;
+  tnBasePermitValidity?:   string;
 }
 
 // ── State module — the contract every state folder must satisfy. ────────────
@@ -440,6 +451,13 @@ export interface TransactionDoc {
   mpUserCharge?:        number;
   mpSgst?:              number;
   mpCgst?:              number;
+  // Tamil Nadu-specific
+  tnPermitFee?:         number;
+  tnMvTax?:             number;
+  tnWelfareTax?:        number;
+  tnUserCharge?:        number;
+  tnGreenTaxValidity?:  string;
+  tnBasePermitValidity?: string;
 }
 
 // Re-export Schema for convenience in shared/baseSchema consumers.

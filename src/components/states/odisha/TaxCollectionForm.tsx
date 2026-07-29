@@ -218,6 +218,8 @@ function TaxCollectionContent() {
 
   const updateTaxRow = (idx: number, field: "fees" | "fine", val: string) => {
     setTaxRows(rows => rows.map((r, i) => i === idx ? { ...r, [field]: val } : r));
+    setTotalAmount("");   // force a fresh Calculate Tax
+    setFormError("");
   };
 
   const handleCalculateTax = () => {
