@@ -16,6 +16,7 @@ import PunjabForm          from "@/components/states/punjab/TaxCollectionForm";
 import UttarPradeshForm    from "@/components/states/uttarpradesh/TaxCollectionForm";
 import UttarakhandForm     from "@/components/states/uttarakhand/TaxCollectionForm";
 import HaryanaForm         from "@/components/states/haryana/TaxCollectionForm";
+import KarnatakaForm       from "@/components/states/karnataka/TaxCollectionForm";
 import HimachalPradeshForm from "@/components/states/himachalpradesh/TaxCollectionForm";
 
 import type { StateCode } from "@/lib/states/types";
@@ -46,6 +47,7 @@ const FORM_COMPONENTS: Record<StateCode, ComponentType> = {
   UP: UttarPradeshForm,
   UK: UttarakhandForm,
   HR: HaryanaForm,
+  KA: KarnatakaForm,
   HP: HimachalPradeshForm,
 };
 

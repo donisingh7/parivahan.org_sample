@@ -356,6 +356,7 @@ function generateReceiptNo(stateCode?: string, paymentInitDate?: string): string
   if (stateCode === "OR") return `ORT${yy}${mm}${dd}${rand}`;
   if (stateCode === "MP") return `MPR${yy}${mm}${dd}${rand}`;
   if (stateCode === "TN") return `TNR${yy}${mm}${dd}${rand}`;
+  if (stateCode === "KA") return `KAT${yy}${mm}${dd}${rand}`;
   if (stateCode === "HP") return `HPR${yy}${mm}${dd}${rand}`;
   if (stateCode === "JH") return `JHR${yy}${mm}${dd}${rand}`;
   if (stateCode === "PB") return `PBR${yy}${mm}${dd}${rand}`;
@@ -398,6 +399,13 @@ function generateUPBankRef(): string {
 // Generates bank ref for MH: 12-digit number.
 function generateMHBankRef(): string {
   return String(Math.floor(Math.random() * 900000000000 + 100000000000));
+}
+
+// Karnataka bank ref — 13-digit numeric (e.g. "5336275987089").
+function generateKABankRef(): string {
+  let s = String(Math.floor(Math.random() * 9) + 1); // non-zero leading digit
+  for (let i = 0; i < 12; i++) s += Math.floor(Math.random() * 10);
+  return s;
 }
 
 // Generates bank ref for BR: 10 chars, 7-9 uppercase letters + 1-3 digits,
@@ -490,6 +498,7 @@ function SBIContent() {
     else if (stateCode === "OR") orderRef = generateHRBankRef();
     else if (stateCode === "MP") orderRef = generateMHBankRef();
     else if (stateCode === "TN") orderRef = generateHRBankRef();
+    else if (stateCode === "KA") orderRef = generateKABankRef();
     else if (stateCode === "JH") orderRef = generateHRBankRef();
     else if (stateCode === "UP") orderRef = generateUPBankRef();
     else if (stateCode === "HP")

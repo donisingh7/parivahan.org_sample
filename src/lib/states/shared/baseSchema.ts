@@ -157,6 +157,11 @@ export function createTransactionSchema(): Schema<TransactionDoc> {
       tnUserCharge:       { type: Number, default: 0 },
       tnGreenTaxValidity: { type: String, default: "" },
       tnBasePermitValidity: { type: String, default: "" },
+      // Odisha-specific (Standing Capacity — string)
+      orStandingCap:      { type: String, default: "" },
+      // Karnataka-specific (Floor Area + Tax Validity — strings)
+      kaFloorArea:        { type: String, default: "" },
+      kaTaxValidity:      { type: String, default: "" },
     },
     { timestamps: true }
   );

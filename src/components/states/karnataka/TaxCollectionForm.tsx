@@ -2,10 +2,10 @@
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TaxDateField, PaymentDateTimeField } from "../shared/TaxDateField";
-import { odishaConfig } from "@/lib/states/odisha/config";
+import { karnatakaConfig } from "@/lib/states/karnataka/config";
 
-const STATE_CODE  = odishaConfig.code;
-const STATE_LABEL = odishaConfig.label;
+const STATE_CODE  = karnatakaConfig.code;
+const STATE_LABEL = karnatakaConfig.label;
 
 const BASE   = "https://checkpost.parivahan.gov.in";
 const LOGO   = `${BASE}/checkpost/faces/javax.faces.resource/checkpost-logo.png?ln=images`;
@@ -65,27 +65,25 @@ const VEHICLE_CATEGORY_OPTIONS = [
   { value: "TEMPORARY REGISTERED VEHICLE",         label: "TEMPORARY REGISTERED VEHICLE" },
 ];
 
-// Odisha checkpost list (web-informed border check gates + district RTOs;
-// pick-or-type — operator can type any checkpost not listed). OMVD runs 13
-// border check gates; the four major ones (Girisola, Jamsola, Luharchati,
-// Laxmannath) carry ~80% of traffic.
+// Karnataka checkpost list (web-informed border check posts + district RTOs;
+// pick-or-type — operator can type any checkpost not listed).
 const CHECKPOST_OPTIONS = [
-  // State-border check gates.
-  "GIRISOLA", "JAMSOLA", "LUHARCHATI", "LAXMANNATH", "KEREDA", "MOTU",
-  "SOHELA", "BANGIRIPOSI", "CHAMPUA", "JHARPOKHARIA",
+  // Border check posts (MH / GA / KL / TN / AP / TS borders).
+  "ALAND", "AURAD", "CHINCHOLI", "KAGWAD", "NIPPANI", "CHIKKODI",
+  "KARWAR", "MOLAKALMURU", "MANGALURU (BORDER)", "HULIYAR", "BAGALKOT (BORDER)",
   // District RTOs / towns.
-  "BHUBANESWAR", "CUTTACK", "PURI", "KHORDHA", "BALASORE", "BHADRAK",
-  "JAJPUR", "KENDRAPARA", "JAGATSINGHPUR", "NAYAGARH", "GANJAM (BERHAMPUR)",
-  "GAJAPATI", "KORAPUT", "RAYAGADA", "NABARANGPUR", "MALKANGIRI",
-  "KALAHANDI", "NUAPADA", "BOLANGIR", "SONEPUR", "BOUDH", "KANDHAMAL",
-  "SAMBALPUR", "BARGARH", "JHARSUGUDA", "DEOGARH", "SUNDARGARH (ROURKELA)",
-  "KEONJHAR", "MAYURBHANJ (BARIPADA)", "ANGUL", "DHENKANAL",
+  "BENGALURU", "MYSURU", "MANGALURU", "HUBBALLI-DHARWAD", "BELAGAVI",
+  "KALABURAGI", "BALLARI", "VIJAYAPURA", "DAVANAGERE", "SHIVAMOGGA",
+  "TUMAKURU", "RAICHUR", "BIDAR", "HASSAN", "MANDYA", "UDUPI", "CHITRADURGA",
+  "KOLAR", "CHIKKAMAGALURU", "KOPPAL", "GADAG", "HAVERI", "BAGALKOT",
+  "YADGIR", "CHAMARAJANAGAR", "KODAGU (MADIKERI)", "RAMANAGARA",
+  "CHIKKABALLAPURA", "VIJAYANAGARA", "UTTARA KANNADA (KARWAR)",
 ];
 
 const TAX_ROW_NAMES = [
   "MV Tax",
-  "Application Fee",
-  "Permit Fee",
+  "Cess",
+  "Infra Cess",
 ];
 
 interface TaxRow {
@@ -151,12 +149,12 @@ function TaxCollectionContent() {
   const [unladenWt,        setUnladenWt]        = useState("");
   const [seatingCap,       setSeatingCap]       = useState("");
   const [sleeperCap,       setSleeperCap]       = useState("0");
-  const [standingCap,      setStandingCap]      = useState("0");
+  const [floorArea,        setFloorArea]        = useState("");
 
   // ── Validity dates ──────────────────────────────────────────────────────
   const [fitnessValidity,   setFitnessValidity]   = useState("");
   const [insuranceValidity, setInsuranceValidity] = useState("");
-  const [puccValidity,      setPuccValidity]      = useState("");
+  const [taxValidity,       setTaxValidity]       = useState("");
 
   // ── AP-specific string fields ───────────────────────────────────────────
   const [serviceType,      setServiceType]      = useState("");
@@ -282,10 +280,10 @@ function TaxCollectionContent() {
       unladenWt,
       seatingCap,
       sleeperCap,
-      orStandingCap:    standingCap,
+      kaFloorArea:      floorArea,
+      kaTaxValidity:    taxValidity,
       fitnessValidity,
       insuranceValidity,
-      puccValidity,
       serviceType,
       nameOfGoods,
       route,
@@ -304,8 +302,8 @@ function TaxCollectionContent() {
     setFromState("-1"); setVehicleType(""); setVehicleClass("");
     setVehicleCategory(""); setCheckpostName(""); setPermitType("-1");
     setPermitValidity(""); setTaxMode(""); setPaymentMode("Online");
-    setGrossVehicleWt(""); setUnladenWt(""); setSeatingCap(""); setSleeperCap("0"); setStandingCap("0");
-    setFitnessValidity(""); setInsuranceValidity(""); setPuccValidity("");
+    setGrossVehicleWt(""); setUnladenWt(""); setSeatingCap(""); setSleeperCap("0"); setFloorArea("");
+    setFitnessValidity(""); setInsuranceValidity(""); setTaxValidity("");
     setServiceType(""); setNameOfGoods(""); setRoute("");
     setTaxFrom(""); setTaxTo("");
     setPaymentInitDateInput(""); setPaymentConfDateInput(""); setPrintedOnInput("");
@@ -327,17 +325,16 @@ function TaxCollectionContent() {
       return;
     }
 
-    // Receipt No. = APR + YYMMDD of Payment Initialization Date + 7-digit random.
+    // Receipt No. = KAT + YYMMDD of Payment Initialization Date + 7-digit random.
     const effectivePaymentInitDate = paymentInitDateInput || nowIST();
     const initParts = parseInitDateParts(effectivePaymentInitDate);
     const rand = Math.floor(Math.random() * 9000000 + 1000000);
     const receiptNo = initParts
-      ? `ORT${initParts.yy}${initParts.mm}${initParts.dd}${rand}`
-      : `ORT${rand}`;
-    // Bank Ref No. = 10-char uppercase alphanumeric (e.g. "MGK1B5U7Q4").
-    const ALPHANUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let orderRef = "";
-    for (let i = 0; i < 10; i++) orderRef += ALPHANUM[Math.floor(Math.random() * ALPHANUM.length)];
+      ? `KAT${initParts.yy}${initParts.mm}${initParts.dd}${rand}`
+      : `KAT${rand}`;
+    // Bank Ref No. = 13-digit numeric (e.g. "5336275987089").
+    let orderRef = String(Math.floor(Math.random() * 9) + 1);
+    for (let i = 0; i < 12; i++) orderRef += Math.floor(Math.random() * 10);
     const ts           = Date.now().toString(36).toUpperCase();
     const randTxn      = Math.random().toString(36).slice(2, 6).toUpperCase();
     const transactionId = `TXN${ts}${randTxn}`;
@@ -363,8 +360,9 @@ function TaxCollectionContent() {
           permitType,       checkpostName, taxMode,         paymentMethod: paymentMode,
           taxFrom,          taxTo,
           grossVehicleWt,   unladenWt,
-          fitnessValidity,  insuranceValidity, puccValidity,
+          fitnessValidity,  insuranceValidity,
           serviceType,      nameOfGoods,   route,
+          kaFloorArea:      floorArea,     kaTaxValidity: taxValidity,
           permitUpto:       permitValidity,
           apTaxItemsJson:   JSON.stringify(apTaxItems),
           amount:           parseFloat(totalAmount) || 0,
@@ -373,7 +371,6 @@ function TaxCollectionContent() {
           noOfPeriods:      1,
           seatingCap,
           sleeperCap,
-          orStandingCap:    standingCap,
           paymentInitDate:  effectivePaymentInitDate,
           paymentConfDate:  paymentConfDateInput,
           printedOn:        printedOnInput,
@@ -491,7 +488,7 @@ function TaxCollectionContent() {
             Verify the validity of the receipt by sending sms&nbsp;
             <strong className="cp-news-highlight">VAHAN &lt;STATE CODE&gt; CP &lt;VEHICLE NO&gt;</strong>
             &nbsp;to 7738299899 (e.g.&nbsp;
-            <strong className="cp-news-highlight">VAHAN OR CP XXXXXXXXXX</strong>)
+            <strong className="cp-news-highlight">VAHAN KA CP XXXXXXXXXX</strong>)
           </div>
         </div>
       </div>
@@ -534,7 +531,7 @@ function TaxCollectionContent() {
                       </div>
                       <input type="text" className="ui-inputtext" maxLength={10}
                         value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value.toUpperCase())}
-                        autoComplete="off" placeholder="e.g. AP14AB1234" />
+                        autoComplete="off" placeholder="e.g. KA01AB1234" />
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="ui-grid-row">
@@ -736,15 +733,15 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
-                  {/* Row: Standing Capacity */}
+                  {/* Row: Floor Area */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel">Standing Capacity</label>
+                        <label className="ui-outputlabel">Floor Area</label>
                       </div>
-                      <input type="text" className="ui-inputtext" value={standingCap}
-                        onChange={(e) => setStandingCap(e.target.value.replace(/\D/g, ""))}
-                        maxLength={4} autoComplete="off" placeholder="0" />
+                      <input type="text" className="ui-inputtext" value={floorArea}
+                        onChange={(e) => setFloorArea(e.target.value.toUpperCase())}
+                        maxLength={20} autoComplete="off" placeholder="e.g. NA" />
                     </div>
                   </div>
 
@@ -764,13 +761,13 @@ function TaxCollectionContent() {
                     </div>
                   </div>
 
-                  {/* Row: PUCC Validity + Permit Validity */}
+                  {/* Row: Tax Validity + Permit Validity */}
                   <div className="ui-grid-row">
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">
-                        <label className="ui-outputlabel">PUCC Validity</label>
+                        <label className="ui-outputlabel">Tax Validity</label>
                       </div>
-                      <TaxDateField date={puccValidity} onDateChange={setPuccValidity} />
+                      <TaxDateField date={taxValidity} onDateChange={setTaxValidity} />
                     </div>
                     <div className="ui-grid-col-6">
                       <div className="field-label resp-label-section">

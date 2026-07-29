@@ -1,9 +1,10 @@
 /**
- * Single source of truth for the Odisha checkpost-tax receipt.
+ * Single source of truth for the Karnataka checkpost-tax receipt.
  *
  * Both the on-screen ReceiptTemplate and the PDF generator (generateReceipt.js)
- * consume the shape produced here, so a single Mongo Transaction document
- * drives identical output everywhere.
+ * consume the shape produced here. Tax rows are dynamic (MV Tax / Cess / Infra
+ * Cess): a row is dropped whenever its total is zero, so a blank row on the
+ * form never prints a blank row on the receipt.
  */
 
 import {
@@ -20,9 +21,8 @@ import {
 import { numberToWords } from "../shared/numberToWords";
 import type { ReceiptData, TaxItem, TxnLike } from "../types";
 
-// Validity dates are entered via a date picker as "yyyy-mm-dd"; the receipt
-// prints them upper-case "DD-MMM-YYYY" (UTC-based so a server in any
-// timezone renders the same calendar day the user picked).
+// Validity dates print upper-case "DD-MMM-YYYY" (UTC-based so any server
+// timezone renders the calendar day the operator picked).
 function fmtValidity(v: string | undefined | null): string {
   if (!v) return "-";
   const d = new Date(v);
@@ -34,8 +34,6 @@ function fmtValidity(v: string | undefined | null): string {
   return `${dd}-${mm}-${yy}`;
 }
 
-// YYYY-MM-DD for the tax-period range appended to every tax-table row
-// (e.g. "2026-06-26 to 2026-06-28"), date only.
 function fmtTaxDateYMD(d: Date | string | null | undefined): string {
   if (!d) return "";
   const dt = typeof d === "string" ? new Date(d) : d;
@@ -46,8 +44,7 @@ function fmtTaxDateYMD(d: Date | string | null | undefined): string {
   return `${yy}-${mm}-${dd}`;
 }
 
-// Always render in IST (UTC+5:30) regardless of server timezone. Used for
-// auto Payment Init / Conf / Printed-On fallbacks.
+// Always render in IST (UTC+5:30) regardless of server timezone.
 function fmtDateWithSecs(d: Date): string {
   const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
   const ist = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
@@ -62,38 +59,34 @@ function fmtDateWithSecs(d: Date): string {
   return `${dd}-${mon}-${yy} ${String(hh).padStart(2, "0")}:${mm}:${ss} ${ap}`;
 }
 
-export function buildOdishaReceiptData(txn: TxnLike): ReceiptData {
+export function buildKarnatakaReceiptData(txn: TxnLike): ReceiptData {
   const amount      = Number(txn.amount) || 0;
   const paymentDate = txn.paidAt ? new Date(txn.paidAt) : new Date();
   const receiptNo   = txn.receiptNo || "-";
-  const or          = txn as Record<string, unknown>;
+  const ka          = txn as Record<string, unknown>;
 
-  // Odisha weight fields print with units (e.g. "7490  KG." / "3355 Kg.").
-  const gvw     = Number(txn.grossVehicleWt) || 0;
-  const uw      = Number(txn.unladenWt)      || 0;
-  const isGoods = String(txn.vehicleType || txn.vehicleCategory || "").toUpperCase().includes("GOODS");
-  const ownerMasked = maskName(txn.ownerName ?? "");
+  const gvw = Number(txn.grossVehicleWt) || 0;
+  const uw  = Number(txn.unladenWt)      || 0;
 
-  // Parse operator-entered tax rows; fall back to a single amount row for
-  // legacy records that predate the apTaxItemsJson field. Rows where the
-  // operator left both fees and fine at 0 are dropped — a blank row on the
-  // form should not print a blank row on the receipt.
-  // Tax period suffix appended to every row's particular, e.g.
-  // "MV Tax (2026-06-26 to 2026-06-28)".
+  // Tax period suffix appended to each operator-entered row's particular.
   const taxFromYMD = fmtTaxDateYMD(txn.taxFrom ?? null);
   const taxToYMD   = fmtTaxDateYMD(txn.taxTo   ?? null);
-  const taxPeriodSuffix = taxFromYMD && taxToYMD ? ` (${taxFromYMD} to ${taxToYMD})` : "";
+  const taxPeriodSuffix = taxFromYMD && taxToYMD ? ` ( ${taxFromYMD} TO ${taxToYMD} )` : "";
 
+  // Dynamic tax rows from the form's editable table (apTaxItemsJson).
   let taxItems: TaxItem[];
   try {
     const raw = txn.apTaxItemsJson ? JSON.parse(txn.apTaxItemsJson as string) : [];
     if (Array.isArray(raw) && raw.length > 0) {
       taxItems = (raw as Record<string, unknown>[])
         .map((item) => ({
-          particular: `${String(item.particular ?? "")}${taxPeriodSuffix}`,
-          fees:       Number(item.fees)  || 0,
-          fine:       Number(item.fine)  || 0,
-          total:      Number(item.total) || 0,
+          // MV Tax carries the tax period; Cess / Infra Cess print plain.
+          particular: String(item.particular ?? "").toUpperCase().startsWith("MV TAX")
+            ? `${String(item.particular ?? "")}${taxPeriodSuffix}`
+            : String(item.particular ?? ""),
+          fees:  Number(item.fees)  || 0,
+          fine:  Number(item.fine)  || 0,
+          total: Number(item.total) || 0,
         }))
         .filter((item) => item.total !== 0);
     } else {
@@ -108,10 +101,9 @@ export function buildOdishaReceiptData(txn: TxnLike): ReceiptData {
     receiptNo,
     paymentDate:      paymentDate.toISOString(),
     paymentDateText:  fmtPaymentDate(paymentDate),
-    paymentInitDate:    txn.paymentInitDate || fmtDateWithSecs(paymentDate),
-    paymentConfirmDate: txn.paymentConfDate || fmtDateWithSecs(paymentDate),
-    printedOnDate:      txn.printedOn      || fmtDateWithSecs(paymentDate),
-    ownerName:        ownerMasked,
+    paymentInitDate:  txn.paymentInitDate || fmtDateWithSecs(paymentDate),
+    printedOnDate:    txn.printedOn      || fmtDateWithSecs(paymentDate),
+    ownerName:        maskName(txn.ownerName    ?? ""),
     chassisNo:        maskChassis(txn.chassisNo ?? ""),
     mobileNo:         maskMobile(txn.mobileNo   ?? ""),
     taxMode:          resolveLabel(TAX_MODE_LABELS,      txn.taxMode      ?? ""),
@@ -119,45 +111,25 @@ export function buildOdishaReceiptData(txn: TxnLike): ReceiptData {
     vehicleClass:     resolveLabel(VEHICLE_CLASS_LABELS, txn.vehicleClass ?? ""),
     permitType:       resolveLabel(PERMIT_TYPE_LABELS,   txn.permitType   ?? ""),
     permitCategory:   "",
-    vehicleCategory:  txn.vehicleCategory || "",
     checkpostName:    txn.checkpostName   || "-",
-    grossVehicleWt:   Number(txn.grossVehicleWt) || 0,
-    unladenWt:        Number(txn.unladenWt)       || 0,
     sleeperCap:       Number(txn.sleeperCap) || 0,
     seatingCapacity:  Number(txn.seatingCap) || 0,
     bankRefNo:        txn.orderRef        || "-",
     paymentMode:      txn.paymentMethod   || "ONLINE",
     serviceType:      txn.serviceType     || "NOT APPLICABLE",
-    fitnessValidity:  fmtValidity(txn.fitnessValidity as string),
-    insuranceValidity: fmtValidity(txn.insuranceValidity as string),
-    puccValidity:     fmtValidity(txn.puccValidity as string),
-    permitValidity:   fmtValidity(txn.permitUpto as string),
-    nameOfGoods:      txn.nameOfGoods || "-",
-    route:            txn.route       || "-",
     qrUrl:            `https://kms.parivahan.gov.in/verify?receipt=${receiptNo}`,
     amount,
     amountInWords:    numberToWords(amount),
     taxItems,
 
-    // ── Odisha receipt-specific fields ────────────────────────────────────
-    standingCapacity: (or.orStandingCap as string) || "0",
-    ladenWeight:      gvw > 0 ? `${gvw}  KG.` : "-",
-    unladenWeight:    uw  > 0 ? `${uw} Kg.`   : "-",
-    paymentStatus:    (or.status as string) || "SUCCESS",
-
-    // Temporary-permit block (Rule 46(1)(v)) printed beneath the receipt.
-    permit: {
-      number:             receiptNo,
-      holderName:         ownerMasked,
-      area:               "",
-      vehicleType:        txn.vehicleType || "",
-      registrationMark:   txn.vehicleNo   || "",
-      seatingCapacity:    isGoods ? (gvw > 0 ? String(gvw) : "") : String(Number(txn.seatingCap) || 0),
-      grossVehicleWeight: gvw > 0 ? String(gvw) : "",
-      purposeOfJourneys:  isGoods ? "CARRYING GOODS" : "",
-      natureOfGoods:      (txn.nameOfGoods as string) || "",
-      expiryDate:         fmtValidity(txn.permitUpto as string),
-      routes:             (txn.route as string) || "",
-    },
+    // ── Karnataka receipt-specific fields ─────────────────────────────────
+    floorArea:        (ka.kaFloorArea as string) || "NA",
+    ladenWeight:      gvw > 0 ? `${gvw} KG .` : "-",
+    unladenWeight:    uw  > 0 ? String(uw)     : "-",
+    permitValidity:   fmtValidity(txn.permitUpto as string),
+    fitnessValidity:  fmtValidity(txn.fitnessValidity   as string),
+    insuranceValidity: fmtValidity(txn.insuranceValidity as string),
+    taxValidity:      fmtValidity((ka.kaTaxValidity as string) || null),
+    paymentStatus:    (ka.status as string) || "SUCCESS",
   };
 }

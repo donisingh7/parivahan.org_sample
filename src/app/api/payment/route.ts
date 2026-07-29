@@ -95,6 +95,10 @@ export async function POST(req: NextRequest) {
       mpDto, mpStandingCap, mpRoadTaxValidity, mpPermitFee, mpMvTax, mpUserCharge, mpSgst, mpCgst,
       // ── Tamil Nadu-specific ──────────────────────────────────────────
       tnPermitFee, tnMvTax, tnWelfareTax, tnUserCharge, tnGreenTaxValidity, tnBasePermitValidity,
+      // ── Odisha-specific ──────────────────────────────────────────────
+      orStandingCap,
+      // ── Karnataka-specific ───────────────────────────────────────────
+      kaFloorArea, kaTaxValidity,
     } = body;
 
     const missing: string[] = [];
@@ -239,6 +243,11 @@ export async function POST(req: NextRequest) {
       tnUserCharge:           Number(tnUserCharge)    || 0,
       tnGreenTaxValidity:     tnGreenTaxValidity     ?? "",
       tnBasePermitValidity:   tnBasePermitValidity   ?? "",
+      // ── Odisha-specific (silently ignored by other states' Mongoose schemas)
+      orStandingCap:          orStandingCap          ?? "",
+      // ── Karnataka-specific (silently ignored by other states' Mongoose schemas)
+      kaFloorArea:            kaFloorArea            ?? "",
+      kaTaxValidity:          kaTaxValidity          ?? "",
     });
 
     // ── Upsert VehicleCache with grey-field values ────────────────────────

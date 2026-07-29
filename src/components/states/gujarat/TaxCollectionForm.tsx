@@ -697,7 +697,11 @@ function TaxCollectionContent() {
                                       <select value={taxMode} onChange={(e) => setTaxMode(e.target.value)}>
                                         <option value="DAILY">DAILY</option>
                                         <option value="WEEKLY">WEEKLY</option>
+                                        <option value="FORTNIGHT">FORTNIGHT</option>
                                         <option value="MONTHLY">MONTHLY</option>
+                                        <option value="QUARTERLY">QUARTERLY</option>
+                                        <option value="HALF YEARLY">HALF YEARLY</option>
+                                        <option value="YEARLY">YEARLY</option>
                                       </select>
                                       <span className="ui-selectonemenu-arrow">▼</span>
                                     </div>

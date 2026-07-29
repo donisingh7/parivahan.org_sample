@@ -31,6 +31,7 @@ export type StateCode =
   | "UP" // Uttar Pradesh
   | "UK" // Uttarakhand
   | "HR" // Haryana
+  | "KA" // Karnataka
   | "HP"; // Himachal Pradesh
 
 // ── Per-state configuration ─────────────────────────────────────────────────
@@ -138,7 +139,7 @@ export interface ReceiptData {
   unladenWeight?:          string;
   // Madhya Pradesh-specific receipt extras (FORM MPMVR-51 / CheckPost V4)
   dto?:                    string;   // District Transport Office (e.g. "SATNA")
-  standingCapacity?:       number;
+  standingCapacity?:       number | string;
   roadTaxValidity?:        string;
   routesOrArea?:           string;
   purposeOfJourney?:       string;
@@ -146,6 +147,24 @@ export interface ReceiptData {
   // Tamil Nadu-specific receipt extras
   greenTaxValidity?:       string;
   basePermitValidity?:     string;
+  // Karnataka-specific receipt extras (Floor Area + Tax Validity)
+  floorArea?:              string;
+  taxValidity?:            string;
+  // Odisha-specific receipt extras (2-page receipt + temporary permit)
+  paymentStatus?:          string;
+  permit?: {
+    number?:             string;
+    holderName?:         string;
+    area?:               string;
+    vehicleType?:        string;
+    registrationMark?:   string;
+    seatingCapacity?:    string;
+    grossVehicleWeight?: string;
+    purposeOfJourneys?:  string;
+    natureOfGoods?:      string;
+    expiryDate?:         string;
+    routes?:             string;
+  };
 }
 
 // Loose Mongo doc shape — GJ reuses ladenWeight/unladenWeight above. — both lean()'d documents and POJOs work for the
@@ -251,6 +270,11 @@ export interface TxnLike {
   tnUserCharge?:           number;
   tnGreenTaxValidity?:     string;
   tnBasePermitValidity?:   string;
+  // Odisha-specific field (Standing Capacity — string, printed on the receipt)
+  orStandingCap?:          string;
+  // Karnataka-specific fields (Floor Area + Tax Validity)
+  kaFloorArea?:            string;
+  kaTaxValidity?:          string;
 }
 
 // ── State module — the contract every state folder must satisfy. ────────────
@@ -459,6 +483,11 @@ export interface TransactionDoc {
   tnUserCharge?:        number;
   tnGreenTaxValidity?:  string;
   tnBasePermitValidity?: string;
+  // Odisha
+  orStandingCap?:        string;
+  // Karnataka
+  kaFloorArea?:          string;
+  kaTaxValidity?:        string;
 }
 
 // Re-export Schema for convenience in shared/baseSchema consumers.

@@ -35,6 +35,7 @@ import { getPunjabTransactionModel }         from "./punjab/model";
 import { getUttarPradeshTransactionModel }   from "./uttarpradesh/model";
 import { getUttarakhandTransactionModel }    from "./uttarakhand/model";
 import { getHaryanaTransactionModel }        from "./haryana/model";
+import { getKarnatakaTransactionModel }      from "./karnataka/model";
 import { getHimachalPradeshTransactionModel } from "./himachalpradesh/model";
 
 import { buildRajasthanReceiptData }      from "./rajasthan/buildReceiptData";
@@ -52,6 +53,7 @@ import { buildPunjabReceiptData }         from "./punjab/buildReceiptData";
 import { buildUttarPradeshReceiptData }   from "./uttarpradesh/buildReceiptData";
 import { buildUttarakhandReceiptData }    from "./uttarakhand/buildReceiptData";
 import { buildHaryanaReceiptData }        from "./haryana/buildReceiptData";
+import { buildKarnatakaReceiptData }      from "./karnataka/buildReceiptData";
 import { buildHimachalPradeshReceiptData } from "./himachalpradesh/buildReceiptData";
 
 // Static relative requires so webpack bundles every per-state generator and
@@ -73,6 +75,7 @@ const generatePB = require("./punjab/generateReceipt")           as { generateRe
 const generateUP = require("./uttarpradesh/generateReceipt")     as { generateReceipt: GenerateReceiptFn };
 const generateUK = require("./uttarakhand/generateReceipt")      as { generateReceipt: GenerateReceiptFn };
 const generateHR = require("./haryana/generateReceipt")          as { generateReceipt: GenerateReceiptFn };
+const generateKA = require("./karnataka/generateReceipt")        as { generateReceipt: GenerateReceiptFn };
 const generateHP = require("./himachalpradesh/generateReceipt")  as { generateReceipt: GenerateReceiptFn };
 /* eslint-enable @typescript-eslint/no-require-imports */
 
@@ -103,6 +106,7 @@ export const STATE_SERVER: Record<StateCode, StateServerModule> = {
   UP: { code: "UP", getModel: getUttarPradeshTransactionModel,   buildReceiptData: buildUttarPradeshReceiptData,   generateReceipt: generateUP.generateReceipt },
   UK: { code: "UK", getModel: getUttarakhandTransactionModel,    buildReceiptData: buildUttarakhandReceiptData,    generateReceipt: generateUK.generateReceipt },
   HR: { code: "HR", getModel: getHaryanaTransactionModel,        buildReceiptData: buildHaryanaReceiptData,        generateReceipt: generateHR.generateReceipt },
+  KA: { code: "KA", getModel: getKarnatakaTransactionModel,      buildReceiptData: buildKarnatakaReceiptData,      generateReceipt: generateKA.generateReceipt },
   HP: { code: "HP", getModel: getHimachalPradeshTransactionModel,buildReceiptData: buildHimachalPradeshReceiptData,generateReceipt: generateHP.generateReceipt },
 };
 

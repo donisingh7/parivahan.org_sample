@@ -13,7 +13,7 @@ export const odishaConfig: StateConfig = {
   govLabel:       "GOVERNMENT OF ODISHA",
   deptLabel:      "Odisha Motor Vehicles Department",
   receiptTitle:   "Checkpost Tax e-Receipt",
-  watermarkImage: "/Images/Rajasthan-Transport-Department.png",
+  watermarkImage: "/Images/odisha-seal.png",
   themeColor:     "#0d4f8c",
   collection:     "odisha_transactions",
 };
