@@ -44,3 +44,13 @@ export async function requireUserAuth(req: NextRequest): Promise<JWTPayload> {
   if (payload.role !== "user") throw new Error("Unauthorized: not a portal user");
   return payload;
 }
+
+// /doni control-panel auth — fully separate from admin_token / user_token.
+// Reads the `doni_token` cookie set by /api/doni/login.
+export async function requireDoniAuth(req: NextRequest): Promise<JWTPayload> {
+  const token = req.cookies.get("doni_token")?.value ?? null;
+  if (!token) throw new Error("Unauthorized: no token");
+  const payload = await verifyToken(token);
+  if (payload.role !== "doni") throw new Error("Unauthorized: not a doni-panel session");
+  return payload;
+}

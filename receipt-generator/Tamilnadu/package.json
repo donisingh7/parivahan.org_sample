@@ -1,0 +1,17 @@
+{
+  "name": "tamil-nadu-checkpost-tax-receipt",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Data-driven Tamil Nadu CheckPost tax receipt PDF generator.",
+  "main": "generateReceipt.js",
+  "scripts": {
+    "generate": "node generateSample.js",
+    "dev": "node devServer.js"
+  },
+  "dependencies": {
+    "chokidar": "^5.0.0",
+    "express": "^5.2.1",
+    "pdfkit": "^0.18.0",
+    "qrcode": "^1.5.4"
+  }
+}
