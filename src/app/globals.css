@@ -850,6 +850,13 @@ body {
 .login-error-msg { background: #fdecea; border: 1px solid #f5c6cb; color: #c0392b; font-size: 13px; padding: 9px 12px; border-radius: 4px; margin-bottom: 14px; text-align: left; }
 .doni-countdown-text { font-size: 13px; font-weight: 700; color: #b73333; margin: 10px 0 0; text-align: left; }
 
+/* Site-wide hosting-expiry banner (rendered in root layout, above every page) */
+.doni-hosting-banner {
+  background: #b73333; color: #fff; font-size: 13px; font-weight: 600;
+  text-align: center; padding: 8px 16px; line-height: 1.4;
+}
+.doni-hosting-banner strong { font-weight: 800; }
+
 /* Bootstrap 3-style form helpers (scoped to login) */
 .login-form .form-group { margin-bottom: 15px; text-align: left; }
 .login-form .input-group { display: flex; align-items: stretch; }
