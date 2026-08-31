@@ -848,6 +848,7 @@ body {
 .log-right { background: rgba(255,255,255,0.97); border-radius: 4px; box-shadow: 0 4px 28px rgba(0,0,0,0.40); padding: 30px 28px 24px; width: 360px; max-width: 95vw; box-sizing: border-box; }
 .login-form { text-align: center; }
 .login-error-msg { background: #fdecea; border: 1px solid #f5c6cb; color: #c0392b; font-size: 13px; padding: 9px 12px; border-radius: 4px; margin-bottom: 14px; text-align: left; }
+.doni-countdown-text { font-size: 13px; font-weight: 700; color: #b73333; margin: 10px 0 0; text-align: left; }
 
 /* Bootstrap 3-style form helpers (scoped to login) */
 .login-form .form-group { margin-bottom: 15px; text-align: left; }

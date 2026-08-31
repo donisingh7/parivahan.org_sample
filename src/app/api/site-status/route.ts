@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSiteSettings, isLockoutActive } from "@/lib/siteSettings";
+import { getSiteSettings, getDaysRemaining, isLockoutActive } from "@/lib/siteSettings";
 
 export const runtime = "nodejs";
 
@@ -14,6 +14,7 @@ export async function GET() {
       success: true,
       warningEnabled: settings.warningEnabled,
       warningMessage: settings.warningMessage,
+      daysRemaining: getDaysRemaining(settings.warningStartDate),
       lockoutActive: isLockoutActive(settings),
     });
   } catch (err) {
@@ -23,6 +24,7 @@ export async function GET() {
       success: false,
       warningEnabled: false,
       warningMessage: "",
+      daysRemaining: 0,
       lockoutActive: false,
     });
   }

@@ -17,14 +17,16 @@ function LoginForm() {
   const [showExpiryModal, setShowExpiryModal] = useState(false);
   const [warningEnabled, setWarningEnabled] = useState(true);
   const [warningMessage, setWarningMessage] = useState(DEFAULT_WARNING_MSG);
+  const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
 
-  // Read the admin-configured warning (enabled? + message) from /doni's settings.
+  // Read the admin-configured warning (enabled? + message + countdown) from /doni's settings.
   useEffect(() => {
     fetch("/api/site-status")
       .then((res) => res.json())
       .then((data) => {
         if (typeof data.warningEnabled === "boolean") setWarningEnabled(data.warningEnabled);
         if (data.warningMessage) setWarningMessage(data.warningMessage);
+        if (typeof data.daysRemaining === "number") setDaysRemaining(data.daysRemaining);
       })
       .catch(() => {});
   }, []);
@@ -162,6 +164,13 @@ function LoginForm() {
                   Click here to know more
                 </a>
               </p>
+              {daysRemaining !== null && (
+                <p className="doni-countdown-text">
+                  {daysRemaining > 0
+                    ? <>⏳ <strong>{daysRemaining}</strong> day{daysRemaining === 1 ? "" : "s"} remaining</>
+                    : <>⏳ <strong>Warning period has ended</strong></>}
+                </p>
+              )}
               <div className="ui-grid-row" style={{ marginTop: 16, textAlign: "right" }}>
                 <button
                   type="button"
