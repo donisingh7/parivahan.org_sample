@@ -6,6 +6,23 @@ export interface IPortalUser extends Document {
   password: string;   // bcrypt hashed
   type:     string;   // e.g. "family" | "test" | "reselling"
   isActive: boolean;
+
+  // ── Single-session enforcement ──────────────────────────────────────────
+  // The id of the one live session. "" = no live session. A login from a
+  // different device while this is set + unexpired locks the whole account.
+  sessionId:        string;
+  sessionExpiresAt: Date | null;
+
+  // ── Scheduled auto-disable ──────────────────────────────────────────────
+  // When set + in the future: account still works but shows a countdown
+  // warning. Once passed, the next login/request flips isActive to false.
+  disableScheduledAt: Date | null;
+
+  // ── Booking cooldown ────────────────────────────────────────────────────
+  // Minimum minutes between two successful bookings. 0 = no limit.
+  bookingCooldownMinutes: number;
+  lastBookingAt:          Date | null;
+
   comparePassword(plain: string): Promise<boolean>;
 }
 
@@ -15,6 +32,14 @@ const PortalUserSchema = new Schema<IPortalUser>(
     password: { type: String, required: true },
     type:     { type: String, required: true, trim: true },
     isActive: { type: Boolean, default: true },
+
+    sessionId:        { type: String,  default: "" },
+    sessionExpiresAt: { type: Date,    default: null },
+
+    disableScheduledAt: { type: Date, default: null },
+
+    bookingCooldownMinutes: { type: Number, default: 0 },
+    lastBookingAt:          { type: Date,   default: null },
   },
   { id: false }
 );

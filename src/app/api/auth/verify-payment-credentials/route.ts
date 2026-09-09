@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import PortalUser from "@/models/PortalUser";
 import { verifyToken } from "@/lib/auth";
+import { runScheduledDisable } from "@/lib/portalAuth";
 
 export const runtime = "nodejs";
 
@@ -86,9 +87,27 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     const user = await PortalUser.findOne({ id: submittedUserId });
-    if (!user || !user.isActive) {
+    if (!user) {
       return NextResponse.json(
         { success: false, code: "INVALID_PASSWORD", message: "Invalid credentials." },
+        { status: 401 }
+      );
+    }
+
+    // A scheduled auto-disable that has elapsed takes effect here too.
+    await runScheduledDisable(user);
+    if (!user.isActive) {
+      return NextResponse.json(
+        { success: false, code: "NOT_LOGGED_IN", message: "Your account has been disabled. Contact the administrator." },
+        { status: 401 }
+      );
+    }
+
+    // The live session must still be the one this cookie belongs to — a newer
+    // login elsewhere (which locks the account) or a logout invalidates this.
+    if ((payload.sid ?? "") !== (user.sessionId ?? "")) {
+      return NextResponse.json(
+        { success: false, code: "NOT_LOGGED_IN", message: "Your portal session is no longer active. Please log in again." },
         { status: 401 }
       );
     }

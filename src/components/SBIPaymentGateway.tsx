@@ -457,8 +457,71 @@ function generateTransactionId(): string {
   return `TXN${ts}${rand}`;
 }
 
+// Blocking screen shown on the gateway when the logged-in account is still
+// inside its per-account booking cooldown window (set from /doni/dashboard).
+// Runs its own 1s countdown and calls onClear when it reaches zero.
+function CooldownGate({
+  nextAllowedAt, remainingMs, onClear,
+}: {
+  nextAllowedAt: string;
+  remainingMs:   number;
+  onClear:       () => void;
+}) {
+  const [ms, setMs] = useState(remainingMs);
+  useEffect(() => {
+    const t = setInterval(() => {
+      setMs((prev) => {
+        const next = prev - 1000;
+        if (next <= 0) { clearInterval(t); onClear(); return 0; }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, []); // eslint-disable-line
+
+  const totalSec = Math.max(0, Math.ceil(ms / 1000));
+  const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
+  const ss = String(totalSec % 60).padStart(2, "0");
+  const when = (() => {
+    const d = new Date(nextAllowedAt);
+    return isNaN(d.getTime())
+      ? ""
+      : d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+  })();
+
+  return (
+    <div className="sbi-page">
+      <div className="sbi-cooldown-block">
+        <i className="fa fa-hourglass-half sbi-cooldown-icon"></i>
+        <h2>Please wait before your next booking</h2>
+        <p>
+          A booking limit is set on your account.
+          {when && <> You can book your next receipt at <strong>{when}</strong>.</>}
+        </p>
+        <div className="sbi-cooldown-timer">{mm}:{ss}</div>
+        <a href="/checkpost" className="sbi-cooldown-back">
+          <i className="fa fa-arrow-left"></i> Back to Tax Payment
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function SBIContent() {
   const searchParams = useSearchParams();
+
+  // Per-account booking cooldown — null until the status check says otherwise.
+  const [cooldown, setCooldown] = useState<{ nextAllowedAt: string; remainingMs: number } | null>(null);
+  useEffect(() => {
+    fetch("/api/user/account-status")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.cooldownActive && typeof d.remainingMs === "number" && d.remainingMs > 0) {
+          setCooldown({ nextAllowedAt: d.nextAllowedAt ?? "", remainingMs: d.remainingMs });
+        }
+      })
+      .catch(() => {});
+  }, []);
   const stateCode        = searchParams.get("state")            ?? "";
   const vehicleNo        = searchParams.get("vehicleNo")        ?? "";
   const ownerName        = searchParams.get("ownerName")        ?? "";
@@ -582,6 +645,16 @@ function SBIContent() {
   };
 
   const handlePaymentSuccess = () => { void persistAndShowReceipt(); };
+
+  if (cooldown) {
+    return (
+      <CooldownGate
+        nextAllowedAt={cooldown.nextAllowedAt}
+        remainingMs={cooldown.remainingMs}
+        onClear={() => setCooldown(null)}
+      />
+    );
+  }
 
   if (step === "success") {
     return (

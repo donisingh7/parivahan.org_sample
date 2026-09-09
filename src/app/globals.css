@@ -911,6 +911,78 @@ body {
 .doni-logout-btn { width: 100%; padding: 11px; background: transparent; border: 1.5px solid #c5d3e8; border-radius: 6px; color: #555; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; }
 .doni-logout-btn:hover { background: #f5f8fd; }
 
+/* /doni dashboard — stacked cards + portal-user account manager */
+.doni-page:has(.doni-stack) { align-items: flex-start; }
+.doni-stack { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 480px; }
+.doni-stack .doni-card { max-width: 100%; }
+.doni-stack-logout { background: #fff; margin-top: 0; }
+.doni-acc-create { margin-bottom: 22px; padding-bottom: 20px; border-bottom: 1px solid #e6ecf6; }
+.doni-acc-select { width: 100%; padding: 11px 14px; border: 1.5px solid #c5d3e8; border-radius: 6px; font-size: 14px; color: #333; box-sizing: border-box; background: #fff; font-family: inherit; }
+.doni-acc-select:focus { border-color: #1c4f9c; outline: none; box-shadow: 0 0 0 3px rgba(28,79,156,0.1); }
+.doni-acc-list-head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 10px; }
+.doni-acc-refresh { background: transparent; border: 1.5px solid #c5d3e8; border-radius: 6px; color: #555; width: 30px; height: 30px; cursor: pointer; }
+.doni-acc-refresh:hover { background: #f5f8fd; }
+.doni-acc-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
+.doni-acc-empty { font-size: 13px; color: #888; padding: 14px 0; text-align: center; }
+.doni-acc-list { list-style: none; margin: 0; padding: 0; }
+.doni-acc-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eef2f8; }
+.doni-acc-row:last-child { border-bottom: none; }
+.doni-acc-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.doni-acc-id { font-size: 14px; font-weight: 700; color: #1a2b4a; }
+.doni-acc-type { font-size: 11px; color: #8a97ab; text-transform: uppercase; letter-spacing: 0.3px; }
+.doni-acc-status { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px; }
+.doni-acc-status.on  { background: #eafaf1; color: #1e8449; }
+.doni-acc-status.off { background: #fdecea; color: #c0392b; }
+.doni-acc-toggle { min-width: 74px; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1.5px solid transparent; }
+.doni-acc-toggle:disabled { opacity: 0.6; cursor: not-allowed; }
+.doni-acc-toggle.enable  { background: #1c4f9c; color: #fff; }
+.doni-acc-toggle.enable:hover:not(:disabled)  { background: #14387a; }
+.doni-acc-toggle.disable { background: #fff; color: #c0392b; border-color: #e6b3ad; }
+.doni-acc-toggle.disable:hover:not(:disabled) { background: #fdecea; }
+
+/* account row: main line + manage panel */
+.doni-acc-row { flex-direction: column; align-items: stretch; }
+.doni-acc-main { display: flex; align-items: center; gap: 10px; }
+.doni-acc-main .doni-acc-info { flex: 1; min-width: 0; }
+.doni-acc-dot { color: #1e8449; font-size: 9px; margin-left: 6px; vertical-align: middle; }
+.doni-acc-manage-btn { background: transparent; border: 1.5px solid #c5d3e8; border-radius: 6px; color: #555; width: 30px; height: 30px; cursor: pointer; flex-shrink: 0; }
+.doni-acc-manage-btn:hover, .doni-acc-manage-btn.open { background: #f5f8fd; }
+.doni-acc-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.doni-acc-tag { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 9px; background: #eef2f8; color: #556; }
+.doni-acc-tag.warn { background: #fff3e0; color: #b26a00; }
+.doni-acc-manage { margin-top: 10px; padding: 10px 12px; background: #f7f9fc; border: 1px solid #e6ecf6; border-radius: 6px; display: flex; flex-direction: column; gap: 10px; }
+.doni-acc-manage-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.doni-acc-manage-row label { font-size: 12px; font-weight: 700; color: #444; min-width: 108px; }
+.doni-acc-manage-row input { width: 72px; padding: 6px 8px; border: 1.5px solid #c5d3e8; border-radius: 5px; font-size: 13px; box-sizing: border-box; }
+.doni-acc-manage-unit { font-size: 12px; color: #8a97ab; }
+.doni-acc-mini { padding: 6px 12px; border-radius: 5px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1.5px solid transparent; background: #1c4f9c; color: #fff; }
+.doni-acc-mini:hover:not(:disabled) { background: #14387a; }
+.doni-acc-mini:disabled { opacity: 0.6; cursor: not-allowed; }
+.doni-acc-mini.ghost { background: #fff; color: #c0392b; border-color: #e6b3ad; }
+.doni-acc-mini.ghost:hover:not(:disabled) { background: #fdecea; }
+
+/* per-account "your account will be disabled" banner — darker than the
+   site-wide hosting banner so the two are distinguishable when both show */
+.doni-hosting-banner--account { background: #8b1a1a; }
+
+/* booking-cooldown block on the /payment/sbi gateway */
+.sbi-cooldown-block {
+  max-width: 460px; margin: 60px auto; background: #fff; border: 1px solid #e0d0d0;
+  border-radius: 8px; padding: 32px 28px; text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+}
+.sbi-cooldown-icon { font-size: 40px; color: #b26a00; margin-bottom: 12px; }
+.sbi-cooldown-block h2 { font-size: 18px; font-weight: 800; color: #1a2b4a; margin: 0 0 10px; }
+.sbi-cooldown-block p { font-size: 13px; color: #555; margin: 0 0 18px; line-height: 1.6; }
+.sbi-cooldown-timer {
+  font-family: "Courier New", monospace; font-size: 40px; font-weight: 800; color: #b73333;
+  letter-spacing: 2px; margin-bottom: 20px;
+}
+.sbi-cooldown-back {
+  display: inline-flex; align-items: center; gap: 6px; background: #1a3060; color: #fff;
+  border-radius: 4px; padding: 8px 18px; font-size: 13px; font-weight: 700; text-decoration: none;
+}
+.sbi-cooldown-back:hover { background: #0f2140; }
+
 /* Site unavailable page */
 .doni-unavailable-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0d1b3e; padding: 24px 12px; }
 .doni-unavailable-card { background: #fff; border-radius: 12px; padding: 40px 32px; text-align: center; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }

@@ -9,6 +9,9 @@ export interface JWTPayload {
   userId: string;
   email: string;
   role: string;
+  // Portal-user single-session id. Present only on `user_token` JWTs; admin /
+  // doni tokens omit it.
+  sid?: string;
 }
 
 export async function signToken(payload: JWTPayload): Promise<string> {

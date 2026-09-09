@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { verifyToken } from "@/lib/auth";
 import { buildReceiptPdf } from "@/lib/receipt/generatePdf";
 import { uploadReceipt, buildReceiptS3Key } from "@/lib/aws/s3";
 import { sendReceiptSms } from "@/lib/aws/sns";
@@ -8,6 +7,8 @@ import { signQrToken, buildQrPageUrl } from "@/lib/qrToken";
 import { isSupportedState } from "@/lib/states/registry";
 import { getStateServer } from "@/lib/states/registry.server";
 import VehicleCache from "@/models/VehicleCache";
+import PortalUser, { IPortalUser } from "@/models/PortalUser";
+import { resolvePortalUser, accountStatus } from "@/lib/portalAuth";
 
 export const runtime = "nodejs";
 
@@ -17,19 +18,19 @@ function makeTransactionId() {
   return `TXN${ts}${rand}`;
 }
 
-// Decode the portal user from the user_token cookie if present. Returns
-// { userId, userIdLabel } so the receipt can identify who paid. Failures are
-// soft — an unauthenticated request still gets a transaction saved (with
-// empty userId) so the user always sees their receipt.
-async function readPortalUser(req: NextRequest): Promise<{ userId: string; userIdLabel: string }> {
-  try {
-    const token = req.cookies.get("user_token")?.value;
-    if (!token) return { userId: "", userIdLabel: "" };
-    const payload = await verifyToken(token);
-    return { userId: payload.userId ?? "", userIdLabel: payload.email ?? "" };
-  } catch {
-    return { userId: "", userIdLabel: "" };
+// Resolve the paying portal user from the user_token cookie.
+//   - no cookie            → anonymous booking (empty ids), as before
+//   - cookie + valid session → returns the PortalUser doc
+//   - cookie + broken session (disabled / locked / superseded) → throws so the
+//     caller can 401 instead of silently downgrading to anonymous
+async function readPayingUser(
+  req: NextRequest
+): Promise<{ portalUser: IPortalUser | null; userId: string; userIdLabel: string }> {
+  if (!req.cookies.get("user_token")?.value) {
+    return { portalUser: null, userId: "", userIdLabel: "" };
   }
+  const { user } = await resolvePortalUser(req);
+  return { portalUser: user, userId: user._id.toString(), userIdLabel: user.id };
 }
 
 // Coerce a possibly-empty date-ish input into a Date or null.
@@ -133,7 +134,36 @@ export async function POST(req: NextRequest) {
     const transactionId = body.transactionId && typeof body.transactionId === "string"
       ? body.transactionId
       : makeTransactionId();
-    const { userId, userIdLabel } = await readPortalUser(req);
+
+    let portalUser: IPortalUser | null;
+    let userId: string;
+    let userIdLabel: string;
+    try {
+      ({ portalUser, userId, userIdLabel } = await readPayingUser(req));
+    } catch {
+      return NextResponse.json(
+        { success: false, code: "SESSION_INVALID", message: "Your session is no longer active. Please log in again." },
+        { status: 401 }
+      );
+    }
+
+    // ── Per-account booking cooldown ─────────────────────────────────────────
+    if (portalUser) {
+      const st = accountStatus(portalUser);
+      if (st.cooldownActive) {
+        return NextResponse.json(
+          {
+            success: false,
+            code: "COOLDOWN",
+            message: "Please wait before booking another receipt.",
+            nextAllowedAt: st.nextAllowedAt,
+            remainingMs: st.remainingMs,
+            cooldownMinutes: st.cooldownMinutes,
+          },
+          { status: 429 }
+        );
+      }
+    }
 
     const txn = await TransactionModel.create({
       transactionId,
@@ -283,6 +313,16 @@ export async function POST(req: NextRequest) {
       );
     } catch (cacheErr) {
       console.error("[payment] vehicle cache upsert failed:", cacheErr);
+    }
+
+    // ── Stamp the account's last-booking time for the cooldown gate ───────
+    // Best-effort: a write failure here must never fail the payment response.
+    if (portalUser) {
+      try {
+        await PortalUser.updateOne({ _id: portalUser._id }, { $set: { lastBookingAt: new Date() } });
+      } catch (cdErr) {
+        console.error("[payment] lastBookingAt stamp failed:", cdErr);
+      }
     }
 
     // ── Side-effects after a successful save ──────────────────────────────

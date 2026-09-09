@@ -58,6 +58,28 @@ export async function middleware(req: NextRequest) {
       res.cookies.set("user_token", "", { maxAge: 0, path: "/" });
       return res;
     }
+
+    // ── DB-backed portal check: account disabled / locked / session superseded
+    // by a newer login. Same internal-fetch pattern as the site-status check
+    // below. Skipped in MOCK_DB mode (no database to check against).
+    if (process.env.MOCK_DB !== "true") {
+      try {
+        const checkRes = await fetch(new URL("/api/user/session-check", req.url), {
+          headers: { cookie: req.headers.get("cookie") ?? "" },
+        });
+        const check = await checkRes.json().catch(() => ({ valid: false }));
+        if (!check?.valid) {
+          const loginUrl = new URL("/login", req.url);
+          loginUrl.searchParams.set("reason", "session");
+          loginUrl.searchParams.set("redirect", pathname + req.nextUrl.search);
+          const res = NextResponse.redirect(loginUrl);
+          res.cookies.set("user_token", "", { maxAge: 0, path: "/" });
+          return res;
+        }
+      } catch {
+        // Fail open — a check hiccup must never break the payment flow.
+      }
+    }
   }
 
   // ── 3. Site-wide lockout — controlled from /doni/dashboard ──────────────────
